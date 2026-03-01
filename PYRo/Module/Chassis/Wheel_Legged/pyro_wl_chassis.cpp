@@ -2,7 +2,7 @@
  * @Author: Vod vod0575@outlook
  * @Date: 2026-02-06 15:27:37
  * @LastEditors: vod vod_x@outlook.com
- * @LastEditTime: 2026-03-01 15:41:26
+ * @LastEditTime: 2026-03-01 19:47:39
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -71,6 +71,7 @@ status_t wl_chassis_t::_init()
     /* Initialize PID controllers */
     for(uint8_t i = 0; i < 2; i++)
     {
+        /* Init T pid */
         _T_pid[i] = new pid_t(_module_deps.T_pid_cfg[i].kp, _module_deps.T_pid_cfg[i].ki, 
                             _module_deps.T_pid_cfg[i].kd, 
                             _module_deps.T_pid_cfg[i].integral_limit,
@@ -79,11 +80,30 @@ status_t wl_chassis_t::_init()
         {
             return PYRO_NO_MEMORY;
         }
-        _F_pid[i] = new pid_t(_module_deps.F_pid_cfg[i].kp, _module_deps.F_pid_cfg[i].ki, 
+        /* Init d_T pid */
+        _d_T_pid[i] = new pid_t(_module_deps.F_pid_cfg[i].kp, _module_deps.F_pid_cfg[i].ki, 
                             _module_deps.F_pid_cfg[i].kd, 
                             _module_deps.F_pid_cfg[i].integral_limit,
                             _module_deps.F_pid_cfg[i].max_out);
+        if(!_d_T_pid[i])
+        {
+            return PYRO_NO_MEMORY;
+        }
+        /* Init F pid */
+        _F_pid[i] = new pid_t(_module_deps.d_F_pid_cfg[i].kp, _module_deps.d_F_pid_cfg[i].ki, 
+                            _module_deps.d_F_pid_cfg[i].kd, 
+                            _module_deps.d_F_pid_cfg[i].integral_limit,
+                            _module_deps.d_F_pid_cfg[i].max_out);
         if(!_F_pid[i])        
+        {
+            return PYRO_NO_MEMORY;
+        }
+        /* Init d_F pid */
+        _d_F_pid[i] = new pid_t(_module_deps.d_T_pid_cfg[i].kp, _module_deps.d_T_pid_cfg[i].ki, 
+                            _module_deps.d_T_pid_cfg[i].kd, 
+                            _module_deps.d_T_pid_cfg[i].integral_limit,
+                            _module_deps.d_T_pid_cfg[i].max_out);
+        if(!_d_F_pid[i])
         {
             return PYRO_NO_MEMORY;
         }
@@ -120,6 +140,12 @@ void wl_chassis_t::_update_feedback()
                                                         + _motor_offset[LF];
     _leg_data[L].theta2 = _motor_drv[LB]->get_current_position() 
                                                         + _motor_offset[LB];
+    /* The direction of differential of theta is same as theta */
+    _leg_data[R].d_theta1 = -_motor_drv[RF]->get_current_rotate();
+    _leg_data[R].d_theta2 = -_motor_drv[RB]->get_current_rotate();
+    _leg_data[L].d_theta1 = _motor_drv[LF]->get_current_rotate();
+    _leg_data[L].d_theta2 = _motor_drv[LB]->get_current_rotate();
+
     for(uint8_t i = 0; i < 2; i++)
     {
         _wheel_drv[i]->update_feedback();
@@ -135,10 +161,14 @@ void wl_chassis_t::_update_feedback()
 
         ret = _kinematic_solver.solve(_leg_data[i].theta1, 
                                       _leg_data[i].theta2,
+                                    _leg_data[i].d_theta1,
+                                    _leg_data[i].d_theta2,
                                         &_leg_data[i].phi1,
                                         &_leg_data[i].phi2,
                                       &_leg_data[i].alpha,
-                                       &_leg_data[i].l);
+                                       &_leg_data[i].l,
+                                    &_leg_data[i].d_alpha,
+                                     &_leg_data[i].d_l);
         if(ret != PYRO_OK)
         {
             _cnt.solver_error++;

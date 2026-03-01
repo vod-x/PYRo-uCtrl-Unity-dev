@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-07 15:14:47
  * @LastEditors: vod vod_x@outlook.com
- * @LastEditTime: 2026-02-28 13:13:15
+ * @LastEditTime: 2026-03-01 19:20:54
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -69,7 +69,10 @@ struct wl_chassis_cfg_t
     /* PID configuration for the chassis control. The order of array is: 
 right leg, left leg */
     wl_pid_cfg_t T_pid_cfg[2];
+    wl_pid_cfg_t d_T_pid_cfg[2];
     wl_pid_cfg_t F_pid_cfg[2];
+    wl_pid_cfg_t d_F_pid_cfg[2];
+
     /* LQR coefficients for the chassis control. 2 raw x 6 column, 12 values
        in total. Every value has 3 coefficients.*/
     float *lqr_coef;
@@ -204,18 +207,30 @@ private:
     {
         /* Angle between big rod and direction of movement(rad) */
         float theta1, theta2;
+        /* Differential of angle between big rod and direction of movement(rad/s) */
+        float d_theta1, d_theta2;
         /* Angle between little rod and direction of movement(rad) */
         float phi1, phi2;
         /* Polar radius of j9(m) */
         float l;
+        /* Differential of polar radius of j9(m/s) */
+        float d_l;
+        /* Reference differential of polar radius of j9(m/s), which calculated
+           by pid controller. */
+        float ref_d_l;
         /* Polar angle of j9(rad), clockwise is positive with forward direction
            as fixed side. */
         float alpha;
+        /* Differential of polar angle of j9(rad/s) */
+        float d_alpha;
+        /* Reference differential of polar angle of j9(rad/s), which calculated
+           by pid controller. */
+        float ref_d_alpha;
         /* The angle between the vertical direction(towards ground) and the 
            leg(rad), it equal pi/2 - alpha - pitch angle of chassis */
         float beta;
-        /* The angle between the ground and the body(rad) */
-        float gamma;
+        /* Differential of the angle between the vertical direction and the leg(rad/s) */
+        float d_beta;
         /* Displacement distance of a j9(m) */
         float x;
         /* Velocity of the displacement of j9(m/s) */
@@ -230,7 +245,9 @@ private:
         float F[2];
     } _leg_data[2];
     pid_t *_T_pid[2];
+    pid_t *_d_T_pid[2];
     pid_t *_F_pid[2];
+    pid_t *_d_F_pid[2];
 
     /* CAN bus configuration for motors, the order is same as _motor_drv array */
     struct

@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-26 20:18:33
  * @LastEditors: vod vod_x@outlook.com
- * @LastEditTime: 2026-03-01 15:36:59
+ * @LastEditTime: 2026-03-01 19:44:53
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -49,7 +49,8 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
 
 }
 void infantry2_chassis_main_tread(void *argument)
-{infantry2_chassis_ptr->start();
+{
+    status_t ret = infantry2_chassis_ptr->start();
     while(1)
     {
         infantry2_chassis_rc2cmd(infantry2_rc_ctrl_ptr);

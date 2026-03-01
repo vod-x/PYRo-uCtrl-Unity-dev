@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-07 15:14:47
  * @LastEditors: vod vod_x@outlook.com
- * @LastEditTime: 2026-02-07 22:47:21
+ * @LastEditTime: 2026-03-01 21:32:34
  * @Description: 
  * The kinematic solve algorithm for wheel legged robot. If you want to use,
  * define a variable which type is wheel_legged_kin_t, than call its init 
@@ -16,7 +16,7 @@
 #include "pyro_kin.wl.h"
 
 using namespace pyro;
-
+float ax, ay;
 status_t wheel_legged_kin_t::init( const phi_k_t *phi_k,
                               const polar_k_t *polar_k,
                               const vmc_k_t *vmc_k)
@@ -51,8 +51,10 @@ status_t wheel_legged_kin_t::init( const phi_k_t *phi_k,
 }
 
 status_t wheel_legged_kin_t::solve(float theta1, float theta2,
+                                 float d_theta1, float d_theta2,
                                  float *phi1,  float *phi2,
-                                 float *alpha, float *length)
+                                 float *alpha, float *length,
+                                 float *d_length, float *d_alpha)
 {
     arm_status ret; //variable to store return value of arm math functions
     float temp1, temp2;  //two temporary variables to store claculation results
@@ -68,6 +70,8 @@ status_t wheel_legged_kin_t::solve(float theta1, float theta2,
     CHECK_POINT_NULL(phi2)
     CHECK_POINT_NULL(alpha)
     CHECK_POINT_NULL(length)
+    CHECK_POINT_NULL(d_length)
+    CHECK_POINT_NULL(d_alpha)
     /* 2. Calculate phi1, phi2 */
     /* 2.1 calculate the molecule of phi1 and phi2 */
     ret = arm_sqrt_f32((_phi_k.k1 - _phi_k.k2*arm_cos_f32(theta1 - theta2)  
@@ -107,6 +111,39 @@ status_t wheel_legged_kin_t::solve(float theta1, float theta2,
     temp2 = temp2 * temp2;
     ret = arm_sqrt_f32(temp1 + temp2, length);
     CHECK_ARM_MATH_RET(ret);
+    /* 4. Calculate the differential of polar coordinates, the cofficients is 
+       same as VMC calc*/
+    /* 4.1 calulate dx and dy */
+    float dx, dy;
+    //dx
+    dx = -(_vmc_k.k0 * d_theta1 * arm_sin_f32(theta1)) / (_vmc_k.k1) 
+        -(_vmc_k.k0 * arm_sin_f32(*phi1) 
+        * (d_theta1 * arm_sin_f32(*phi2 - theta1) 
+        - d_theta2 * arm_sin_f32(*phi2 - theta2))) 
+        / (_vmc_k.k1 * arm_sin_f32(phi1 - phi2));
+    //dy
+    dy = (_vmc_k.k0 * d_theta1 * arm_cos_f32(theta1)) / (_vmc_k.k1) 
+        +(_vmc_k.k0 * arm_cos_f32(*phi1) 
+        * (d_theta1 * arm_sin_f32(*phi2 - theta1) 
+        - d_theta2 * arm_sin_f32(*phi2 - theta2))) 
+        / (_vmc_k.k1 * arm_sin_f32(phi1 - phi2));
+    arm_sqrt_f32(dx*dx+dy*dy, d_length);
+    *d_alpha = (temp1 * dy - temp2 * dx) / (*length * *length);
+    // static float l_temp1, l_temp2;
+    // if(abs(temp1 - l_temp1) > 0.001f)ax+= temp1;
+    // if(abs(temp2 - l_temp2) > 0.001f)ay+= temp2;
+    
+    
+    // l_temp1 = temp1;
+    // l_temp2 = temp2;
+    
+
+    // /* 4.2 calculate diffrential alpha */
+    // *d_alpha = (arm_sin_f32(*alpha) * temp1 + arm_cos_f32(*alpha) * temp2) / (*length);
+    // /* 4.3 calculate diffrential length */
+    // *d_length = arm_sin_f32(*alpha) * temp2 - arm_cos_f32(*alpha) * temp1;
+
+
     return PYRO_OK;
 }
 
