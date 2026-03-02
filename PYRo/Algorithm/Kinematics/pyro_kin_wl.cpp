@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-07 15:14:47
  * @LastEditors: vod vod_x@outlook.com
- * @LastEditTime: 2026-03-01 21:32:34
+ * @LastEditTime: 2026-03-02 18:41:39
  * @Description: 
  * The kinematic solve algorithm for wheel legged robot. If you want to use,
  * define a variable which type is wheel_legged_kin_t, than call its init 
@@ -54,7 +54,9 @@ status_t wheel_legged_kin_t::solve(float theta1, float theta2,
                                  float d_theta1, float d_theta2,
                                  float *phi1,  float *phi2,
                                  float *alpha, float *length,
-                                 float *d_length, float *d_alpha)
+                                 float *d_length, float *d_alpha,
+                                 float *d_x, float *d_y,
+                                 float *x, float *y)
 {
     arm_status ret; //variable to store return value of arm math functions
     float temp1, temp2;  //two temporary variables to store claculation results
@@ -103,32 +105,43 @@ status_t wheel_legged_kin_t::solve(float theta1, float theta2,
     CHECK_ARM_MATH_RET(ret);
     *alpha = temp2;
     /* 3.2 calculate l */
-    temp1 = ( _polar_k.k0*arm_cos_f32(*phi1))/_polar_k.k2 + 
+    *x = ( _polar_k.k0*arm_cos_f32(*phi1))/_polar_k.k2 + 
                             (_polar_k.k1*arm_cos_f32(theta1))/_polar_k.k3;
-    temp1 = temp1 * temp1;
-    temp2 = ( _polar_k.k0*arm_sin_f32(*phi1))/_polar_k.k2 +
+    temp1 = (*x) * (*x);
+    *y = ( _polar_k.k0*arm_sin_f32(*phi1))/_polar_k.k2 +
                             (_polar_k.k1*arm_sin_f32(theta1))/_polar_k.k3;
-    temp2 = temp2 * temp2;
+    temp2 = (*y) * (*y);
     ret = arm_sqrt_f32(temp1 + temp2, length);
     CHECK_ARM_MATH_RET(ret);
     /* 4. Calculate the differential of polar coordinates, the cofficients is 
        same as VMC calc*/
     /* 4.1 calulate dx and dy */
-    float dx, dy;
-    //dx
-    dx = -(_vmc_k.k0 * d_theta1 * arm_sin_f32(theta1)) / (_vmc_k.k1) 
-        -(_vmc_k.k0 * arm_sin_f32(*phi1) 
-        * (d_theta1 * arm_sin_f32(*phi2 - theta1) 
-        - d_theta2 * arm_sin_f32(*phi2 - theta2))) 
-        / (_vmc_k.k1 * arm_sin_f32(phi1 - phi2));
-    //dy
-    dy = (_vmc_k.k0 * d_theta1 * arm_cos_f32(theta1)) / (_vmc_k.k1) 
-        +(_vmc_k.k0 * arm_cos_f32(*phi1) 
-        * (d_theta1 * arm_sin_f32(*phi2 - theta1) 
-        - d_theta2 * arm_sin_f32(*phi2 - theta2))) 
-        / (_vmc_k.k1 * arm_sin_f32(phi1 - phi2));
-    arm_sqrt_f32(dx*dx+dy*dy, d_length);
-    *d_alpha = (temp1 * dy - temp2 * dx) / (*length * *length);
+    // //dx
+    // dx = -(_vmc_k.k0 * d_theta1 * arm_sin_f32(theta1)) / (_vmc_k.k1) 
+    //     -(_vmc_k.k0 * arm_sin_f32(*phi1) 
+    //     * (d_theta1 * arm_sin_f32(*phi2 - theta1) 
+    //     - d_theta2 * arm_sin_f32(*phi2 - theta2))) 
+    //     / (_vmc_k.k1 * arm_sin_f32(phi1 - phi2));
+    // //dy
+    // dy = (_vmc_k.k0 * d_theta1 * arm_cos_f32(theta1)) / (_vmc_k.k1) 
+    //     +(_vmc_k.k0 * arm_cos_f32(*phi1) 
+    //     * (d_theta1 * arm_sin_f32(*phi2 - theta1) 
+    //     - d_theta2 * arm_sin_f32(*phi2 - theta2))) 
+    //     / (_vmc_k.k1 * arm_sin_f32(phi1 - phi2));
+    // dx = -(_vmc_k.k0*(d_theta1*arm_sin_f32(*phi1)*arm_sin_f32(*phi2 - theta1) 
+    // + d_theta1*arm_sin_f32(theta1)*arm_sin_f32(*phi1 - *phi2) 
+    // - d_theta2*arm_sin_f32(*phi1)*arm_sin_f32(*phi2 - theta2)))
+    // /(_vmc_k.k1*arm_sin_f32(*phi1 - *phi2));
+    // dy = (_vmc_k.k0*(d_theta1*arm_cos_f32(*phi1)*arm_sin_f32(*phi2 - theta1) 
+    // + d_theta1*arm_cos_f32(theta1)*arm_sin_f32(*phi1 - *phi2) 
+    // - d_theta2*arm_cos_f32(*phi1)*arm_sin_f32(*phi2 - theta2)))
+    // /(_vmc_k.k1*arm_sin_f32(*phi1 - *phi2));
+    *d_x = -d_theta1 * (21059*arm_sin_f32(*phi2)*arm_sin_f32(*phi1 - theta1))/(100000*arm_sin_f32(*phi1 - *phi2))+d_theta2*(21059*arm_sin_f32(*phi1)*arm_sin_f32(*phi2 - theta2))/(100000*arm_sin_f32(*phi1 - *phi2));
+    *d_y = d_theta1 * (21059*arm_cos_f32(*phi2)*arm_sin_f32(*phi1 - theta1))/(100000*arm_sin_f32(*phi1 - *phi2)) - d_theta2 * (21059*arm_cos_f32(*phi1)*arm_sin_f32(*phi2 - theta2))/(100000*arm_sin_f32(*phi1 - *phi2));
+    *d_length = (*x * (*d_x) + *y * (*d_y)) / (*length);
+    *d_alpha = (*x * (*d_y) - *y * (*d_x)) / (*length * *length);
+    *d_x = *d_x;
+    *d_y = *d_y;
     // static float l_temp1, l_temp2;
     // if(abs(temp1 - l_temp1) > 0.001f)ax+= temp1;
     // if(abs(temp2 - l_temp2) > 0.001f)ay+= temp2;
@@ -139,7 +152,7 @@ status_t wheel_legged_kin_t::solve(float theta1, float theta2,
     
 
     // /* 4.2 calculate diffrential alpha */
-    // *d_alpha = (arm_sin_f32(*alpha) * temp1 + arm_cos_f32(*alpha) * temp2) / (*length);
+    // *d_alpha = (arm_arm_sin_f32_f32(*alpha) * temp1 + arm_arm_cos_f32_f32(*alpha) * temp2) / (*length);
     // /* 4.3 calculate diffrential length */
     // *d_length = arm_sin_f32(*alpha) * temp2 - arm_cos_f32(*alpha) * temp1;
 

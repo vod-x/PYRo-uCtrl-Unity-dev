@@ -130,7 +130,10 @@ public:
                    float d_theta1, float d_theta2,
                    float *phi1,  float *phi2, 
                    float *length, float *alpha,
-                   float *d_length, float *d_alpha);
+                   float *d_length, float *d_alpha,
+                    float *d_x, float *d_y,
+                    float *x, float *y);
+
 
     
     /**

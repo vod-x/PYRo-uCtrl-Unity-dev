@@ -2,7 +2,7 @@
  * @Author: Vod vod0575@outlook
  * @Date: 2026-02-06 15:27:37
  * @LastEditors: vod vod_x@outlook.com
- * @LastEditTime: 2026-03-01 19:47:39
+ * @LastEditTime: 2026-03-02 18:48:16
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -167,8 +167,12 @@ void wl_chassis_t::_update_feedback()
                                         &_leg_data[i].phi2,
                                       &_leg_data[i].alpha,
                                        &_leg_data[i].l,
-                                    &_leg_data[i].d_alpha,
-                                     &_leg_data[i].d_l);
+                                    &_leg_data[i].d_l,
+                                     &_leg_data[i].d_alpha,
+                                     &_leg_data[i].d_jx,
+                                     &_leg_data[i].d_jy,
+                                     &_leg_data[i].jx,
+                                     &_leg_data[i].jy);
         if(ret != PYRO_OK)
         {
             _cnt.solver_error++;

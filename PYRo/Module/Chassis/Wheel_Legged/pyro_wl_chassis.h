@@ -243,6 +243,8 @@ private:
         float T[2];
         /* VMC output force and torque, force is 0, torque is 1*/
         float F[2];
+        float jx,jy;
+        float d_jx, d_jy;
     } _leg_data[2];
     pid_t *_T_pid[2];
     pid_t *_d_T_pid[2];
