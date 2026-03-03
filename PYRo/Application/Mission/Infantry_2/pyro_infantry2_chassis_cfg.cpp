@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-27 20:38:05
  * @LastEditors: vod vod_x@outlook.com
- * @LastEditTime: 2026-03-03 10:38:44
+ * @LastEditTime: 2026-03-03 13:09:22
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -90,14 +90,14 @@ wl_chassis_cfg_t infantry2_chassis_cfg = {
     },
     .T_pid_cfg = {
         {
-            .kp = 4.0f,
+            .kp = 6.0f,
             .ki = 0.0f,
             .kd = 0.0f,
             .integral_limit = 0.0f,
             .max_out = 20.0f,
         },
         {
-            .kp = 4.0f,
+            .kp = 6.0f,
             .ki = 0.0f,
             .kd = 0.0f,
             .integral_limit = 0.0f,
