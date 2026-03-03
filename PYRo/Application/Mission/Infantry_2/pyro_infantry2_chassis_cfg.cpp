@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-27 20:38:05
  * @LastEditors: vod vod_x@outlook.com
- * @LastEditTime: 2026-03-01 21:35:53
+ * @LastEditTime: 2026-03-03 10:38:44
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -25,8 +25,8 @@
 // the forward direction of robot, counter clockwise is positive(rad)
 #define R_MOTOR1_OFFSET 2.66f
 #define R_MOTOR2_OFFSET 3.979092653f
-#define L_MOTOR1_OFFSET 0.0f
-#define L_MOTOR2_OFFSET 0.0f
+#define L_MOTOR1_OFFSET -1.323f
+#define L_MOTOR2_OFFSET 1.226f
 // the cofficients of lqr gain, 36 values in total, every value has 3 cofficients,
 #define LQR_GAIN 0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,\
                  0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f
@@ -90,14 +90,14 @@ wl_chassis_cfg_t infantry2_chassis_cfg = {
     },
     .T_pid_cfg = {
         {
-            .kp = 0.0f,
+            .kp = 4.0f,
             .ki = 0.0f,
             .kd = 0.0f,
             .integral_limit = 0.0f,
             .max_out = 20.0f,
         },
         {
-            .kp = 0.0f,
+            .kp = 4.0f,
             .ki = 0.0f,
             .kd = 0.0f,
             .integral_limit = 0.0f,
@@ -106,14 +106,14 @@ wl_chassis_cfg_t infantry2_chassis_cfg = {
     },
     .d_T_pid_cfg = {
         {
-            .kp = 0.0f,
+            .kp = 2.0f,
             .ki = 0.0f,
             .kd = 0.0f,
             .integral_limit = 0.0f,
             .max_out = 20.0f,
         },
         {
-            .kp = 0.0f,
+            .kp = 2.0f,
             .ki = 0.0f,
             .kd = 0.0f,
             .integral_limit = 0.0f,
@@ -138,14 +138,14 @@ wl_chassis_cfg_t infantry2_chassis_cfg = {
     },
     .d_F_pid_cfg = {
         {
-            .kp = 20.0f,
+            .kp = 40.0f,
             .ki = 0.0f,
             .kd = 0.0f,
             .integral_limit = 0.0f,
             .max_out = 20.0f,
         },
         {
-            .kp = 20.0f,
+            .kp = 40.0f,
             .ki = 0.0f,
             .kd = 0.0f,
             .integral_limit = 0.0f,

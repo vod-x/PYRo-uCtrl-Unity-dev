@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-28 13:11:52
  * @LastEditors: vod vod_x@outlook.com
- * @LastEditTime: 2026-03-01 19:30:25
+ * @LastEditTime: 2026-03-02 20:22:19
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -18,24 +18,26 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
 {
     /* Calculate target force of VMC for each legs. */
     /* Right leg */
-    owner->_leg_data[wl_chassis_t::R].ref_d_l=
-        owner->_F_pid[wl_chassis_t::R]->
-        calculate(owner->_cmd->r_leg, 
-        owner->_leg_data[wl_chassis_t::R].l);
-    owner->_leg_data[wl_chassis_t::R].F[0]=
-            owner->_F_pid[wl_chassis_t::R]->
-             calculate(owner->_leg_data[wl_chassis_t::R].ref_d_l, 
-        owner->_leg_data[wl_chassis_t::R].d_l);
-    /* Left leg */
-    owner->_leg_data[wl_chassis_t::L].ref_d_l=
-        owner->_F_pid[wl_chassis_t::L]->
-        calculate(owner->_cmd->l_leg,
-        owner->_leg_data[wl_chassis_t::L].l);
-    owner->_leg_data[wl_chassis_t::L].F[0]=
-        owner->_F_pid[wl_chassis_t::L]->
-        calculate(owner->_leg_data[wl_chassis_t::L].ref_d_l,
-        owner->_leg_data[wl_chassis_t::L].d_l);
+    // owner->_leg_data[wl_chassis_t::R].ref_d_l=
+    //     owner->_F_pid[wl_chassis_t::R]->
+    //     calculate(owner->_cmd->r_leg, 
+    //     owner->_leg_data[wl_chassis_t::R].l);
+    // owner->_leg_data[wl_chassis_t::R].F[0]=
+    //         owner->_F_pid[wl_chassis_t::R]->
+    //          calculate(owner->_leg_data[wl_chassis_t::R].ref_d_l, 
+    //     owner->_leg_data[wl_chassis_t::R].d_l);
+    // /* Left leg */
+    // owner->_leg_data[wl_chassis_t::L].ref_d_l=
+    //     owner->_F_pid[wl_chassis_t::L]->
+    //     calculate(owner->_cmd->l_leg,
+    //     owner->_leg_data[wl_chassis_t::L].l);
+    // owner->_leg_data[wl_chassis_t::L].F[0]=
+    //     owner->_F_pid[wl_chassis_t::L]->
+    //     calculate(owner->_leg_data[wl_chassis_t::L].ref_d_l,
+    //     owner->_leg_data[wl_chassis_t::L].d_l);
 
+    owner->_leg_data[wl_chassis_t::R].F[0] = 0;
+    owner->_leg_data[wl_chassis_t::L].F[0] = 0;
     /* Calculate the target torque of VMC for each leg */
     /* Right leg */
     owner->_leg_data[wl_chassis_t::R].ref_d_alpha=
