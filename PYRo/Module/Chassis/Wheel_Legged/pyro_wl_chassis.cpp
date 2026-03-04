@@ -2,14 +2,14 @@
  * @Author: Vod vod0575@outlook
  * @Date: 2026-02-06 15:27:37
  * @LastEditors: vod vod_x@outlook.com
- * @LastEditTime: 2026-03-02 18:48:16
+ * @LastEditTime: 2026-03-04 13:14:50
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
  */
 
- #include "pyro_wl_chassis.h"
-
+#include "pyro_wl_chassis.h"
+#include "pyro_dwt_drv.h"
 
  namespace pyro
  {
@@ -116,11 +116,13 @@ status_t wl_chassis_t::_init()
 
 void wl_chassis_t::_update_feedback()
 {
+    static uint32_t dwt_cnt;
     /* Update INS data */
     if(_ins_drv)
     {
         _ins_drv->get_rads_b(&yaw, &pitch, &roll);
         _ins_drv->get_gyro_b(&g_yaw, &g_pitch, &g_roll);
+        _ins_drv->get_acc_without_g_n(&a_x, &a_y, &a_z);
     }
     /* Update the feedback of joint motors and wheel motors. */
     for(uint8_t i = 0; i < 4; i++)
@@ -158,7 +160,9 @@ void wl_chassis_t::_update_feedback()
     for(uint8_t i = 0; i < 2; i++)
     {
         status_t ret;
-
+        float time;
+        float last_d_l = _leg_data[i].d_l;
+        float last_d_beta = _leg_data[i].d_beta;
         ret = _kinematic_solver.solve(_leg_data[i].theta1, 
                                       _leg_data[i].theta2,
                                     _leg_data[i].d_theta1,
@@ -177,6 +181,16 @@ void wl_chassis_t::_update_feedback()
         {
             _cnt.solver_error++;
         }
+         
+        _leg_data[i].beta = PI / 2 - _leg_data[i].alpha - pitch;
+        _leg_data[i].d_beta = -_leg_data[i].d_alpha - g_pitch;
+         /* The second differential of beta is calculated by data, which may be
+            noisy but can reflect the real dynamic of the chassis. */
+        time = dwt_drv_t::get_delta_t(&dwt_cnt);
+        _leg_data[i].d2_beta = (_leg_data[i].d_beta - last_d_beta) / time;
+         /* The second differential of l is calculated by data, which may be
+            noisy but can reflect the real dynamic of the chassis. */
+        _leg_data[i].d2_l = (_leg_data[i].d_l - last_d_l) / time;
     }
 
     /* update VMC matrix */
@@ -195,7 +209,6 @@ void wl_chassis_t::_update_feedback()
         {
             _cnt.solver_error++;
         }
-        _leg_data[i].beta = PI / 2 - _leg_data[i].alpha - pitch;
     }
 
 }

@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-07 15:14:47
  * @LastEditors: vod vod_x@outlook.com
- * @LastEditTime: 2026-03-01 19:20:54
+ * @LastEditTime: 2026-03-04 12:56:49
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -184,6 +184,7 @@ private:
 
     float yaw, pitch, roll;
     float g_yaw, g_pitch, g_roll;
+    float a_x, a_y, a_z;
 
     /* LQR coefficients for the chassis control. 2 raw x 6 column, 12 values
        in total. Every value has 3 coefficients.*/
@@ -215,6 +216,8 @@ private:
         float l;
         /* Differential of polar radius of j9(m/s) */
         float d_l;
+        /* Second differential of polar radius of j9(m/s^2), calculated by data. */
+        float d2_l;
         /* Reference differential of polar radius of j9(m/s), which calculated
            by pid controller. */
         float ref_d_l;
@@ -231,6 +234,9 @@ private:
         float beta;
         /* Differential of the angle between the vertical direction and the leg(rad/s) */
         float d_beta;
+        /* Second differential of the angle between the vertical direction and 
+           the leg(rad/s^2), calculated by data. */
+        float d2_beta;
         /* Displacement distance of a j9(m) */
         float x;
         /* Velocity of the displacement of j9(m/s) */
@@ -243,6 +249,8 @@ private:
         float T[2];
         /* VMC output force and torque, force is 0, torque is 1*/
         float F[2];
+        /* Support force of the leg in vertical direction */
+        float P;
         float jx,jy;
         float d_jx, d_jy;
     } _leg_data[2];
@@ -271,6 +279,7 @@ private:
             void enter(wl_chassis_t *owner) override;
             void execute(wl_chassis_t *owner) override;
             void exit(wl_chassis_t *owner) override;
+            void calc_support_force(wl_chassis_t *owner);
         }_state_normal;
         void on_enter(wl_chassis_t *owner) override;
         void on_execute(wl_chassis_t *owner) override;
