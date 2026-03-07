@@ -2,7 +2,7 @@
  * @Author: Vod vod0575@outlook
  * @Date: 2026-02-06 15:27:37
  * @LastEditors: vod vod_x@outlook.com
- * @LastEditTime: 2026-03-04 13:14:50
+ * @LastEditTime: 2026-03-07 14:54:08
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -27,7 +27,7 @@ status_t wl_chassis_t::_init()
              &_module_deps.polar_k, &_module_deps.vmc_k);
     CHECK_PYRO_RET(ret);
     /* Save LQR coefficients */
-    memcpy(_lqr_cof, _module_deps.lqr_coef, sizeof(float) * 36);
+    memcpy(_lqr_cof, _module_deps.lqr_coef, sizeof(float) * 48);
 
     /* Save wheel radius and reduction ratio */
     _wheel_radius = _module_deps.wheel_radius;
@@ -117,6 +117,7 @@ status_t wl_chassis_t::_init()
 void wl_chassis_t::_update_feedback()
 {
     static uint32_t dwt_cnt;
+    static float last_dx[2];
     /* Update INS data */
     if(_ins_drv)
     {
@@ -148,13 +149,19 @@ void wl_chassis_t::_update_feedback()
     _leg_data[L].d_theta1 = _motor_drv[LF]->get_current_rotate();
     _leg_data[L].d_theta2 = _motor_drv[LB]->get_current_rotate();
 
-    for(uint8_t i = 0; i < 2; i++)
-    {
-        _wheel_drv[i]->update_feedback();
-        _leg_data[i].dx = _wheel_drv[i]->get_current_rotate() * _wheel_radius 
-                                        * _reduction_ratio;
-        _leg_data[i].x += _leg_data[i].dx * 0.001f;
-    }
+    /* Update wheel feedback, state x is from the intefration of x, due to 
+       the direction of installation, the direction of left wheel if opposite to
+    the direction of forward, so its dx has minus */
+    _wheel_drv[R]->update_feedback();
+    _leg_data[R].dx = _wheel_drv[R]->get_current_rotate() * _wheel_radius   
+                                        / _reduction_ratio;
+    _leg_data[R].x += (_leg_data[R].dx + last_dx[R])/2 * 0.001f;
+    last_dx[R] = _leg_data[R].dx;
+    _wheel_drv[L]->update_feedback();
+    _leg_data[L].dx = - _wheel_drv[L]->get_current_rotate() * _wheel_radius 
+                                        / _reduction_ratio;
+    _leg_data[L].x += (_leg_data[L].dx + last_dx[L])/2 * 0.001f;
+    last_dx[L] = _leg_data[L].dx;
 
     /* kinematic solve the current states of the chassis */
     for(uint8_t i = 0; i < 2; i++)
@@ -184,6 +191,9 @@ void wl_chassis_t::_update_feedback()
          
         _leg_data[i].beta = PI / 2 - _leg_data[i].alpha - pitch;
         _leg_data[i].d_beta = -_leg_data[i].d_alpha - g_pitch;
+        _leg_data[i].gamma = -pitch;
+        _leg_data[i].d_gamma = -g_pitch;
+
          /* The second differential of beta is calculated by data, which may be
             noisy but can reflect the real dynamic of the chassis. */
         time = dwt_drv_t::get_delta_t(&dwt_cnt);

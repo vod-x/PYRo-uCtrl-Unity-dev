@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-27 20:38:05
  * @LastEditors: vod vod_x@outlook.com
- * @LastEditTime: 2026-03-03 13:09:22
+ * @LastEditTime: 2026-03-07 21:15:56
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -27,13 +27,14 @@
 #define R_MOTOR2_OFFSET 3.979092653f
 #define L_MOTOR1_OFFSET -1.323f
 #define L_MOTOR2_OFFSET 1.226f
-// the cofficients of lqr gain, 36 values in total, every value has 3 cofficients,
-#define LQR_GAIN 0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,\
-                 0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f
+// the cofficients of lqr gain, 48 values in total, every value has 3 cofficients,
+#define LQR_GAIN \
+-0.0215, 1.3702, -3.4480, 3.2223,-0.2006, 14.2219, -35.6207, 33.2876,-3.8845, 7.5766, 0.6314, -12.1206,-1.8301, 3.5088, 0.2825, -5.5770,-0.4938, -64.3496, 126.4332, -108.9568,0.0425, -7.6852, 9.2691, -8.7643,-0.4610, -0.4589, 5.9741, -8.7850,-4.8608, -4.4632, 61.2681, -90.4981,-0.4119, -56.0491, 124.2200, -101.8118,-0.0373, -26.2371, 57.7281, -46.9898,8.2844, 84.1827, -373.1021, 452.8045,1.9033, 9.8719, -44.2983, 54.6131
 #include "pyro_wl_chassis.h"
+
 using namespace pyro;
 
-float infantry2_lqr_coef[36] = {LQR_GAIN};
+float infantry2_lqr_coef[48] = {LQR_GAIN};
 wl_chassis_cfg_t infantry2_chassis_cfg = {
     .phi_k = {
         .k0 = PHI_K0,
@@ -80,7 +81,7 @@ wl_chassis_cfg_t infantry2_chassis_cfg = {
     },
     .wheel_motor_cfg = {
         {
-            .tx_id = dji_motor_tx_frame_t::id_1,
+            .tx_id = dji_motor_tx_frame_t::id_3,
             .can = can_hub_t::can1,
         },
         {
@@ -126,14 +127,14 @@ wl_chassis_cfg_t infantry2_chassis_cfg = {
             .ki = 0.0f,
             .kd = 0.0f,
             .integral_limit = 0.0f,
-            .max_out = 20.0f,
+            .max_out = 200.0f,
         },
         {
             .kp = 200.0f,
             .ki = 0.0f,
             .kd = 0.0f,
             .integral_limit = 0.0f,
-            .max_out = 20.0f,
+            .max_out = 200.0f,
         }
     },
     .d_F_pid_cfg = {
@@ -142,19 +143,19 @@ wl_chassis_cfg_t infantry2_chassis_cfg = {
             .ki = 0.0f,
             .kd = 0.0f,
             .integral_limit = 0.0f,
-            .max_out = 20.0f,
+            .max_out = 200.0f,
         },
         {
             .kp = 40.0f,
             .ki = 0.0f,
             .kd = 0.0f,
             .integral_limit = 0.0f,
-            .max_out = 20.0f,
+            .max_out = 200.0f,
         }
     },
     .lqr_coef = infantry2_lqr_coef,
-    .wheel_radius = 0.076f,
-    .reduction_ratio = 36.0f,
+    .wheel_radius = 0.06f,
+    .reduction_ratio = 13.94f,
     .rotate_min = -45.0f,
     .rotate_max = 45.0f,
     .position_min = -12.5f,

@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-26 20:03:11
  * @LastEditors: vod vod_x@outlook.com
- * @LastEditTime: 2026-02-28 13:14:30
+ * @LastEditTime: 2026-03-07 18:40:08
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -24,6 +24,9 @@ void wl_chassis_t::fsm_active_t::on_enter(wl_chassis_t *owner)
     {
         owner->_wheel_drv[i]->enable();
     }
+    
+    owner->_leg_data[wl_chassis_t::R].x = 0.0f;
+    owner->_leg_data[wl_chassis_t::L].x = 0.0f;
 }
 
 void wl_chassis_t::fsm_active_t::on_execute(wl_chassis_t *owner)

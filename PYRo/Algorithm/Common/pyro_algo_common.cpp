@@ -48,5 +48,14 @@ float loop_fp32_constrain(float val, const float min_val, const float max_val)
         val += len;
     return val;
 }
+float fp32_constrain(float val, const float min_val, const float max_val)
+{
+    if (val > max_val)
+        return max_val;
+    if (val < min_val)
+        return min_val;
+    return val;
 
-} // namespace pyro
+} 
+}
+// namespace pyro

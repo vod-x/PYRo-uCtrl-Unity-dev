@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-07 15:14:47
  * @LastEditors: vod vod_x@outlook.com
- * @LastEditTime: 2026-03-04 12:56:49
+ * @LastEditTime: 2026-03-07 14:13:36
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -188,7 +188,7 @@ private:
 
     /* LQR coefficients for the chassis control. 2 raw x 6 column, 12 values
        in total. Every value has 3 coefficients.*/
-    float _lqr_cof[36];
+    float _lqr_cof[48];
 
     /* DM joint motors driver, the order of array is: front-right, rear-right, 
        front-left, rear-left */
@@ -237,6 +237,8 @@ private:
         /* Second differential of the angle between the vertical direction and 
            the leg(rad/s^2), calculated by data. */
         float d2_beta;
+        float gamma;
+        float d_gamma;
         /* Displacement distance of a j9(m) */
         float x;
         /* Velocity of the displacement of j9(m/s) */
@@ -249,6 +251,10 @@ private:
         float T[2];
         /* VMC output force and torque, force is 0, torque is 1*/
         float F[2];
+        /* Target wheel torque */
+        float T_w;
+        /* LQR gain for the leg, which is calculated by leg length, 2 x 6 matrix */
+        float lqr_gain[12];
         /* Support force of the leg in vertical direction */
         float P;
         float jx,jy;
@@ -281,6 +287,13 @@ private:
             void exit(wl_chassis_t *owner) override;
             void calc_support_force(wl_chassis_t *owner);
         }_state_normal;
+        class state_reverse_t : public state_t<wl_chassis_t>
+        {
+            void enter(wl_chassis_t *owner) override;
+            void execute(wl_chassis_t *owner) override;
+            void exit(wl_chassis_t *owner) override;
+        }_state_reverse;
+
         void on_enter(wl_chassis_t *owner) override;
         void on_execute(wl_chassis_t *owner) override;
         void on_exit(wl_chassis_t *owner) override;

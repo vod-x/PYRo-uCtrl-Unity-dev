@@ -19,5 +19,7 @@ float evaluate_polynomial(float x, const float *coeffs, uint32_t degree);
 float mps_to_rpm(float mps, float radius);
 
 float loop_fp32_constrain(float val, float min_val, float max_val);
+
+float fp32_constrain(float val, float min_val, float max_val);
 } // namespace pyro
 #endif
