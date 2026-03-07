@@ -2,14 +2,15 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-26 20:18:33
  * @LastEditors: vod vod_x@outlook.com
- * @LastEditTime: 2026-03-07 21:26:58
+ * @LastEditTime: 2026-03-08 02:12:04
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
  */
 #include "pyro_wl_chassis.h"
 #include "pyro_rc_hub.h"
-
+#include "pyro_ins.h"
+#include "pyro_algo_common.h"
 
 using namespace pyro;
 wl_chassis_t *infantry2_chassis_ptr = nullptr;
@@ -25,24 +26,35 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
          pyro::rc_hub_t::DR16)->get_lock());
    static auto *p_ctrl =
             static_cast<pyro::dr16_drv_t::dr16_ctrl_t const *>(rc_ctrl);
-    if(pyro::dr16_drv_t::sw_state_t::SW_UP == p_ctrl->rc.s_r.state)
+    if(pyro::dr16_drv_t::sw_state_t::SW_UP == p_ctrl->rc.s_r.state || pyro::dr16_drv_t::sw_state_t::SW_DOWN == p_ctrl->rc.s_r.state)
     {
         infantry2_chassis_cmd_ptr->l_angle = 0;
         infantry2_chassis_cmd_ptr->r_angle = 0;
         infantry2_chassis_cmd_ptr->l_leg = 0;
         infantry2_chassis_cmd_ptr->r_leg = 0;
         infantry2_chassis_cmd_ptr->mode = pyro::cmd_base_t::mode_t::PASSIVE;
+        float yaw, pitch, roll;
+        ins_drv_t::get_instance()->get_rads_b(&yaw, &pitch, &roll);
+        infantry2_chassis_cmd_ptr->yaw = yaw;
         return;
     }
     // infantry2_chassis_cmd_ptr->l_leg = (p_ctrl->rc.ch_ly + 1.0f) / 14.0f + 0.15f;
     // infantry2_chassis_cmd_ptr->r_leg = (p_ctrl->rc.ch_ry + 1.0f) / 14.0f + 0.15f;
-    infantry2_chassis_cmd_ptr->l_leg = 0.27f;
-    infantry2_chassis_cmd_ptr->r_leg = 0.27f;
+    infantry2_chassis_cmd_ptr->l_leg = 0.17f;
+    infantry2_chassis_cmd_ptr->r_leg = 0.17f;
     infantry2_chassis_cmd_ptr->l_angle = PI / 2 + (p_ctrl->rc.ch_lx * PI / 2);
     infantry2_chassis_cmd_ptr->r_angle = PI / 2 + (p_ctrl->rc.ch_rx * PI / 2);
+    infantry2_chassis_cmd_ptr->yaw += (p_ctrl->rc.ch_lx * PI / 4000.0f);
+    infantry2_chassis_cmd_ptr->yaw = loop_fp32_constrain(
+            infantry2_chassis_cmd_ptr->yaw, -PI, PI);
+
 
     infantry2_chassis_cmd_ptr->mode = pyro::cmd_base_t::mode_t::ACTIVE;
-    if(p_ctrl->rc.s_r.state == pyro::dr16_drv_t::sw_state_t::SW_MID)
+    if(p_ctrl->rc.s_l.state == pyro::dr16_drv_t::sw_state_t::SW_UP)
+    {
+        infantry2_chassis_cmd_ptr->active_mode = 2;
+    }
+    else if(p_ctrl->rc.s_l.state == pyro::dr16_drv_t::sw_state_t::SW_MID)
     {
         infantry2_chassis_cmd_ptr->active_mode = 1;
     }

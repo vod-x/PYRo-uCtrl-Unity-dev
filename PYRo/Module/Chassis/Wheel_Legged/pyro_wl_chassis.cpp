@@ -2,7 +2,7 @@
  * @Author: Vod vod0575@outlook
  * @Date: 2026-02-06 15:27:37
  * @LastEditors: vod vod_x@outlook.com
- * @LastEditTime: 2026-03-07 14:54:08
+ * @LastEditTime: 2026-03-08 01:22:55
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -107,6 +107,22 @@ status_t wl_chassis_t::_init()
         {
             return PYRO_NO_MEMORY;
         }
+    }
+    _yaw_pid = new pid_t(_module_deps.yaw_pid_cfg.kp, _module_deps.yaw_pid_cfg.ki, 
+                            _module_deps.yaw_pid_cfg.kd, 
+                            _module_deps.yaw_pid_cfg.integral_limit,
+                            _module_deps.yaw_pid_cfg.max_out);
+    if(!_yaw_pid)
+    {
+        return PYRO_NO_MEMORY;
+    }
+    _g_yaw_pid = new pid_t(_module_deps.g_yaw_pid_cfg.kp, _module_deps.g_yaw_pid_cfg.ki, 
+                            _module_deps.g_yaw_pid_cfg.kd, 
+                            _module_deps.g_yaw_pid_cfg.integral_limit,
+                            _module_deps.g_yaw_pid_cfg.max_out);
+    if(!_g_yaw_pid)    
+    {
+        return PYRO_NO_MEMORY;
     }
     /* get INS drv */
     _ins_drv = ins_drv_t::get_instance();

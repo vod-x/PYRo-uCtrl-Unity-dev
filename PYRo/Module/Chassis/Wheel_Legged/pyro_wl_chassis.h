@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-07 15:14:47
  * @LastEditors: vod vod_x@outlook.com
- * @LastEditTime: 2026-03-07 14:13:36
+ * @LastEditTime: 2026-03-08 01:21:25
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -73,6 +73,10 @@ right leg, left leg */
     wl_pid_cfg_t F_pid_cfg[2];
     wl_pid_cfg_t d_F_pid_cfg[2];
 
+    /* Yaw PID configuration for the chassis control.*/
+    wl_pid_cfg_t yaw_pid_cfg;
+    wl_pid_cfg_t g_yaw_pid_cfg;
+
     /* LQR coefficients for the chassis control. 2 raw x 6 column, 12 values
        in total. Every value has 3 coefficients.*/
     float *lqr_coef;
@@ -102,6 +106,8 @@ struct wl_cmd_t final : public cmd_base_t
     /* Angular velocity in z direction(rad/s), positive for counter-clockwise
        negative for clockwise */
     float vz;
+    /* Yaw angle of the chassis(rad), counter-clockwise positive */
+    float yaw;
     /* Leg length of both sides after normalization, value is between 0 and 1*/
     float l_leg;
     float r_leg;
@@ -111,7 +117,7 @@ struct wl_cmd_t final : public cmd_base_t
     uint8_t active_mode; // 0 for normal mode, 1 for test mode, other value is reserved
 
     /* Construct function, set zero values */
-    wl_cmd_t() : vx(0), vy(0), vz(0), l_leg(0), r_leg(0),l_angle(0), r_angle(0), active_mode(0)
+    wl_cmd_t() : vx(0), vy(0), vz(0), yaw(0), l_leg(0), r_leg(0),l_angle(0), r_angle(0), active_mode(0)
     {
     }
 };
@@ -186,6 +192,10 @@ private:
     float g_yaw, g_pitch, g_roll;
     float a_x, a_y, a_z;
 
+    pid_t* _yaw_pid;
+    pid_t* _g_yaw_pid;
+    float _yaw_ref;
+    float _g_yaw_ref;
     /* LQR coefficients for the chassis control. 2 raw x 6 column, 12 values
        in total. Every value has 3 coefficients.*/
     float _lqr_cof[48];
@@ -204,6 +214,8 @@ private:
        as _motor_drv array */
     float _motor_offset[4];
     /* data of each leg */
+    float _T_w_gain;
+    float _x_gain;
     struct leg_data_t
     {
         /* Angle between big rod and direction of movement(rad) */
