@@ -1,3 +1,12 @@
+/*
+ * @Author: vod vod_x@outlook.com
+ * @Date: 2026-02-28 15:56:04
+ * @LastEditors: vod vod_x@outlook.com
+ * @LastEditTime: 2026-02-28 16:02:41
+ * @Description: 
+ * 
+ * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
+ */
 #ifndef __PYRO_CORE_CONFIG_H__
 #define __PYRO_CORE_CONFIG_H__
 
@@ -9,7 +18,7 @@
 #define RC_DEMO_EN         0
 #define MOTOR_DEMO_EN      0
 #define CONTROLLER_DEMO_EN 0
-#define CONTROL_DEMO_EN    1
+#define CONTROL_DEMO_EN    0
 #define IMU_DEMO_EN        0
 #define REFEREE_DEMO_EN    0
 
@@ -46,14 +55,22 @@
 
 #define BOARD_ID   CHASSIS_ID
 #endif
+#if (ROBOT_ID == HERO_ID) || (ROBOT_ID == SUB_HERO_ID)
+#define GIMBAL_ID  1
+#define CHASSIS_ID 2
 
-#define PYRO_UART1 1
-#define PYRO_UART5 2
-#define PYRO_UART7 3
-#define PYRO_UART10 4
+#define BOARD_ID   CHASSIS_ID
+#endif
+
+#define PYRO_UART1 0
+#define PYRO_UART5 1
+#define PYRO_UART7 2
+#define PYRO_UART10 3
 
 #define DR16_UART PYRO_UART5
 #define VT03_UART PYRO_UART1
+
+#define REFEREE_UART PYRO_UART1
 
 #define VOFA_DEBUG_PORT PYRO_UART10
 #define JCOM_DEBUG_PORT PYRO_UART7

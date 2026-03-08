@@ -170,7 +170,7 @@ class vt03_drv_t : public rc_drv_t
      * 中断回调：验证包头并缓冲数据。
      */
     bool rc_callback(uint8_t *buf, uint16_t len,
-                     BaseType_t xHigherPriorityTaskWoken) override;
+                     BaseType_t& xHigherPriorityTaskWoken) override;
 
     /* Private Methods - Processing
      * --------------------------------------------*/

@@ -170,7 +170,7 @@ class dr16_drv_t : public rc_drv_t
      * 中断回调：基于协议优先级缓冲数据。
      */
     bool rc_callback(uint8_t *buf, uint16_t len,
-                     BaseType_t xHigherPriorityTaskWoken) override;
+                     BaseType_t& xHigherPriorityTaskWoken) override;
 
     /* Private Methods - Processing
      * --------------------------------------------*/

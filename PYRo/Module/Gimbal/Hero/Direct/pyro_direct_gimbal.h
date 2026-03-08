@@ -21,11 +21,16 @@ struct direct_gimbal_cmd_t final : public cmd_base_t
     direct_gimbal_cmd_t() : pitch_delta_angle(0.0f), yaw_delta_angle(0.0f) {}
 };
 
+struct direct_gimbal_config_t
+{
+
+};
+
 // =========================================================
 // 2. 云台类
 // =========================================================
 class direct_gimbal_t final
-    : public module_base_t<direct_gimbal_t, direct_gimbal_cmd_t>
+    : public module_base_t<direct_gimbal_t, direct_gimbal_cmd_t, direct_gimbal_config_t>
 {
     friend class module_base_t;
 
@@ -40,7 +45,7 @@ class direct_gimbal_t final
     ~direct_gimbal_t() override = default;
 
     // --- 基类接口实现 ---
-    void _init() override;
+    status_t _init() override;
     void _update_feedback() override;
     void _fsm_execute() override;
 

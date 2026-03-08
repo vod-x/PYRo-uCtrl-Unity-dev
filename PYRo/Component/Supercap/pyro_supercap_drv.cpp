@@ -18,12 +18,14 @@ namespace pyro
 /* Inner Task Implementation                                                  */
 /* ========================================================================== */
 
-void supercap_drv_t::supercap_task_t::init()
+status_t supercap_drv_t::supercap_task_t::init()
 {
     if (_owner)
     {
         _owner->init_impl();
+        return PYRO_OK;
     }
+    return PYRO_ERROR;
 }
 
 void supercap_drv_t::supercap_task_t::run_loop()
@@ -124,12 +126,10 @@ void supercap_drv_t::init_impl()
     // We use a lambda to bridge to the member function
     _uart_drv->add_rx_event_callback(
         [this](const uint8_t *p, const uint16_t size,
-               const BaseType_t task_woken) -> bool
+               BaseType_t& task_woken) -> bool
         { return this->rx_callback(p, size, task_woken); },
         reinterpret_cast<uint32_t>(this));
 
-    // 3. Enable DMA Reception
-    _uart_drv->enable_rx_dma();
 }
 
 // Called by supercap_task_t::run_loop()
@@ -170,7 +170,7 @@ void supercap_drv_t::run_loop_impl()
 
 /* ISR Callback --------------------------------------------------------------*/
 bool supercap_drv_t::rx_callback(const uint8_t *p_data, const uint16_t size,
-                                 BaseType_t xHigherPriorityTaskWoken) const
+                                 BaseType_t& xHigherPriorityTaskWoken) const
 {
     // Minimal check in ISR: Frame Start and Minimum Length
     if (size == sizeof(rx_packet_t) + 1 && p_data[0] == FRAME_SOF &&

@@ -5,7 +5,6 @@
  */
 
 #include "pyro_task.h"
-#include "pyro_core_def.h"
 
 namespace pyro
 {
@@ -14,12 +13,10 @@ namespace pyro
  * @brief Constructor for task_base_t.
  * task_base_t 构造函数。
  */
-
 task_base_t::task_base_t(const char *name, const uint16_t init_stack,
                          const uint16_t loop_stack, const priority_t priority)
     : _loop_task_handle(nullptr), _task_name(name),
-      _init_stack_depth(init_stack), _loop_stack_depth(loop_stack),
-      _priority(priority)
+      _loop_stack_depth(loop_stack), _priority(priority)
 {
 }
 
@@ -40,10 +37,12 @@ status_t task_base_t::start()
 {
     if (_loop_task_handle != nullptr)
     {
-        return status_t::PYRO_ERROR;
+        return PYRO_ERROR;
     }
 
-    return init_entry_point(this);
+    const status_t ret = init_entry_point(this);
+
+    return ret;
 }
 
 /**
@@ -69,17 +68,25 @@ status_t task_base_t::init_entry_point(void *arg)
 
     if (self)
     {
-        CHECK_PYRO_RET(self->init());
+        const status_t init_ret = self->init();
+        if (init_ret != PYRO_OK)
+        {
+            return init_ret;
+        }
 
         if (self->_loop_stack_depth > 0)
         {
-            xTaskCreate(loop_entry_point, self->_task_name,
-                        self->_loop_stack_depth, self,
-                        convert_priority(self->_priority),
-                        &self->_loop_task_handle);
+            const BaseType_t ret = xTaskCreate(
+                loop_entry_point, self->_task_name, self->_loop_stack_depth,
+                self, convert_priority(self->_priority),
+                &self->_loop_task_handle);
+            if (ret == pdPASS)
+            {
+                return PYRO_OK;
+            }
         }
     }
-    return status_t::PYRO_ERROR;
+    return status_t::PYRO_OK;
 }
 
 /**

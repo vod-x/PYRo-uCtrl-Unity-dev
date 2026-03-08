@@ -61,7 +61,7 @@ void vt03_drv_t::enable()
 {
     _rc_uart->add_rx_event_callback(
         [this](uint8_t *buf, const uint16_t len,
-               const BaseType_t xHigherPriorityTaskWoken) -> bool
+               BaseType_t& xHigherPriorityTaskWoken) -> bool
         { return rc_callback(buf, len, xHigherPriorityTaskWoken); },
         reinterpret_cast<uint32_t>(this));
 }
@@ -287,7 +287,7 @@ void vt03_drv_t::unpack(const vt03_buf_t *vt03_buf)
  * ISR 处理程序。检查包头、大小和优先级。
  */
 bool vt03_drv_t::rc_callback(uint8_t *buf, const uint16_t len,
-                             BaseType_t xHigherPriorityTaskWoken)
+                             BaseType_t& xHigherPriorityTaskWoken)
 {
     if (len == sizeof(vt03_buf_t))
     {

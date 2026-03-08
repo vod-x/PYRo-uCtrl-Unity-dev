@@ -18,7 +18,7 @@ void quad_booster_t::fsm_active_t::state_stall_t::enter(owner *owner)
     }
     else
     {
-        owner->_ctx.data.target_trig_rad += 0.2; // 待调整
+        owner->_ctx.data.target_trig_rad += 0.2f; // 待调整
     }
 }
 

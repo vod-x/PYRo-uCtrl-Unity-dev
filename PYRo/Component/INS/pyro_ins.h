@@ -1,3 +1,12 @@
+/*
+ * @Author: vod vod_x@outlook.com
+ * @Date: 2026-02-28 15:55:32
+ * @LastEditors: vod vod_x@outlook.com
+ * @LastEditTime: 2026-03-03 14:21:10
+ * @Description: 
+ * 
+ * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
+ */
 #ifndef PYRO_INS_H
 #define PYRO_INS_H
 
@@ -17,8 +26,12 @@ private:
     float _gyro_n[3];
     float _acc_b[3];
     float _acc_n[3];
+    float _acc_without_g_b[3];
+    float _acc_without_g_n[3];
     float _angle_b[3];
     float _angle_n[3];
+    float _gravity_b[3];
+    float _gravity_n[3];
 
     float _dt;
     float _t;
@@ -26,7 +39,8 @@ private:
     static TaskHandle_t _ins_task_handle;
     void __ins_task();
     static void __static_ins_task(void *argument);
-    
+    status_t __transform_b2n(float* v_b, float* v_n, float*n2b_q);
+    status_t __transform_n2b(float* v_n, float* v_b, float*n2b_q); 
 public:
     static ins_drv_t* get_instance(void);
     status_t init();
@@ -36,6 +50,10 @@ public:
     status_t get_rads_n(float* rad_yaw, float* rad_pitch, float* rad_roll);
     status_t get_gyro_b(float* g_yaw, float* g_pitch, float* g_roll);
     status_t get_gyro_n(float* g_yaw, float* g_pitch, float* g_roll);
+    status_t get_acc_b(float* a_x, float* a_y, float* a_z);
+    status_t get_acc_n(float* a_x, float* a_y, float* a_z);
+    status_t get_acc_without_g_b(float* a_x, float* a_y, float* a_z);
+    status_t get_acc_without_g_n(float* a_x, float* a_y, float* a_z);
 
 
 };

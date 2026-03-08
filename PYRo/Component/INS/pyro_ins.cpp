@@ -151,7 +151,9 @@ void ins_drv_t::__ins_task()
 {
     _dwt_cnt = 0;
     IMU_QuaternionEKF_Init(10, 0.001, 10000000, 0.9996, 0);
-
+    _gravity_n[0] = 0.0f;
+    _gravity_n[1] = 0.0f;
+    _gravity_n[2] = imu_data.gNorm;
     while (1)
     {
         _dt = dwt_drv_t::get_delta_t(&_dwt_cnt);
@@ -189,15 +191,28 @@ void ins_drv_t::__ins_task()
         }
 
 
-
+        /* Calculate the angle in body coordinate. */
         IMU_QuaternionEKF_Update(_gyro_b[X], _gyro_b[Y], _gyro_b[Z], _acc_b[X],
                                  _acc_b[Y], _acc_b[Z], _dt);
         memcpy(_q, QEKF_INS.q, sizeof(QEKF_INS.q));
 
 
+        /* TBD, transform the angles to navigation coordinate */
         _angle_n[X] = QEKF_INS.Roll;
         _angle_n[Y] = QEKF_INS.Pitch;
         _angle_n[Z] = QEKF_INS.Yaw;
+
+        /* Transform the gravity from navigation coordinate to body coordinate */
+        __transform_n2b(_gravity_n, _gravity_b, _q);
+        
+        /* Eliminate the gravity component from the accelerometer readings */
+        _acc_without_g_b[X] = _acc_b[X] - _gravity_b[X];
+        _acc_without_g_b[Y] = _acc_b[Y] - _gravity_b[Y];
+        _acc_without_g_b[Z] = _acc_b[Z] - _gravity_b[Z];
+
+        /* Transform the accelerometer readings to navigation coordinate */
+        __transform_b2n(_acc_b, _acc_n, _q);
+        __transform_b2n(_acc_without_g_b, _acc_without_g_n, _q);
 
         vTaskDelay(1);
     }
@@ -274,5 +289,103 @@ status_t ins_drv_t::get_gyro_n(float *g_yaw, float *g_pitch, float *g_roll)
     *g_roll  = _gyro_b[X];
     *g_pitch = _gyro_b[Y];
     *g_yaw   = _gyro_b[Z];
+    return PYRO_OK;
+}
+
+status_t ins_drv_t::get_acc_b(float *a_x, float *a_y, float *a_z)
+{
+    if (a_x == nullptr || a_y == nullptr || a_z == nullptr)
+    {
+        return PYRO_ERROR;
+    }
+    *a_x = _acc_b[X];
+    *a_y = _acc_b[Y];
+    *a_z = _acc_b[Z];
+    return PYRO_OK;
+}
+
+status_t ins_drv_t::get_acc_n(float *a_x, float *a_y, float *a_z)
+{
+    if (a_x == nullptr || a_y == nullptr || a_z == nullptr)
+    {
+        return PYRO_ERROR;
+    }
+    *a_x = _acc_n[X];
+    *a_y = _acc_n[Y];
+    *a_z = _acc_n[Z];
+    return PYRO_OK;
+}
+
+status_t ins_drv_t::get_acc_without_g_b(float *a_x, float *a_y,
+                                               float *a_z)
+{
+    if (a_x == nullptr || a_y == nullptr || a_z == nullptr)
+    {
+        return PYRO_ERROR;
+    }
+    *a_x = _acc_without_g_b[X];
+    *a_y = _acc_without_g_b[Y];
+    *a_z = _acc_without_g_b[Z];
+    return PYRO_OK;
+}
+
+status_t ins_drv_t::get_acc_without_g_n(float *a_x, float *a_y,
+                                               float *a_z)
+{
+    if (a_x == nullptr || a_y == nullptr || a_z == nullptr)
+    {
+        return PYRO_ERROR;
+    }
+    *a_x = _acc_without_g_n[X];
+    *a_y = _acc_without_g_n[Y];
+    *a_z = _acc_without_g_n[Z];
+    return PYRO_OK;
+}
+
+status_t ins_drv_t::__transform_b2n(float *v_b, float *v_n, float *n2b_q)
+{
+    if(v_b == nullptr || v_n == nullptr || n2b_q == nullptr)
+    {
+        return PYRO_ERROR;
+    }
+    /* Take the conjugate of n2b_q, because the R(q)' = R(q*) */
+    float q[4];
+    q[0] = n2b_q[0];
+    q[1] = -n2b_q[1];
+    q[2] = -n2b_q[2];
+    q[3] = -n2b_q[3];
+    v_n[0] = 1 - 2 * (q[2] * q[2] + q[3] * q[3]) * v_b[0] 
+           + 2 * (q[1] * q[2] - q[0] * q[3])     * v_b[1] 
+           + 2 * (q[1] * q[3] + q[0] * q[2])     * v_b[2];
+
+    v_n[1] = 2 * (q[1] * q[2] + q[0] * q[3])     * v_b[0]
+           + 1 - 2 * (q[1] * q[1] + q[3] * q[3]) * v_b[1]
+           + 2 * (q[2] * q[3] - q[0] * q[1])     * v_b[2];
+
+    v_n[2] = 2 * (q[1] * q[3] - q[0] * q[2])     * v_b[0]
+           + 2 * (q[2] * q[3] + q[0] * q[1])     * v_b[1]
+           + 1 - 2 * (q[1] * q[1] + q[2] * q[2]) * v_b[2];
+    return PYRO_OK;
+}
+
+status_t ins_drv_t::__transform_n2b(float *v_n, float *v_b, float *n2b_q)
+{
+    if(v_n == nullptr || v_b == nullptr || n2b_q == nullptr)
+    {
+        return PYRO_ERROR;
+    }
+
+    float *q = n2b_q;
+    v_b[0] = (1 - 2 * (q[2] * q[2] + q[3] * q[3])) * v_n[0] 
+           + (2 * (q[1] * q[2] - q[0] * q[3]))     * v_n[1] 
+           + (2 * (q[1] * q[3] + q[0] * q[2]))     * v_n[2];
+
+    v_b[1] = (2 * (q[1] * q[2] + q[0] * q[3]))     * v_n[0]
+           + (1 - 2 * (q[1] * q[1] + q[3] * q[3])) * v_n[1]
+           + (2 * (q[2] * q[3] - q[0] * q[1]))     * v_n[2];
+
+    v_b[2] = (2 * (q[1] * q[3] - q[0] * q[2]))     * v_n[0]
+           + (2 * (q[2] * q[3] + q[0] * q[1]))     * v_n[1]
+           + (1 - 2 * (q[1] * q[1] + q[2] * q[2])) * v_n[2];
     return PYRO_OK;
 }

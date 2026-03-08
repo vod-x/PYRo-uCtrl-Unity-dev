@@ -1,23 +1,9 @@
 #include "pyro_hybrid_chassis.h"
-
+#include "pyro_algo_common.h"
+#include <arm_math.h> // 引入 CMSIS-DSP 库
 
 namespace pyro
 {
-
-static float _mps_to_rpm(const float mps, const float radius)
-{
-    // v = w * r  -> w = v / r
-    // RPM = w * 60 / 2pi
-    if (radius < 1e-4f)
-        return 0.0f;
-    return (mps / radius) * 9.5492966f;
-}
-
-static float _radps_to_rpm(const float radps)
-{
-    // RPM = (w * 60) / (2 * pi)
-    return radps * 9.5492966f;
-}
 
 // =========================================================
 // 构造与初始化
@@ -25,258 +11,240 @@ static float _radps_to_rpm(const float radps)
 
 hybrid_chassis_t::hybrid_chassis_t() : module_base_t("hybrid")
 {
-    _ctx       = {};
-    debug_data = {};
+    _ctx = {};
 }
 
-void hybrid_chassis_t::_init()
+status_t hybrid_chassis_t::_init()
 {
-    _kinematics = new hybrid_kin_t(0.648f, 0.35f, 0.41f);
+    _ctx.motor  = _module_deps.motor_deps;
+    _ctx.pid    = _module_deps.pid_deps;
 
-    _ctx.rud_config.motor.mecanum[0] =
-        new dji_m3508_motor_drv_t(dji_motor_tx_frame_t::id_1,
-                                  can_hub_t::can1); // FL
-    _ctx.rud_config.motor.mecanum[1] =
-        new dji_m3508_motor_drv_t(dji_motor_tx_frame_t::id_2,
-                                  can_hub_t::can1); // FR
-    _ctx.rud_config.motor.mecanum[2] =
-        new dji_m3508_motor_drv_t(dji_motor_tx_frame_t::id_3,
-                                  can_hub_t::can1); // BL
-    _ctx.rud_config.motor.mecanum[3] =
-        new dji_m3508_motor_drv_t(dji_motor_tx_frame_t::id_4,
-                                  can_hub_t::can1); // BR
-    // _ctx.rud_config.motor.track[0]   = new dm_motor_drv_t(0x31, 0x41,
-    // can_hub_t::can3); _ctx.rud_config.motor.track[1]   = new
-    // dm_motor_drv_t(0x32, 0x42, can_hub_t::can3);
-    _ctx.rud_config.motor.leg[0] =
-        new dm_motor_drv_t(0x11, 0x21, can_hub_t::can3);
-    _ctx.rud_config.motor.leg[1] =
-        new dm_motor_drv_t(0x12, 0x22, can_hub_t::can3);
+    // 使用 config.h 中的参数初始化运动学模型
+    _kinematics = new hybrid_kin_t(0.648f, MEC_WHEELBASE, MEC_TRACK_WIDTH);
 
-    // NOLINTBEGIN(cppcoreguidelines-pro-type-static-cast-downcast)
-    // static_cast<dm_motor_drv_t *>(_ctx.rud_config.motor.track[0])
-    //     ->set_position_range(-PI, PI);
-    // static_cast<dm_motor_drv_t *>(_ctx.rud_config.motor.track[0])
-    //     ->set_rotate_range(-50, 50);
-    // static_cast<dm_motor_drv_t *>(_ctx.rud_config.motor.track[0])
-    //     ->set_torque_range(-10, 10);
-    // static_cast<dm_motor_drv_t *>(_ctx.rud_config.motor.track[1])
-    //     ->set_position_range(-PI, PI);
-    // static_cast<dm_motor_drv_t *>(_ctx.rud_config.motor.track[1])
-    //     ->set_rotate_range(-50, 50);
-    // static_cast<dm_motor_drv_t *>(_ctx.rud_config.motor.track[1])
-    //     ->set_torque_range(-10, 10);
-    static_cast<dm_motor_drv_t *>(_ctx.rud_config.motor.leg[0])
-        ->set_position_range(-PI, PI);
-    static_cast<dm_motor_drv_t *>(_ctx.rud_config.motor.leg[0])
-        ->set_rotate_range(-10, 10);
-    static_cast<dm_motor_drv_t *>(_ctx.rud_config.motor.leg[0])
-        ->set_torque_range(-10, 10);
-    static_cast<dm_motor_drv_t *>(_ctx.rud_config.motor.leg[1])
-        ->set_position_range(-PI, PI);
-    static_cast<dm_motor_drv_t *>(_ctx.rud_config.motor.leg[1])
-        ->set_rotate_range(-10, 10);
-    static_cast<dm_motor_drv_t *>(_ctx.rud_config.motor.leg[1])
-        ->set_torque_range(-10, 10);
-    // NOLINTEND(cppcoreguidelines-pro-type-static-cast-downcast)
-
-    _ctx.rud_config.pid.mecanum_pid[0] =
-        new pid_t(0.28f, 0.0008f, 0.0002f, 1.0f, 20.0f, 20, 10, 4);
-    _ctx.rud_config.pid.mecanum_pid[1] =
-        new pid_t(0.35f, 0.0007f, 0.0002f, 1.0f, 20.0f, 20, 10, 4);
-    _ctx.rud_config.pid.mecanum_pid[2] =
-        new pid_t(0.37f, 0.0008f, 0.0002f, 1.0f, 20.0f, 20, 10, 4);
-    _ctx.rud_config.pid.mecanum_pid[3] =
-        new pid_t(0.36f, 0.0006f, 0.0001f, 1.0f, 20.0f, 20, 10, 4);
-
-    // Track Speed Loop
-    // for (auto &i : _ctx.rud_config.pid.track_pid)
-    // {
-    //     i = new pid_t(0.02f, 0.0001f, 0.000001f, 0.5f, 10.0f, 30, 10, 4);
-    // }
-
-    // Leg Position Loop (Inner loop)
-    // for (auto &i : _ctx.rud_config.pid.leg_pos_pid)
-    // {
-    //     i = new pid_t(10.0f, 0.005f, 0.008f, 0.5f, 20.0f, 20, 10, 4);
-    // }
-    //
-    // for (auto &i : _ctx.rud_config.pid.leg_spd_pid)
-    // {
-    //     i = new pid_t(10.0f, 0.005f, 0.008f, 0.5f, 7.0f, 20, 10, 4);
-    // }
-    for (auto &i : _ctx.rud_config.pid.leg_pos_pid)
-    {
-        i = new pid_t(15.0f, 0.005f, 0.008f, 0.5f, 20.0f, 20, 10, 4);
-    }
-
-    for (auto &i : _ctx.rud_config.pid.leg_spd_pid)
-    {
-        i = new pid_t(1.2f, 0.005f, 0.008f, 0.5f, 7.0f, 20, 10, 4);
-    }
-
-
-
-    _ctx.rud_config.pid.balance_pid =
-        new pid_t(3.14f, 0.5f, 0.1f, 0.0f,
-                  0.05f); // Output is radians (position offset)
-
-    _ctx.hardware.power_meter = new powermeter_drv_t(0x212, can_hub_t::can2);
-    _ctx.power.data           = new powermeter_data();
+    return PYRO_OK;
 }
 
 void hybrid_chassis_t::_update_feedback()
 {
-    _ctx.rud_config.motor.mecanum[0]->update_feedback();
-    _ctx.rud_config.motor.mecanum[1]->update_feedback();
-    _ctx.rud_config.motor.mecanum[2]->update_feedback();
-    _ctx.rud_config.motor.mecanum[3]->update_feedback();
-    _ctx.rud_config.motor.leg[0]->update_feedback();
-    _ctx.rud_config.motor.leg[1]->update_feedback();
-    // _ctx.rud_config.motor.track[0]->update_feedback();
-    // _ctx.rud_config.motor.track[1]->update_feedback();
+    // 1. 更新所有电机反馈
+    for (const auto &i : _ctx.motor.mecanum)
+        i->update_feedback();
+    for (const auto &i : _ctx.motor.track)
+        i->update_feedback();
+    for (const auto &i : _ctx.motor.leg)
+        i->update_feedback();
+    _ctx.motor.yaw->update_feedback();
 
-    _ctx.data.current_wheel_rpm[0] =
-        _radps_to_rpm(_ctx.rud_config.motor.mecanum[0]->get_current_rotate() *
-                      dji_m3508_motor_drv_t::reciprocal_reduction_ratio);
+    // 2. 读取 IMU 数据作为底盘姿态反馈
+    ins_drv_t::get_instance()->get_rads_n(&_ctx.data.current_yaw_rad,
+                                          &_ctx.data.current_pitch_rad,
+                                          &_ctx.data.current_roll_rad);
 
-    _ctx.data.current_wheel_rpm[1] =
-        _radps_to_rpm(_ctx.rud_config.motor.mecanum[1]->get_current_rotate() *
-                      dji_m3508_motor_drv_t::reciprocal_reduction_ratio);
+    // 3. 转换并记录电机转速与位置
+    float current_angle =
+        _ctx.motor.yaw->get_current_position() - YAW_OFFSET_RAD;
+    current_angle = loop_fp32_constrain(current_angle, -PI, PI);
+    _ctx.data.current_yaw_error =
+        loop_fp32_constrain(0 - current_angle, -PI, PI);
 
-    _ctx.data.current_wheel_rpm[2] =
-        _radps_to_rpm(_ctx.rud_config.motor.mecanum[2]->get_current_rotate() *
-                      dji_m3508_motor_drv_t::reciprocal_reduction_ratio);
+    for (int i = 0; i < 4; i++)
+        _ctx.data.current_wheel_rpm[i] =
+            radps_to_rpm(_ctx.motor.mecanum[i]->get_current_rotate());
 
-    _ctx.data.current_wheel_rpm[3] =
-        _radps_to_rpm(_ctx.rud_config.motor.mecanum[3]->get_current_rotate() *
-                      dji_m3508_motor_drv_t::reciprocal_reduction_ratio);
+    for (int i = 0; i < 2; i++)
+        _ctx.data.current_track_rpm[i] =
+            radps_to_rpm(_ctx.motor.track[i]->get_current_rotate());
 
-    // 2. 两条履带的 RPM、腿角度、腿角速度
-    // _ctx.data.current_track_rpm[0] =
-    //     _radps_to_rpm(_ctx.rud_config.motor.track[0]->get_current_rotate());
-    // _ctx.data.current_track_rpm[1] =
-    //     _radps_to_rpm(_ctx.rud_config.motor.track[1]->get_current_rotate());
-
-    _ctx.data.current_leg_rad[0] =
-        _ctx.rud_config.motor.leg[0]->get_current_position();
-    _ctx.data.current_leg_radps[0] =
-        _ctx.rud_config.motor.leg[0]->get_current_rotate();
-    _ctx.data.current_leg_rad[1] =
-        _ctx.rud_config.motor.leg[1]->get_current_position();
-    _ctx.data.current_leg_radps[1] =
-        _ctx.rud_config.motor.leg[1]->get_current_rotate();
-
-    debug_data.debug_leg_torque[0] =
-        _ctx.rud_config.motor.leg[0]->get_current_torque();
-    debug_data.debug_leg_torque[1] =
-        _ctx.rud_config.motor.leg[1]->get_current_torque();
+    // 左右腿对称性修正：对右腿(leg[1])的读取数据取反，抹平机械差异
+    _ctx.data.current_leg_rad[0]   = _ctx.motor.leg[0]->get_current_position();
+    _ctx.data.current_leg_radps[0] = _ctx.motor.leg[0]->get_current_rotate();
+    _ctx.data.current_leg_rad[1]   = -_ctx.motor.leg[1]->get_current_position();
+    _ctx.data.current_leg_radps[1] = -_ctx.motor.leg[1]->get_current_rotate();
 }
+
+// =========================================================
+// 核心解算与控制逻辑
+// =========================================================
 
 void hybrid_chassis_t::_kinematics_solve()
 {
-    static hybrid_kin_t::hybrid_speeds_t solved_speeds_mps{};
+    // -------------------------------------------------------------
+    // 1. 跟随 PID 计算 (算出底盘需要的自旋速度 wz)
+    // -------------------------------------------------------------
+    // Calculate(measurement, target) 或 (error, 0)
+    // 假设 pid_t::calculate(target, current)，我们将 error 作为 P项输入
+    const float follow_wz =
+        _ctx.pid.follow_yaw_pid->calculate(0.0f, _ctx.data.current_yaw_error);
 
-    solved_speeds_mps = _kinematics->solve(_ctx.cmd->vx, _ctx.cmd->vy,
-                                           _ctx.cmd->wz, _ctx.cmd->drive_mode);
+    // 最终角速度 = 跟随产生的角速度 + 选手手动输入的角速度(小陀螺/微调)
+    const float final_wz    = follow_wz + _ctx.cmd->wz;
+
+    // -------------------------------------------------------------
+    // 2. 矢量旋转 (将云台坐标系速度转换到底盘坐标系)
+    const float theta       = _ctx.data.current_yaw_error;
+
+    const float c_theta     = arm_cos_f32(theta);
+    const float s_theta     = arm_sin_f32(theta);
+
+    // 旋转矩阵公式 (逆时针旋转 theta)
+    const float vx_chassis  = _ctx.cmd->vx * c_theta + _ctx.cmd->vy * s_theta;
+    const float vy_chassis  = -_ctx.cmd->vx * s_theta + _ctx.cmd->vy * c_theta;
+
+    const auto wheel_speeds = _kinematics->solve(vx_chassis, vy_chassis,
+                                                 final_wz, _ctx.cmd->track_en);
+
+    // 麦轮转速分配 (右侧反转视底层驱动而定，此处按常规处理)
     _ctx.data.target_wheel_rpm[0] =
-        _mps_to_rpm(solved_speeds_mps.mec_fl, MEC_RADIUS);
+        mps_to_rpm(wheel_speeds.mec_fl, WHEEL_RADIUS);
     _ctx.data.target_wheel_rpm[1] =
-        -_mps_to_rpm(solved_speeds_mps.mec_fr, MEC_RADIUS);
+        -mps_to_rpm(wheel_speeds.mec_fr, WHEEL_RADIUS);
     _ctx.data.target_wheel_rpm[2] =
-        _mps_to_rpm(solved_speeds_mps.mec_bl, MEC_RADIUS);
+        mps_to_rpm(wheel_speeds.mec_bl, WHEEL_RADIUS);
     _ctx.data.target_wheel_rpm[3] =
-        -_mps_to_rpm(solved_speeds_mps.mec_br, MEC_RADIUS);
+        -mps_to_rpm(wheel_speeds.mec_br, WHEEL_RADIUS);
 
-    // _ctx.data.target_track_rpm[0] =
-    //     _mps_to_rpm(solved_speeds_mps.track_l, TRACK_RADIUS);
-    // _ctx.data.target_track_rpm[1] =
-    //     -_mps_to_rpm(solved_speeds_mps.track_r, TRACK_RADIUS);
-
-    _ctx.data.target_leg_rad[0] += _ctx.cmd->wy;
-    _ctx.data.target_leg_rad[1] -= _ctx.cmd->wy;
-    // if (_ctx.data.target_leg_rad[0] > LEG_EXTEND_POS)
-    // {
-    //     _ctx.data.target_leg_rad[0] = LEG_EXTEND_POS;
-    // }
-    // else if (_ctx.data.target_leg_rad[0] < LEG_RETRACT_POS)
-    // {
-    //     _ctx.data.target_leg_rad[0] = LEG_RETRACT_POS;
-    // }
-    // if (_ctx.data.target_leg_rad[1] < -LEG_EXTEND_POS)
-    // {
-    //     _ctx.data.target_leg_rad[1] = -LEG_EXTEND_POS;
-    // }
-    // else if (_ctx.data.target_leg_rad[1] > -LEG_RETRACT_POS)
-    // {
-    //     _ctx.data.target_leg_rad[1] = -LEG_RETRACT_POS;
-    // }
-}
-
-void hybrid_chassis_t::_chassis_control(hybrid_context_t *ctx)
-{
-    // 1. Mecanum Wheels PID (Speed Loop)
-    for (int i = 0; i < 4; i++)
+    // 履带分配 (差速模型)
+    if (_ctx.cmd->track_en)
     {
-        ctx->data.out_mecanum_torque[i] = ctx->pid.mecanum_pid[i]->calculate(
-            ctx->data.target_wheel_rpm[i], ctx->data.current_wheel_rpm[i]);
+        _ctx.data.target_track_rpm[0] = mps_to_rpm(
+            _ctx.cmd->vx - _ctx.cmd->wz * TRACK_SPACING / 2.0f, TRACK_RADIUS);
+        _ctx.data.target_track_rpm[1] = -mps_to_rpm(
+            _ctx.cmd->vx + _ctx.cmd->wz * TRACK_SPACING / 2.0f, TRACK_RADIUS);
     }
-
-    // 2. Track PID (Speed Loop)
-    // for (int i = 0; i < 2; i++)
-    // {
-    //     ctx->data.out_track_torque[i] = ctx->pid.track_pid[i]->calculate(
-    //         ctx->data.target_track_rpm[i], ctx->data.current_track_rpm[i]);
-    // }
-
-    static float leg_pos_target_radps[2] = {0.0f, 0.0f};
-    for (int i = 0; i < 2; i++)
+    else
     {
-        leg_pos_target_radps[i] = ctx->pid.leg_pos_pid[i]->calculate(
-            ctx->data.target_leg_rad[i], ctx->data.current_leg_rad[i]);
-        ctx->data.out_leg_torque[i] = ctx->pid.leg_spd_pid[i]->calculate(
-            leg_pos_target_radps[i], ctx->data.current_leg_radps[i]);
+        _ctx.data.target_track_rpm[0] = 0.0f;
+        _ctx.data.target_track_rpm[1] = 0.0f;
     }
 }
 
-void hybrid_chassis_t::_send_motor_command(hybrid_context_t *ctx)
+void hybrid_chassis_t::_leg_control()
 {
-    for (int i = 0; i < 4; i++)
-    {
-        ctx->motor.mecanum[i]->send_torque(ctx->data.out_mecanum_torque[i]);
-    }
+    const float pitch     = _ctx.data.current_pitch_rad;
+    const float roll      = _ctx.data.current_roll_rad;
 
-    // for (int i = 0; i < 2; i++)
-    // {
-    //     ctx->motor.track[i]->send_torque(ctx->data.out_track_torque[i]);
-    // }
+    // 预计算 DSP 三角函数
+    const float cos_pitch = arm_cos_f32(pitch);
+    const float sin_pitch = arm_sin_f32(pitch);
+
+    // 1. 计算姿态维稳所需的宏观虚拟力
+    const float f_pitch   = _ctx.pid.pitch_pid->calculate(_ctx.data.target_pitch_rad, pitch);
+    const float f_roll    = _ctx.pid.roll_pid->calculate(0.0f, roll);
 
     for (int i = 0; i < 2; i++)
     {
-        ctx->motor.leg[i]->send_torque(ctx->data.out_leg_torque[i]);
+        const float theta     = _ctx.data.current_leg_rad[i];
+        const float theta_dot = _ctx.data.current_leg_radps[i];
+
+        // 2. 多项式求解雅可比及端点坐标
+        const float j_x =
+            evaluate_polynomial(theta, JX_POLY_COEF, JX_POLY_DEGREE);
+        const float j_y =
+            evaluate_polynomial(theta, JY_POLY_COEF, JY_POLY_DEGREE);
+        const float x_b =
+            evaluate_polynomial(theta, XB_POLY_COEF, XB_POLY_DEGREE);
+        const float y_b =
+            evaluate_polynomial(theta, YB_POLY_COEF, YB_POLY_DEGREE);
+
+        // 3. 计算重力前馈补偿 (使用预计算的 DSP 三角函数)
+        const float y_wheel   = y_b - H_HIP_OFFSET;
+        const float numerator = DIST_FRONT * cos_pitch - H_COG * sin_pitch;
+        const float denominator =
+            (DIST_FRONT + DIST_HIP + x_b) * cos_pitch + y_wheel * sin_pitch;
+
+        float f_gravity_ff = 0.0f;
+        if (fabsf(denominator) > 1e-4f)
+        {
+            f_gravity_ff = (MASS * GRAVITY * numerator) / denominator;
+        }
+
+        // 4. 提取动态雅可比标量
+        const float j_dynamic   = j_y * cos_pitch + j_x * sin_pitch;
+
+        // 5. 将任务空间的力分别映射为关节空间的力矩
+        const float tau_gravity = j_dynamic * (0.5f * f_gravity_ff);
+        float tau_pid  = j_dynamic * (f_pitch + (i == 0 ? f_roll : -f_roll));
+
+        // 6. 虚拟阻尼墙限位保护
+        float tau_wall = 0.0f;
+        if (theta > LEG_MAX_POS - LEG_POS_BUFFER_RAD)
+        {
+            tau_wall =
+                -LEG_K_WALL * (theta - (LEG_MAX_POS - LEG_POS_BUFFER_RAD)) -
+                LEG_D_WALL * theta_dot;
+            tau_wall = fminf(0.0f, tau_wall);
+        }
+        else if (theta < LEG_MIN_POS + LEG_POS_BUFFER_RAD)
+        {
+            tau_wall =
+                LEG_K_WALL * ((LEG_MIN_POS + LEG_POS_BUFFER_RAD) - theta) -
+                LEG_D_WALL * theta_dot;
+            tau_wall = fmaxf(0.0f, tau_wall);
+        }
+
+        // 7. 力矩饱和安全限制 (基于优先级的削峰逻辑)
+        const float tau_priority = tau_gravity + tau_wall;
+        float tau_total          = 0.0f;
+
+        if (fabsf(tau_priority + tau_pid) > LEG_MAX_TORQUE)
+        {
+            if (fabsf(tau_priority) >= LEG_MAX_TORQUE)
+            {
+                tau_total =
+                    (tau_priority > 0.0f) ? LEG_MAX_TORQUE : -LEG_MAX_TORQUE;
+            }
+            else
+            {
+                const float tau_avail = LEG_MAX_TORQUE - fabsf(tau_priority);
+                tau_pid   = (tau_pid > 0.0f) ? tau_avail : -tau_avail;
+                tau_total = tau_priority + tau_pid;
+            }
+        }
+        else
+        {
+            tau_total = tau_priority + tau_pid;
+        }
+
+        // 8. 输出并再次针对右腿作符号映射
+        _ctx.data.out_leg_torque[i] = (i == 0 ? 1.0f : -1.0f) * tau_total;
     }
-    // for (int i = 0; i < 4; i++)
-    // {
-    //     ctx->motor.mecanum[i]->send_torque(0);
-    // }
-    //
-    // for (int i = 0; i < 2; i++)
-    // {
-    //     ctx->motor.track[i]->send_torque(0);
-    // }
-    //
-    // for (int i = 0; i < 2; i++)
-    // {
-    //     ctx->motor.leg[i]->send_torque(0);
-    // }
+}
+
+void hybrid_chassis_t::_mecanum_control()
+{
+    for (int i = 0; i < 4; i++)
+    {
+        _ctx.data.out_mecanum_torque[i] = _ctx.pid.mecanum_pid[i]->calculate(
+            _ctx.data.target_wheel_rpm[i], _ctx.data.current_wheel_rpm[i]);
+    }
+}
+
+void hybrid_chassis_t::_track_control()
+{
+    for (int i = 0; i < 2; i++)
+    {
+        _ctx.data.out_track_torque[i] = _ctx.pid.track_pid[i]->calculate(
+            _ctx.data.target_track_rpm[i], _ctx.data.current_track_rpm[i]);
+    }
+}
+
+void hybrid_chassis_t::_send_motor_command() const
+{
+    for (int i = 0; i < 4; i++)
+        _ctx.motor.mecanum[i]->send_torque(_ctx.data.out_mecanum_torque[i]);
+    for (int i = 0; i < 2; i++)
+        _ctx.motor.track[i]->send_torque(_ctx.data.out_track_torque[i]);
+    for (int i = 0; i < 2; i++)
+        _ctx.motor.leg[i]->send_torque(_ctx.data.out_leg_torque[i]);
 }
 
 // =========================================================
-// 核心运行时
+// 核心运行时与状态机
 // =========================================================
+
 void hybrid_chassis_t::_fsm_execute()
 {
-    // 1. 数据刷新
     _ctx.cmd = &_current_cmd;
 
     if (cmd_base_t::mode_t::ACTIVE == _ctx.cmd->mode)
@@ -284,15 +252,7 @@ void hybrid_chassis_t::_fsm_execute()
     else if (cmd_base_t::mode_t::PASSIVE == _ctx.cmd->mode)
         _main_fsm.change_state(&_state_passive);
 
-    // 2. 反馈更新
-    // _pure_update_feedback(_ctx.rud_config.motor, _ctx.data);
-
-    // 3. 状态机运行
-    // 父级 execute 内部会自动调用 fetch_request 处理子状态的切换请求
     _main_fsm.execute(this);
-
-    // 4. 硬件输出
-    // _pure_hw_write(_ctx.rud_config.motor, _ctx.data);
 }
 
 

@@ -29,12 +29,13 @@ rud_chassis_t::rud_chassis_t()
     debug_data = {};
 }
 
-void rud_chassis_t::_init()
+status_t rud_chassis_t::_init()
 {
     _kinematics                             = new rudder_kin_t(0.36f, 0.36f);
-    _ctx.rud_config                         = _config;
+    _ctx.rud_config                         = _module_deps;
     _ctx.hardware.power_meter = new powermeter_drv_t(0x212, can_hub_t::can2);
     _ctx.power.data           = new powermeter_data();
+    return PYRO_OK;
 }
 
 void rud_chassis_t::_update_feedback()
@@ -168,6 +169,9 @@ void rud_chassis_t::_send_motor_command(rud_ctx_t *ctx)
     {
         ctx->rud_config.motor.rudder[i]->send_torque(
             ctx->data.out_rud_torque[i]);
+        // ctx->rud_config.motor.rudder[i]->enable();
+        // ctx->rud_config.motor.rudder[i]->send_torque(
+        //     5.0f);
     }
 
     // 发送轮子扭矩命令
@@ -183,7 +187,7 @@ void rud_chassis_t::_fsm_execute()
 {
     _ctx.cmd = &_current_cmd;
 
-    if (cmd_base_t::mode_t::ZERO_FORCE == _ctx.cmd->mode)
+    if (cmd_base_t::mode_t::PASSIVE == _ctx.cmd->mode)
         _main_fsm.change_state(&_state_passive);
     else if (cmd_base_t::mode_t::ACTIVE == _ctx.cmd->mode)
         _main_fsm.change_state(&_state_active);

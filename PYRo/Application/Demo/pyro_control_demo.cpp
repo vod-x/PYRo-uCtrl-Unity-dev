@@ -157,8 +157,8 @@ extern "C"
             // chassis_control
             if (pyro::dr16_drv_t::sw_state_t::SW_UP == dr16_data.rc.s_r.state)
             {
-                rud_cmd_obj.mode       = pyro::cmd_base_t::mode_t::ZERO_FORCE;
-                yaw_cmd_obj.mode       = pyro::cmd_base_t::mode_t::ZERO_FORCE;
+                rud_cmd_obj.mode       = pyro::cmd_base_t::mode_t::PASSIVE;
+                yaw_cmd_obj.mode       = pyro::cmd_base_t::mode_t::PASSIVE;
                 rud_cmd_obj.follow_yaw = false;
                 rud_cmd_obj.timestamp  = 0;
                 rud_cmd_obj.vx         = 0.0f;

@@ -83,7 +83,7 @@ class rc_drv_t
      * @return true if data was accepted. 如果数据被接收则返回 true。
      */
     virtual bool rc_callback(uint8_t *buf, uint16_t len,
-                             BaseType_t xHigherPriorityTaskWoken) = 0;
+                             BaseType_t& xHigherPriorityTaskWoken) = 0;
 
     /* Protected Members - Resources and State
      * ---------------------------------*/

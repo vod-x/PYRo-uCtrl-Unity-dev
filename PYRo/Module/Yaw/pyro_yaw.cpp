@@ -63,9 +63,18 @@ float yaw_t::get_yaw_error() const
         return world_yaw_error;
 }
 
-void yaw_t::_init()
+status_t yaw_t::_init()
 {
-    _ctx.yaw_config        = _config;
+    if (_module_deps.motor.yaw == nullptr) {
+        // 电机指针未初始化，返回错误码（根据你的 status_t 定义调整）
+        return PYRO_ERROR; // 或 STATUS_ERROR
+    }
+    if (_module_deps.pid.yaw_pos_pid == nullptr || _module_deps.pid.yaw_spd_pid == nullptr) {
+        // PID 指针未初始化，返回错误
+        return PYRO_ERROR;
+    }
+    _ctx.yaw_config        = _module_deps;
+    return PYRO_OK;
 }
 
 void yaw_t::_update_feedback()
@@ -123,7 +132,7 @@ void yaw_t::_fsm_execute()
 {
     _ctx.cmd = &_current_cmd;
 
-    if (cmd_base_t::mode_t::ZERO_FORCE == _ctx.cmd->mode)
+    if (cmd_base_t::mode_t::PASSIVE == _ctx.cmd->mode)
         _main_fsm.change_state(&_state_passive);
     else if (cmd_base_t::mode_t::ACTIVE == _ctx.cmd->mode)
         _main_fsm.change_state(&_state_active);

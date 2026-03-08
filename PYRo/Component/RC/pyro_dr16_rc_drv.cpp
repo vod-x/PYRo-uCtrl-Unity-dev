@@ -65,7 +65,7 @@ void dr16_drv_t::enable()
     // Link the ISR callback to the UART driver
     _rc_uart->add_rx_event_callback(
         [this](uint8_t *buf, const uint16_t len,
-               const BaseType_t xHigherPriorityTaskWoken) -> bool
+               BaseType_t& xHigherPriorityTaskWoken) -> bool
         { return rc_callback(buf, len, xHigherPriorityTaskWoken); },
         reinterpret_cast<uint32_t>(this));
 }
@@ -279,7 +279,7 @@ void dr16_drv_t::unpack(const dr16_buf_t *dr16_buf)
 
 /* Interrupt Service Routine (ISR) Callback ----------------------------------*/
 bool dr16_drv_t::rc_callback(uint8_t *buf, const uint16_t len,
-                             BaseType_t xHigherPriorityTaskWoken)
+                             BaseType_t& xHigherPriorityTaskWoken)
 {
     if (len == sizeof(dr16_buf_t))
     {

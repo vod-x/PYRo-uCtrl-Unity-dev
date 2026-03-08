@@ -25,13 +25,32 @@ struct quad_booster_cmd_t final : public cmd_base_t
     }
 };
 
+struct quad_deps_t
+{
+    struct motor_deps_t
+    {
+        motor_base_t *fric_wheels[4]{nullptr};
+        motor_base_t *trigger_wheel{nullptr};
+    };
+
+    struct pid_deps_t
+    {
+        pid_t *fric_pid[4]{nullptr};
+        pid_t *trigger_pos_pid{nullptr};
+        pid_t *trigger_spd_pid{nullptr};
+    };
+
+    motor_deps_t motor_deps;
+    pid_deps_t pid_deps;
+};
+
 // =========================================================
 // 2. 四轮发射机构类
 // =========================================================
 class quad_booster_t final
-    : public module_base_t<quad_booster_t, quad_booster_cmd_t>
+    : public module_base_t<quad_booster_t, quad_booster_cmd_t, quad_deps_t>
 {
-    friend class module_base_t<quad_booster_t, quad_booster_cmd_t>;
+    friend class module_base_t<quad_booster_t, quad_booster_cmd_t, quad_deps_t>;
     friend class jcom_drv_t;
 
     struct motor_ctx_t;
@@ -48,7 +67,7 @@ class quad_booster_t final
     ~quad_booster_t() override = default;
 
     // --- 接口实现 ---
-    void _init() override;
+    status_t _init() override;
     void _update_feedback() override;
     void _fsm_execute() override;
 
@@ -59,29 +78,12 @@ class quad_booster_t final
     void _send_fric_command() const;
     void _send_trigger_command() const;
 
-    // 角度归一化辅助函数
-    static float _normalize_angle(float angle);
 
     // --- 成员变量 ---
-    struct motor_ctx_t
-    {
-        motor_base_t *fric_wheels[4]{nullptr};
-        motor_base_t *trigger_wheel{nullptr};
-    };
 
-    struct pid_ctx_t
-    {
-        pid_t *fric_pid[4]{nullptr};
-        pid_t *trigger_pos_pid{nullptr};
-        pid_t *trigger_spd_pid{nullptr};
-    };
 
     struct data_ctx_t
     {
-        // 核心逻辑变量
-        float last_rotor_rad{0};     // 上一次的转子角度
-        float total_trig_rad{0};     // 累计的输出轴角度（未归一化）
-
         // 反馈
         float current_fric_mps[4]{};
         float current_trig_radps{0};
@@ -100,8 +102,8 @@ class quad_booster_t final
 
     struct booster_ctx_t
     {
-        motor_ctx_t motor;
-        pid_ctx_t pid;
+        quad_deps_t::motor_deps_t motor;
+        quad_deps_t::pid_deps_t pid;
         data_ctx_t data;
         quad_booster_cmd_t *cmd{};
     };
@@ -119,7 +121,7 @@ class quad_booster_t final
         void execute(owner *owner) override;
         void exit(owner *owner) override;
 
-    private:
+      private:
         bool _trigger_stopped{false}; // 用于确保拨弹盘完全停止后发0
     };
 
@@ -130,7 +132,8 @@ class quad_booster_t final
             void enter(owner *owner) override;
             void execute(owner *owner) override;
             void exit(owner *owner) override;
-        private:
+
+          private:
             float _homing_turnback_start_time{0.0f};
         };
         struct state_interim_t final : public state_t<owner>

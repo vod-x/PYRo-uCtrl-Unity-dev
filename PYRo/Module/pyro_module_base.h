@@ -9,8 +9,9 @@
  * `instance()` method) and a callback-driven architecture, combining static
  * type resolution with dynamic FSM execution.
  * 本文件定义了 `pyro::module_base_t` 类模板，作为机器人模块的基础。
- * 它利用奇异递归模板模式 (CRTP) 提供了类型安全的单例机制（通过 `instance()`
- * 方法） 和基于回调驱动的架构，结合了静态类型解析与动态状态机执行。
+ * 它利用奇异递归模板模式 (CRTP)
+ * 提供了类型安全的单例机制（通过 `instance()`方法）
+ * 基于回调驱动的架构，结合了静态类型解析与动态状态机执行。
  *
  * @author Lucky
  * @version 1.0.0
@@ -36,11 +37,11 @@ struct cmd_base_t
 {
     enum class mode_t : uint8_t
     {
-        ZERO_FORCE,
+        PASSIVE,
         ACTIVE
     } mode;
     uint32_t timestamp;
-    cmd_base_t() : mode(mode_t::ZERO_FORCE), timestamp(0)
+    cmd_base_t() : mode(mode_t::PASSIVE), timestamp(0)
     {
     }
     virtual ~cmd_base_t() = default;
@@ -50,7 +51,7 @@ struct cmd_base_t
  * @brief CRTP Template for Module Base.
  * 模块基类的 CRTP 模板。
  */
-template <typename Derived, typename CmdType, typename ConfigData>
+template <typename Derived, typename CmdType, typename ModuleDeps>
 class module_base_t
 {
   public:
@@ -60,9 +61,23 @@ class module_base_t
         return &_instance_obj;
     }
 
-    void configure(const ConfigData &config);
+    /*
+     * @brief Starts the module task. Must be explicitly called.
+     * 启动模块任务,需要显式调用
+     */
     status_t start();
+    /*
+     * @brief Sets the current command for the module. Thread-safe.
+     * 设置模块当前命令,线程安全（内部环形缓冲区实现）
+     */
     bool set_command(const CmdType &cmd);
+    /*
+     * @brief Sets the configuration for the module. Thread-safe.
+     * 设置模块配置,在start前调用，
+     */
+    void configure(const ModuleDeps &deps);
+
+
     [[nodiscard]] mutex_t &get_mutex();
 
   protected:
@@ -74,7 +89,7 @@ class module_base_t
     virtual ~module_base_t()        = default;
 
     /** @brief Callback for initialization. 初始化回调。 */
-    virtual status_t _init()            = 0;
+    virtual status_t _init()        = 0;
 
     /** @brief Callback for sensor updates. 反馈更新回调。 */
     virtual void _update_feedback() = 0;
@@ -83,8 +98,8 @@ class module_base_t
     virtual void _fsm_execute()     = 0;
 
     CmdType _current_cmd;
-    ConfigData _config;
-    uint8_t _read_index{0};
+
+    ModuleDeps _module_deps;
 
   private:
     class module_task_t final : public task_base_t
@@ -107,7 +122,7 @@ class module_base_t
 
     module_task_t _task;
     mutex_t _mutex;
-    
+
     static constexpr uint8_t CMD_BUF_SIZE = 16; // 缓冲区大小，建议为 2 的幂
     CmdType _cmd_buffer[CMD_BUF_SIZE];
 
@@ -119,4 +134,5 @@ class module_base_t
 } // namespace pyro
 
 #include "pyro_module_base.tpp"
+
 #endif

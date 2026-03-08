@@ -70,7 +70,6 @@ class task_base_t
 
   private:
     const char *_task_name;
-    uint16_t _init_stack_depth;
     uint16_t _loop_stack_depth;
     priority_t _priority;
 

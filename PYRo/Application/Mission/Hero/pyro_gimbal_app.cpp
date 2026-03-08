@@ -77,7 +77,6 @@ extern "C"
 
     void hero_gimbal_thread(void *argument)
     {
-        direct_gimbal_ptr->start();
         while (true)
         {
             chassis_rc2cmd(rc_ctrl_ptr);
@@ -93,6 +92,7 @@ extern "C"
         direct_gimbal_ptr     = pyro::direct_gimbal_t::instance();
         rc_ctrl_ptr = static_cast<pyro::dr16_drv_t::dr16_ctrl_t const *>(
             pyro::rc_hub_t::get_instance(pyro::rc_hub_t::DR16)->read());
+        direct_gimbal_ptr->start();
         xTaskCreate(hero_gimbal_thread, "start_app_thread", 128, nullptr,
                     configMAX_PRIORITIES - 1, nullptr);
         vTaskDelete(nullptr);

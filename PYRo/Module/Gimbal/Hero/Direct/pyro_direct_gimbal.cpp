@@ -13,7 +13,7 @@ direct_gimbal_t::direct_gimbal_t() : module_base_t("direct_gimbal")
     _ctx = {};
 }
 
-void direct_gimbal_t::_init()
+status_t direct_gimbal_t::_init()
 {
     // 1. 初始化电机
 
@@ -44,6 +44,8 @@ void direct_gimbal_t::_init()
     // Yaw 轴 (DJI GM6020，输出为电流值/电压值，通常量级较大，如 +/- 30000)
     _ctx.pid.yaw_pos = new pid_t(5.2f, 0.01f, 0.22f, 0.8f, 5.0f);
     _ctx.pid.yaw_spd = new pid_t(3.0f, 0.0003f, 0.0001f, 0.2f, 3.0f);
+
+    return PYRO_OK;
 }
 
 // =========================================================

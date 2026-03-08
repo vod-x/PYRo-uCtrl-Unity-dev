@@ -3,11 +3,10 @@
 
 #include "pyro_algo_pid.h"
 #include "pyro_module_base.h"
-#include "pyro_dji_motor_drv.h"
-#include "pyro_dm_motor_drv.h"
 #include "pyro_kin_hybrid.h"
 #include "pyro_motor_base.h"
-#include "pyro_powermeter.h"
+#include "pyro_ins.h" // 新增 IMU 依赖
+#include "config.h"
 
 namespace pyro
 {
@@ -17,31 +16,52 @@ namespace pyro
 // =========================================================
 struct hybrid_cmd_t : cmd_base_t
 {
-    hybrid_kin_t::drive_mode_t drive_mode;
-    uint8_t leg_contract_mode;
-    uint8_t jump_mode;
-    float vx, vy, wz, wy;
+    float vx;          // 云台坐标系下的 X 轴速度 m/s (推前)
+    float vy;          // 云台坐标系下的 Y 轴速度 m/s (推左)
+    float wz;          // z轴角速度 rad/s (通常跟随模式下该值为0，除非做小陀螺)
+    float delta_pitch; // 腿部目标位置相对于当前的增量 rad
+    bool track_en;     // 是否启用履带 (true: 履带 + 麦轮混合驱动, false: 仅麦轮)
 
-    hybrid_cmd_t()
-        : drive_mode(hybrid_kin_t::drive_mode_t::CRUISING),
-          leg_contract_mode(0), jump_mode(0), vx(0), vy(0), wz(0), wy(0)
+    hybrid_cmd_t() : vx(0), vy(0), wz(0), delta_pitch(0), track_en(false)
     {
     }
+};
+
+struct hybrid_deps_t
+{
+    // 电机句柄
+    struct motor_deps_t
+    {
+        motor_base_t *mecanum[4]{nullptr};
+        motor_base_t *track[2]{nullptr};
+        motor_base_t *leg[2]{nullptr};
+        motor_base_t *yaw{nullptr};
+    };
+
+    // 算法对象
+    struct pid_deps_t
+    {
+        pid_t *mecanum_pid[4]{nullptr};
+        pid_t *follow_yaw_pid{nullptr};
+        pid_t *track_pid[2]{nullptr};
+        pid_t *pitch_pid{nullptr};
+        pid_t *roll_pid{nullptr};
+    };
+
+    motor_deps_t motor_deps{};
+    pid_deps_t pid_deps{};
 };
 
 // =========================================================
 // 2. 混合底盘类
 // =========================================================
 class hybrid_chassis_t final
-    : public module_base_t<hybrid_chassis_t, hybrid_cmd_t>
+    : public module_base_t<hybrid_chassis_t, hybrid_cmd_t, hybrid_deps_t>
 {
+    friend class module_base_t<hybrid_chassis_t, hybrid_cmd_t, hybrid_deps_t>;
 
-    // 前向声明
-    friend class chassis_base_t;
-    friend class jcom_drv_t;
-
-    struct motor_ctx_t;
-    struct pid_ctx_t;
+    struct motor_deps_t;
+    struct pid_deps_t;
     struct data_ctx_t;
     struct hybrid_context_t;
 
@@ -54,37 +74,17 @@ class hybrid_chassis_t final
     ~hybrid_chassis_t() override = default;
 
     // --- 基类接口 ---
-    void _init() override;
+    status_t _init() override;
     void _update_feedback() override;
     void _fsm_execute() override;
 
     // --- 派生方法 ---
     void _kinematics_solve();
-    static void _chassis_control(hybrid_context_t *ctx);
-    static void _send_motor_command(hybrid_context_t *ctx);
-
-
-
-
+    void _mecanum_control();
+    void _track_control();
+    void _leg_control();
+    void _send_motor_command() const;
     hybrid_kin_t *_kinematics{nullptr};
-
-    // 电机句柄
-    struct motor_ctx_t
-    {
-        motor_base_t *mecanum[4]{nullptr};
-        // motor_base_t *track[2]{nullptr};
-        motor_base_t *leg[2]{nullptr};
-    };
-
-    // 算法对象
-    struct pid_ctx_t
-    {
-        pid_t *mecanum_pid[4]{nullptr};
-        pid_t *track_pid[2]{nullptr};
-        pid_t *leg_pos_pid[2]{nullptr};
-        pid_t *leg_spd_pid[2]{nullptr};
-        pid_t *balance_pid{nullptr};
-    };
 
     // 运行时数据
     struct data_ctx_t
@@ -93,6 +93,15 @@ class hybrid_chassis_t final
         float current_track_rpm[2]{};
         float current_leg_rad[2]{};
         float current_leg_radps[2]{};
+
+        // IMU 姿态反馈
+        float current_pitch_rad{0};
+        float current_roll_rad{0};
+        float current_yaw_rad{0};
+        float target_pitch_rad{0};
+
+        // YAW 电机差值反馈（用于底盘跟随云台）
+        float current_yaw_error{0};
 
         float target_wheel_rpm[4]{};
         float target_track_rpm[2]{};
@@ -105,42 +114,20 @@ class hybrid_chassis_t final
         float out_leg_torque[2]{};
     };
 
-    struct hardware_ctx_t
-    {
-        powermeter_drv_t *power_meter{nullptr};
-    };
-
-    struct power_ctx_t
-    {
-        powermeter_data *data{nullptr};
-    };
-
-
-
     struct hybrid_context_t
     {
-        motor_ctx_t motor;
-        pid_ctx_t pid;
-        hardware_ctx_t hardware;
-        power_ctx_t power;
+        hybrid_deps_t::motor_deps_t motor;
+        hybrid_deps_t::pid_deps_t pid;
         data_ctx_t data;
-        hybrid_cmd_t *cmd;
+        hybrid_cmd_t *cmd{};
     };
-    struct debug_ctx_t
-    {
-        float debug_leg_torque[2]{};
-    };
+
     // 总 Context
     hybrid_context_t _ctx;
-    debug_ctx_t debug_data;
-
 
     // =====================================================
     // 状态定义 (HFSM)
-    // 注意：不再需要 sibling/next 指针，直接查 _ctx.states
     // =====================================================
-
-    // 1. 被动状态
     using owner = hybrid_chassis_t;
 
     struct state_passive_t : public state_t<owner>
@@ -150,66 +137,34 @@ class hybrid_chassis_t final
         void exit(owner *owner) override;
     };
 
-    // 2. 主动状态 (FSM)
     struct fsm_active_t : public fsm_t<owner>
     {
-        // 子状态定义
-        struct state_cruising_t : public state_t<owner>
+        struct cruising_state_t : public state_t<owner>
         {
             void enter(owner *owner) override;
             void execute(owner *owner) override;
             void exit(owner *owner) override;
         };
-
-        struct state_climbing_t : public state_t<owner>
+        struct climbing_state_t : public state_t<owner>
         {
             void enter(owner *owner) override;
             void execute(owner *owner) override;
             void exit(owner *owner) override;
         };
-
-        struct state_jumping_t : public state_t<owner>
-        {
-            void enter(owner *owner) override;
-            void execute(owner *owner) override;
-            void exit(owner *owner) override;
-        };
-
 
         // FSM Hooks
         void on_enter(owner *owner) override;
         void on_execute(owner *owner) override;
         void on_exit(owner *owner) override;
-
-      private:
-        state_cruising_t _cruising_state;
-        state_climbing_t _climbing_state;
-        state_jumping_t _jumping_state;
+    private:
+        cruising_state_t cruising_state;
+        climbing_state_t climbing_state;
     };
 
     // 状态实例
     state_passive_t _state_passive;
     fsm_active_t _state_active;
     fsm_t<owner> _main_fsm;
-
-    // =====================================================
-    // 静态纯逻辑内核
-    // =====================================================
-    // static void _pure_update_feedback(motor_ctx_t &hw, data_ctx_t &data);
-    // static void _pure_calc_kinematics(const algo_ctx_t &algo, data_ctx_t
-    // &data); static void _pure_calc_mecanum_pid(algo_ctx_t &algo, data_ctx_t
-    // &data); static void _pure_calc_track_pid(algo_ctx_t &algo, data_ctx_t
-    // &data); static void _pure_calc_leg_pid(algo_ctx_t &algo, data_ctx_t
-    // &data); static void _pure_reset_pids(algo_ctx_t &algo); static void
-    // _pure_hw_write(motor_ctx_t &hw, const data_ctx_t &data);
-    //
-    // // 辅助
-    // static float _mps_to_rpm(float mps, float radius);
-    // static float _radps_to_rpm(float radps);
-    static constexpr float MEC_RADIUS      = 0.076f;
-    static constexpr float TRACK_RADIUS    = 0.035f;
-    static constexpr float LEG_RETRACT_POS = 0.6f;
-    static constexpr float LEG_EXTEND_POS  = 1.60f;
 };
 
 } // namespace pyro

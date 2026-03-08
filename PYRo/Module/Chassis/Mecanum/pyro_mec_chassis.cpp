@@ -1,6 +1,6 @@
 #include "pyro_mec_chassis.h"
 #include "pyro_dji_motor_drv.h"
-#include "referee.h"
+#include "pyro_referee.h"
 
 
 namespace pyro
@@ -23,7 +23,7 @@ static float _loop_fp32_constrain(float val, float min_val, float max_val)
     return val;
 }
 
-static float _mps_to_rpm(const float mps, const float radius)
+static float mps_to_rpm(const float mps, const float radius)
 {
     if (radius < 1e-4f)
         return 0.0f;
@@ -44,7 +44,7 @@ mec_chassis_t::mec_chassis_t() : module_base_t("mec_chassis")
     _ctx = {};
 }
 
-void mec_chassis_t::_init()
+status_t mec_chassis_t::_init()
 {
     _kinematics          = new mecanum_kin_t(WHEELBASE, TRACK_WIDTH);
 
@@ -74,6 +74,8 @@ void mec_chassis_t::_init()
 
     // 功率控制初始化
     _power_control_init();
+
+    return PYRO_OK;
 }
 
 void mec_chassis_t::_power_control_init()
@@ -109,13 +111,13 @@ void mec_chassis_t::_power_control()
     {
         power_control_drv_t::get_instance().calculate_restricted_torques(
             _ctx.power_motor_data, 4,
-            static_cast<float>(referee_data.robot_status.chassis_power_limit) + 100.0f);
+            static_cast<float>(referee_drv_t::get_instance()->get_data().robot_status.chassis_power_limit) + 100.0f);
     }
     else
     {
         power_control_drv_t::get_instance().calculate_restricted_torques(
             _ctx.power_motor_data, 4,
-            referee_data.robot_status.chassis_power_limit);
+            referee_drv_t::get_instance()->get_data().robot_status.chassis_power_limit);
     }
     for (int i = 0; i < 4; i++)
         _ctx.data.out_wheel_torque[i] =
@@ -163,11 +165,11 @@ void mec_chassis_t::_update_feedback()
 
     // 4. 更新 cap_tx 数据
     _ctx.supercap_cmd.power_referee = 0;
-    _ctx.supercap_cmd.power_limit_referee =
-        referee_data.robot_status.chassis_power_limit;
-    _ctx.supercap_cmd.power_buffer_limit_referee = 60.0f;
-    _ctx.supercap_cmd.power_buffer_referee =
-        referee_data.power_heat.buffer_energy;
+    // _ctx.supercap_cmd.power_limit_referee =
+    //     referee_data.robot_status.chassis_power_limit;
+    // _ctx.supercap_cmd.power_buffer_limit_referee = 60.0f;
+    // _ctx.supercap_cmd.power_buffer_referee =
+    //     referee_data.power_heat.buffer_energy;
     _ctx.supercap_cmd.use_cap           = 1;
     _ctx.supercap_cmd.kill_chassis_user = 0;
     _ctx.supercap_cmd.speed_up_user_now = 0;
@@ -218,13 +220,13 @@ void mec_chassis_t::_kinematics_solve()
     // 4. 转 RPM 并分配给电机
     // 注意：右侧电机通常需要反转，取决于具体安装和电机库定义
     _ctx.data.target_wheel_rpm[0] =
-        _mps_to_rpm(wheel_speeds_mps.fl, WHEEL_RADIUS);
+        mps_to_rpm(wheel_speeds_mps.fl, WHEEL_RADIUS);
     _ctx.data.target_wheel_rpm[1] =
-        -_mps_to_rpm(wheel_speeds_mps.fr, WHEEL_RADIUS);
+        -mps_to_rpm(wheel_speeds_mps.fr, WHEEL_RADIUS);
     _ctx.data.target_wheel_rpm[2] =
-        _mps_to_rpm(wheel_speeds_mps.bl, WHEEL_RADIUS);
+        mps_to_rpm(wheel_speeds_mps.bl, WHEEL_RADIUS);
     _ctx.data.target_wheel_rpm[3] =
-        -_mps_to_rpm(wheel_speeds_mps.br, WHEEL_RADIUS);
+        -mps_to_rpm(wheel_speeds_mps.br, WHEEL_RADIUS);
 }
 
 void mec_chassis_t::_chassis_control(mec_context_t *ctx)
@@ -243,6 +245,7 @@ void mec_chassis_t::_send_motor_command(mec_context_t *ctx)
     for (int i = 0; i < 4; i++)
     {
         ctx->motor.wheels[i]->send_torque(ctx->data.out_wheel_torque[i]);
+        // ctx->motor.wheels[i]->send_torque(0);
     }
 }
 
