@@ -40,8 +40,8 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
     }
     // infantry2_chassis_cmd_ptr->l_leg = (p_ctrl->rc.ch_ly + 1.0f) / 14.0f + 0.15f;
     // infantry2_chassis_cmd_ptr->r_leg = (p_ctrl->rc.ch_ry + 1.0f) / 14.0f + 0.15f;
-    infantry2_chassis_cmd_ptr->l_leg = 0.17f;
-    infantry2_chassis_cmd_ptr->r_leg = 0.17f;
+    infantry2_chassis_cmd_ptr->l_leg = 0.27f;
+    infantry2_chassis_cmd_ptr->r_leg = 0.27f;
     infantry2_chassis_cmd_ptr->l_angle = PI / 2 + (p_ctrl->rc.ch_lx * PI / 2);
     infantry2_chassis_cmd_ptr->r_angle = PI / 2 + (p_ctrl->rc.ch_rx * PI / 2);
     infantry2_chassis_cmd_ptr->yaw += (p_ctrl->rc.ch_lx * PI / 4000.0f);

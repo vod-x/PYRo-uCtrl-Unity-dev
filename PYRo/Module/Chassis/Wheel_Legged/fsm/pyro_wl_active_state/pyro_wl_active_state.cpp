@@ -27,7 +27,8 @@ void wl_chassis_t::fsm_active_t::on_enter(wl_chassis_t *owner)
     
     owner->_leg_data[wl_chassis_t::R].x = 0.0f;
     owner->_leg_data[wl_chassis_t::L].x = 0.0f;
-    owner->_x_gain = 0.0f;
+    owner->_leg_data[wl_chassis_t::R].x_gain = 0.0f;
+    owner->_leg_data[wl_chassis_t::L].x_gain = 0.0f;
 }
 
 void wl_chassis_t::fsm_active_t::on_execute(wl_chassis_t *owner)

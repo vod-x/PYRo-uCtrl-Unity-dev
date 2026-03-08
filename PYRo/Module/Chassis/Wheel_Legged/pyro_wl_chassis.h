@@ -267,6 +267,8 @@ private:
         float T_w;
         /* LQR gain for the leg, which is calculated by leg length, 2 x 6 matrix */
         float lqr_gain[12];
+        float x_gain;
+        float d_x_gain;
         /* Support force of the leg in vertical direction */
         float P;
         float jx,jy;
