@@ -1,8 +1,8 @@
 /*
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-26 20:03:11
- * @LastEditors: vod vod_x@outlook.com
- * @LastEditTime: 2026-03-08 02:39:52
+ * @LastEditors: vod-x vod_x@outlook.com
+ * @LastEditTime: 2026-03-10 14:14:26
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -33,15 +33,19 @@ void wl_chassis_t::fsm_active_t::on_enter(wl_chassis_t *owner)
 
 void wl_chassis_t::fsm_active_t::on_execute(wl_chassis_t *owner)
 {
-    if(owner->_cmd->active_mode == 0)
+    if(owner->_cmd->active_mode == wl_cmd_t::REVERSE)
     {
         this->change_state(&_state_reverse);
     }
-    if(owner->_cmd->active_mode == 1)
+    if(owner->_cmd->active_mode == wl_cmd_t::READY)
+    {
+        this->change_state(&_state_ready);
+    }
+    if(owner->_cmd->active_mode == wl_cmd_t::NORMAL)
     {
         this->change_state(&_state_normal);
     }
-    if(owner->_cmd->active_mode == 2)
+    if(owner->_cmd->active_mode == wl_cmd_t::TEST)
     {
         this->change_state(&_state_test);
     }

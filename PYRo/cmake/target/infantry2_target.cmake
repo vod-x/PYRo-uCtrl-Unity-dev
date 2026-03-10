@@ -6,6 +6,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
         PYRo/Module/Chassis/Wheel_Legged/fsm/pyro_wl_passive_state.cpp
         PYRo/Module/Chassis/Wheel_Legged/fsm/pyro_wl_active_state/pyro_wl_active_state.cpp
         PYRo/Module/Chassis/Wheel_Legged/fsm/pyro_wl_active_state/pyro_wl_test_state.cpp
+        PYRo/Module/Chassis/Wheel_Legged/fsm/pyro_wl_active_state/pyro_wl_ready_state.cpp
         PYRo/Module/Chassis/Wheel_Legged/fsm/pyro_wl_active_state/pyro_wl_normal_state.cpp
         PYRo/Module/Chassis/Wheel_Legged/fsm/pyro_wl_active_state/pyro_wl_reverse_state.cpp
     )

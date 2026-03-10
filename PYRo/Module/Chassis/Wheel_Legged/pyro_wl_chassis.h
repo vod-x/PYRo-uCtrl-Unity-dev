@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-07 15:14:47
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-03-08 15:13:35
+ * @LastEditTime: 2026-03-10 14:17:38
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -114,10 +114,16 @@ struct wl_cmd_t final : public cmd_base_t
 
     float l_angle;
     float r_angle;
-    uint8_t active_mode; // 0 for normal mode, 1 for test mode, other value is reserved
+    enum active_mode_t
+    {
+        NORMAL = 0,
+        READY = 1,
+        TEST = 2,
+        REVERSE = 3,
+    }active_mode;
 
     /* Construct function, set zero values */
-    wl_cmd_t() : vx(0), vy(0), vz(0), yaw(0), l_leg(0), r_leg(0),l_angle(0), r_angle(0), active_mode(0)
+    wl_cmd_t() : vx(0), vy(0), vz(0), yaw(0), l_leg(0), r_leg(0),l_angle(0), r_angle(0), active_mode(TEST)
     {
     }
 };
@@ -296,6 +302,13 @@ private:
             void execute(wl_chassis_t *owner) override;
             void exit(wl_chassis_t *owner) override;
         }_state_test;
+
+        class state_ready_t : public state_t<wl_chassis_t>
+        {
+            void enter(wl_chassis_t *owner) override;
+            void execute(wl_chassis_t *owner) override;
+            void exit(wl_chassis_t *owner) override;
+        }_state_ready;
         class state_normal_t : public state_t<wl_chassis_t>
         {
             void enter(wl_chassis_t *owner) override;
