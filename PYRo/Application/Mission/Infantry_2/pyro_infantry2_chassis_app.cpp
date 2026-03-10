@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-26 20:18:33
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-03-10 18:38:06
+ * @LastEditTime: 2026-03-10 19:32:56
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -141,6 +141,8 @@ void normal_mode(void const *rc_ctrl)
     infantry2_chassis_cmd_ptr->r_leg = 0.27f;
 
     infantry2_chassis_cmd_ptr->yaw -= (p_ctrl->rc.ch_lx * PI / 1000.0f);
+    infantry2_chassis_cmd_ptr->vx = (p_ctrl->rc.ch_ly * 1.0f);
+
     infantry2_chassis_cmd_ptr->yaw = loop_fp32_constrain(
         infantry2_chassis_cmd_ptr->yaw, -PI, PI);
 }

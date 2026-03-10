@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-28 13:11:52
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-03-10 19:20:51
+ * @LastEditTime: 2026-03-10 19:45:00
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -18,12 +18,13 @@ uint32_t clear_cnt;
 void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
 {
     clear_cnt++;
-    if(clear_cnt > 400)
+    if(clear_cnt > 5000)
     {
         clear_cnt = 0;
         for(uint8_t i = 0; i < 2; i++)
         {
-            // owner->_leg_data[i].x = 0.0f;
+            owner->_leg_data[i].x = 0.0f;
+            owner->_leg_data[i].x_gain = 0.0f;
         }
     }
     calc_support_force(owner);
@@ -46,7 +47,7 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
     {
         diff = yaw_ref - owner->yaw;
     }
-    g_yaw_ref = owner->_yaw_pid->calculate(yaw_ref + diff, owner->yaw);
+    g_yaw_ref = owner->_yaw_pid->calculate(owner->yaw + diff, owner->yaw);
     owner->_yaw_ref = yaw_ref;
     owner->_g_yaw_ref = g_yaw_ref;
     owner->_T_w_gain = owner->_g_yaw_pid->calculate(g_yaw_ref, owner->g_yaw); 
@@ -63,11 +64,8 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
 
     static float last_d_x_gain[2] = {0.0f, 0.0f};
 
-    owner->_leg_data[wl_chassis_t::R].d_x_gain = 0.0f;
-    owner->_leg_data[wl_chassis_t::L].d_x_gain = 0.0f;
-    // owner->_leg_data[wl_chassis_t::R].d_x_gain = -owner->_T_w_gain;
-    // owner->_leg_data[wl_chassis_t::L].d_x_gain = owner->_T_w_gain;
-
+    owner->_leg_data[wl_chassis_t::R].d_x_gain = owner->_cmd->vx;
+    owner->_leg_data[wl_chassis_t::L].d_x_gain = owner->_cmd->vx;
     owner->_leg_data[wl_chassis_t::R].x_gain += (
         owner->_leg_data[wl_chassis_t::R].d_x_gain 
         + last_d_x_gain[wl_chassis_t::R]) / 2.0f /1000.0f;
@@ -78,9 +76,6 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
     last_d_x_gain[wl_chassis_t::R] = owner->_leg_data[wl_chassis_t::R].d_x_gain;
     last_d_x_gain[wl_chassis_t::L] = owner->_leg_data[wl_chassis_t::L].d_x_gain;
 
-    owner->_leg_data[wl_chassis_t::R].d_x_gain = 0.0f;
-    owner->_leg_data[wl_chassis_t::L].d_x_gain = 0.0f;
-    /* Calculate target force of VMC for each legs. */
     /* Right leg */
     owner->_leg_data[wl_chassis_t::R].ref_d_l=
         owner->_F_pid[wl_chassis_t::R]->
