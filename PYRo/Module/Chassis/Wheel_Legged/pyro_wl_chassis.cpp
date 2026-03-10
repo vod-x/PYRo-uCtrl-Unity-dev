@@ -1,8 +1,8 @@
 /*
  * @Author: Vod vod0575@outlook
  * @Date: 2026-02-06 15:27:37
- * @LastEditors: vod vod_x@outlook.com
- * @LastEditTime: 2026-03-08 01:22:55
+ * @LastEditors: vod-x vod_x@outlook.com
+ * @LastEditTime: 2026-03-10 09:33:37
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -17,7 +17,27 @@ wl_chassis_t::wl_chassis_t() : module_base_t("wl_chassis", 0, 512)
 {
 }
 
+status_t wl_chassis_t::get_cur_angle(float *r_angle, float *l_angle)
+{
+    if(!l_angle || !r_angle)
+    {
+        return PYRO_PARAM_ERROR;
+    }
+    *r_angle = _leg_data[R].alpha;
+    *l_angle = _leg_data[L].alpha;
+    return PYRO_OK;
+}
 
+status_t wl_chassis_t::get_cur_leg(float *r_leg, float *l_leg)
+{
+    if(!l_leg || !r_leg)
+    {
+        return PYRO_PARAM_ERROR;
+    }
+    *r_leg = _leg_data[R].l;
+    *l_leg = _leg_data[L].l;
+    return PYRO_OK;
+}
 status_t wl_chassis_t::_init()
 {
     status_t ret;

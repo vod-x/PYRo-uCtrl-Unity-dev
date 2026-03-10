@@ -1,8 +1,8 @@
 /*
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-07 15:14:47
- * @LastEditors: vod vod_x@outlook.com
- * @LastEditTime: 2026-03-02 18:41:39
+ * @LastEditors: vod-x vod_x@outlook.com
+ * @LastEditTime: 2026-03-09 19:02:45
  * @Description: 
  * The kinematic solve algorithm for wheel legged robot. If you want to use,
  * define a variable which type is wheel_legged_kin_t, than call its init 
@@ -180,18 +180,18 @@ status_t wheel_legged_kin_t::get_VMC_value(float theta1, float theta2,
         *arm_sin_f32(phi1 - theta1))/(_vmc_k.k1*arm_sin_f32(phi1 - phi2)) 
         - (_vmc_k.k0*arm_cos_f32(alpha)*arm_sin_f32(phi2)
         *arm_sin_f32(phi1 - theta1))/(_vmc_k.k1*arm_sin_f32(phi1 - phi2));
-    T_val[1] = -((_vmc_k.k0*arm_cos_f32(alpha)*arm_cos_f32(phi2)
+    T_val[1] = ((_vmc_k.k0*arm_cos_f32(alpha)*arm_cos_f32(phi2)
         *arm_sin_f32(phi1 - theta1))/(_vmc_k.k1*arm_sin_f32(phi1 - phi2)) 
-        - (_vmc_k.k0*arm_sin_f32(alpha)*arm_sin_f32(phi2)
+        + (_vmc_k.k0*arm_sin_f32(alpha)*arm_sin_f32(phi2)
         *arm_sin_f32(phi1 - theta1))/(_vmc_k.k1*arm_sin_f32(phi1 - phi2)))
         /length;
     T_val[2] = ( _vmc_k.k0*arm_cos_f32(alpha)*arm_sin_f32(phi1)
         *arm_sin_f32(phi2 - theta2))/(_vmc_k.k1*arm_sin_f32(phi1 - phi2)) 
         - (_vmc_k.k0*arm_cos_f32(phi1)*arm_sin_f32(alpha)
         *arm_sin_f32(phi2 - theta2))/(_vmc_k.k1*arm_sin_f32(phi1 - phi2));
-    T_val[3] = ((_vmc_k.k0*arm_cos_f32(alpha)*arm_cos_f32(phi1)
+    T_val[3] = -((_vmc_k.k0*arm_cos_f32(alpha)*arm_cos_f32(phi1)
         *arm_sin_f32(phi2 - theta2))/(_vmc_k.k1*arm_sin_f32(phi1 - phi2)) 
-        - (_vmc_k.k0*arm_sin_f32(alpha)*arm_sin_f32(phi1)
+        + (_vmc_k.k0*arm_sin_f32(alpha)*arm_sin_f32(phi1)
         *arm_sin_f32(phi2 - theta2))/(_vmc_k.k1*arm_sin_f32(phi1 - phi2)))
         /length;
     

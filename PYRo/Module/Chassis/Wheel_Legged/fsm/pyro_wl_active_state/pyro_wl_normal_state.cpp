@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-28 13:11:52
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-03-08 21:25:37
+ * @LastEditTime: 2026-03-10 10:37:59
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -14,9 +14,18 @@ namespace pyro
 void wl_chassis_t::fsm_active_t::state_normal_t::enter(wl_chassis_t *owner)
 {
 }
-
+uint32_t clear_cnt;
 void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
 {
+    clear_cnt++;
+    // if(clear_cnt > 1000)
+    // {
+    //     clear_cnt = 0;
+    //     for(uint8_t i = 0; i < 2; i++)
+    //     {
+    //         owner->_leg_data[i].x = 0.0f;
+    //     }
+    // }
     calc_support_force(owner);
     if(owner->_leg_data[wl_chassis_t::R].P < 0 || owner->_leg_data[wl_chassis_t::L].P < 0)
     {
@@ -28,13 +37,13 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
     g_yaw_ref = owner->_yaw_pid->calculate(yaw_ref, owner->yaw);
     owner->_yaw_ref = yaw_ref;
     owner->_g_yaw_ref = g_yaw_ref;
-    // owner->_T_w_gain = owner->_g_yaw_pid->calculate(g_yaw_ref, owner->g_yaw); 
+    owner->_T_w_gain = owner->_g_yaw_pid->calculate(g_yaw_ref, owner->g_yaw); 
     // owner->_T_w_gain = g_yaw_ref; 
     // owner->_T_w_gain = 3.0f; 
-    owner->_T_w_gain = 0.0f;
+    // owner->_T_w_gain = 0.0f;
     owner->_x_gain += owner->_T_w_gain;
-    owner->_leg_data[wl_chassis_t::R].d_x_gain = owner->_T_w_gain;
-    owner->_leg_data[wl_chassis_t::L].d_x_gain = -owner->_T_w_gain;
+    owner->_leg_data[wl_chassis_t::R].d_x_gain = 0.0f;
+    owner->_leg_data[wl_chassis_t::L].d_x_gain = 0.0f;
     
     owner->_leg_data[wl_chassis_t::R].x_gain += owner->_leg_data[wl_chassis_t::R].d_x_gain / 1000.0f;
     owner->_leg_data[wl_chassis_t::L].x_gain += owner->_leg_data[wl_chassis_t::L].d_x_gain / 1000.0f;

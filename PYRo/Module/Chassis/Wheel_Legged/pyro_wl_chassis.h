@@ -128,9 +128,11 @@ class wl_chassis_t final : public module_base_t<wl_chassis_t, wl_cmd_t, wl_chass
 
 public:
    
-    wl_chassis_t(const wl_chassis_t &)            = delete;
-    wl_chassis_t &operator=(const wl_chassis_t &) = delete;
+   wl_chassis_t(const wl_chassis_t &)            = delete;
+   wl_chassis_t &operator=(const wl_chassis_t &) = delete;
 
+   status_t get_cur_angle(float *r_angle, float *l_angle);
+   status_t get_cur_leg(float *r_leg, float *l_leg);
 private:
     /**
      * @description:

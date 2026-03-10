@@ -33,6 +33,11 @@ void wl_chassis_t::state_passive_t::enter(wl_chassis_t *owner)
 
 void wl_chassis_t::state_passive_t::execute(wl_chassis_t *owner)
 {
+
+    for(uint8_t i = 0; i < 4; i++)
+    {
+        owner->_motor_drv[i]->send_torque(0.0f);
+    }
     for(uint8_t i = 0; i < 2; i++)
     {
         owner->_wheel_drv[i]->send_torque(0);

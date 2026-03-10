@@ -1,8 +1,8 @@
 /*
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-26 20:18:33
- * @LastEditors: vod vod_x@outlook.com
- * @LastEditTime: 2026-03-08 02:12:04
+ * @LastEditors: vod-x vod_x@outlook.com
+ * @LastEditTime: 2026-03-10 09:46:46
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -21,48 +21,74 @@ extern "C"
 {
 void infantry2_chassis_rc2cmd(void const *rc_ctrl)
 {
+    static pyro::cmd_base_t::mode_t last_mode = pyro::cmd_base_t::mode_t::PASSIVE; 
     pyro::read_scope_lock lock(
             pyro::rc_hub_t::get_instance(
          pyro::rc_hub_t::DR16)->get_lock());
    static auto *p_ctrl =
-            static_cast<pyro::dr16_drv_t::dr16_ctrl_t const *>(rc_ctrl);
+            static_cast<pyro::dr16_drv_t::dr16_ctrl_t const *>(rc_ctrl);  
+    
+    if(last_mode == pyro::cmd_base_t::mode_t::PASSIVE && 
+        p_ctrl->rc.s_r.state == pyro::dr16_drv_t::sw_state_t::SW_MID)
+    {
+        infantry2_chassis_ptr->get_cur_angle(&infantry2_chassis_cmd_ptr->r_angle,
+                              &infantry2_chassis_cmd_ptr->l_angle);
+        infantry2_chassis_ptr->get_cur_leg(&infantry2_chassis_cmd_ptr->r_leg,
+                            &infantry2_chassis_cmd_ptr->l_leg);
+    }
     if(pyro::dr16_drv_t::sw_state_t::SW_UP == p_ctrl->rc.s_r.state || pyro::dr16_drv_t::sw_state_t::SW_DOWN == p_ctrl->rc.s_r.state)
     {
-        infantry2_chassis_cmd_ptr->l_angle = 0;
-        infantry2_chassis_cmd_ptr->r_angle = 0;
+        infantry2_chassis_cmd_ptr->l_angle = PI/2.0f;
+        infantry2_chassis_cmd_ptr->r_angle = PI/2.0f;
         infantry2_chassis_cmd_ptr->l_leg = 0;
         infantry2_chassis_cmd_ptr->r_leg = 0;
         infantry2_chassis_cmd_ptr->mode = pyro::cmd_base_t::mode_t::PASSIVE;
         float yaw, pitch, roll;
         ins_drv_t::get_instance()->get_rads_b(&yaw, &pitch, &roll);
         infantry2_chassis_cmd_ptr->yaw = yaw;
+            
+        last_mode = infantry2_chassis_cmd_ptr->mode;
         return;
     }
-    // infantry2_chassis_cmd_ptr->l_leg = (p_ctrl->rc.ch_ly + 1.0f) / 14.0f + 0.15f;
-    // infantry2_chassis_cmd_ptr->r_leg = (p_ctrl->rc.ch_ry + 1.0f) / 14.0f + 0.15f;
-    infantry2_chassis_cmd_ptr->l_leg = 0.27f;
-    infantry2_chassis_cmd_ptr->r_leg = 0.27f;
-    infantry2_chassis_cmd_ptr->l_angle = PI / 2 + (p_ctrl->rc.ch_lx * PI / 2);
-    infantry2_chassis_cmd_ptr->r_angle = PI / 2 + (p_ctrl->rc.ch_rx * PI / 2);
-    infantry2_chassis_cmd_ptr->yaw += (p_ctrl->rc.ch_lx * PI / 4000.0f);
-    infantry2_chassis_cmd_ptr->yaw = loop_fp32_constrain(
-            infantry2_chassis_cmd_ptr->yaw, -PI, PI);
+    
 
 
     infantry2_chassis_cmd_ptr->mode = pyro::cmd_base_t::mode_t::ACTIVE;
     if(p_ctrl->rc.s_l.state == pyro::dr16_drv_t::sw_state_t::SW_UP)
     {
+        infantry2_chassis_cmd_ptr->r_angle += (p_ctrl->rc.ch_rx * PI / 2000.0f);
+        infantry2_chassis_cmd_ptr->l_angle += (p_ctrl->rc.ch_lx * PI / 2000.0f);
+        infantry2_chassis_cmd_ptr->r_angle = loop_fp32_constrain(
+            infantry2_chassis_cmd_ptr->r_angle, -PI, PI);
+        infantry2_chassis_cmd_ptr->l_angle = loop_fp32_constrain(
+            infantry2_chassis_cmd_ptr->l_angle, -PI, PI);
+
+        infantry2_chassis_cmd_ptr->r_leg += (p_ctrl->rc.ch_ry / 2000.0f);
+        infantry2_chassis_cmd_ptr->l_leg += (p_ctrl->rc.ch_ly / 2000.0f);
+        infantry2_chassis_cmd_ptr->r_leg = fp32_constrain(
+           infantry2_chassis_cmd_ptr->r_leg, 0.14f, 0.33f);
+        infantry2_chassis_cmd_ptr->l_leg = fp32_constrain(
+           infantry2_chassis_cmd_ptr->l_leg, 0.14f, 0.33f);
         infantry2_chassis_cmd_ptr->active_mode = 2;
     }
     else if(p_ctrl->rc.s_l.state == pyro::dr16_drv_t::sw_state_t::SW_MID)
     {
         infantry2_chassis_cmd_ptr->active_mode = 1;
+
+        infantry2_chassis_cmd_ptr->l_leg = 0.27f;
+        infantry2_chassis_cmd_ptr->r_leg = 0.27f;
+
+        infantry2_chassis_cmd_ptr->yaw += (p_ctrl->rc.ch_lx * PI / 4000.0f);
+        infantry2_chassis_cmd_ptr->yaw = loop_fp32_constrain(
+            infantry2_chassis_cmd_ptr->yaw, -PI, PI);
+
     }
     else
     {
         infantry2_chassis_cmd_ptr->active_mode = 0;
     }
 
+    last_mode = infantry2_chassis_cmd_ptr->mode;
 }
 void infantry2_chassis_main_tread(void *argument)
 {
