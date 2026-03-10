@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-28 13:11:52
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-03-10 10:37:59
+ * @LastEditTime: 2026-03-10 19:20:51
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -18,35 +18,68 @@ uint32_t clear_cnt;
 void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
 {
     clear_cnt++;
-    // if(clear_cnt > 1000)
-    // {
-    //     clear_cnt = 0;
-    //     for(uint8_t i = 0; i < 2; i++)
-    //     {
-    //         owner->_leg_data[i].x = 0.0f;
-    //     }
-    // }
+    if(clear_cnt > 400)
+    {
+        clear_cnt = 0;
+        for(uint8_t i = 0; i < 2; i++)
+        {
+            // owner->_leg_data[i].x = 0.0f;
+        }
+    }
     calc_support_force(owner);
     if(owner->_leg_data[wl_chassis_t::R].P < 0 || owner->_leg_data[wl_chassis_t::L].P < 0)
     {
         /* If the support force is negative, it means the leg is in the air, which may cause instability. */
         owner->_cnt.solver_error++;
     }
-    float yaw_ref, g_yaw_ref;
+    float yaw_ref, g_yaw_ref, diff;
     yaw_ref = owner->_cmd->yaw;
-    g_yaw_ref = owner->_yaw_pid->calculate(yaw_ref, owner->yaw);
+    if(yaw_ref - owner->yaw > PI)
+    {
+        diff = -2 * PI + (yaw_ref - owner->yaw);
+    }
+    else if(yaw_ref - owner->yaw < -PI)
+    {
+        diff = 2 * PI + (yaw_ref - owner->yaw);
+    }
+    else
+    {
+        diff = yaw_ref - owner->yaw;
+    }
+    g_yaw_ref = owner->_yaw_pid->calculate(yaw_ref + diff, owner->yaw);
     owner->_yaw_ref = yaw_ref;
     owner->_g_yaw_ref = g_yaw_ref;
     owner->_T_w_gain = owner->_g_yaw_pid->calculate(g_yaw_ref, owner->g_yaw); 
-    // owner->_T_w_gain = g_yaw_ref; 
-    // owner->_T_w_gain = 3.0f; 
-    // owner->_T_w_gain = 0.0f;
-    owner->_x_gain += owner->_T_w_gain;
+
+    owner->_delta_mea = owner->_leg_data[wl_chassis_t::R].alpha 
+                            - owner->_leg_data[wl_chassis_t::L].alpha;
+    owner->_d_delta_mea = owner->_leg_data[wl_chassis_t::R].d_alpha 
+                            - owner->_leg_data[wl_chassis_t::L].d_alpha;
+    owner->_d_delta_ref = owner->_d_delta_pid->calculate(
+                                0.0f, owner->_delta_mea);
+    owner->T_l_gain = owner->_d_delta_pid->calculate(owner->_d_delta_ref,
+                                                 owner->_d_delta_mea);
+    
+
+    static float last_d_x_gain[2] = {0.0f, 0.0f};
+
     owner->_leg_data[wl_chassis_t::R].d_x_gain = 0.0f;
     owner->_leg_data[wl_chassis_t::L].d_x_gain = 0.0f;
-    
-    owner->_leg_data[wl_chassis_t::R].x_gain += owner->_leg_data[wl_chassis_t::R].d_x_gain / 1000.0f;
-    owner->_leg_data[wl_chassis_t::L].x_gain += owner->_leg_data[wl_chassis_t::L].d_x_gain / 1000.0f;
+    // owner->_leg_data[wl_chassis_t::R].d_x_gain = -owner->_T_w_gain;
+    // owner->_leg_data[wl_chassis_t::L].d_x_gain = owner->_T_w_gain;
+
+    owner->_leg_data[wl_chassis_t::R].x_gain += (
+        owner->_leg_data[wl_chassis_t::R].d_x_gain 
+        + last_d_x_gain[wl_chassis_t::R]) / 2.0f /1000.0f;
+    owner->_leg_data[wl_chassis_t::L].x_gain += (
+        owner->_leg_data[wl_chassis_t::L].d_x_gain 
+        + last_d_x_gain[wl_chassis_t::L]) / 2.0f /1000.0f;
+
+    last_d_x_gain[wl_chassis_t::R] = owner->_leg_data[wl_chassis_t::R].d_x_gain;
+    last_d_x_gain[wl_chassis_t::L] = owner->_leg_data[wl_chassis_t::L].d_x_gain;
+
+    owner->_leg_data[wl_chassis_t::R].d_x_gain = 0.0f;
+    owner->_leg_data[wl_chassis_t::L].d_x_gain = 0.0f;
     /* Calculate target force of VMC for each legs. */
     /* Right leg */
     owner->_leg_data[wl_chassis_t::R].ref_d_l=
@@ -101,6 +134,8 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
                                   owner->_leg_data[i].lqr_gain[11] * (0 - owner->_leg_data[i].d_beta));
                                   
     }
+    owner->_leg_data[wl_chassis_t::R].F[1] += owner->T_l_gain;
+    owner->_leg_data[wl_chassis_t::L].F[1] -= owner->T_l_gain;
     
 
     /* Transfer the force and torque of virtual rod to the practical torque of
@@ -114,8 +149,8 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
 
     /* Send torque to motors. The direction of right motors is opposite to the
        torque direction due to installation*/
-    owner->_wheel_drv[wl_chassis_t::R]->send_torque(fp32_constrain(-owner->_leg_data[wl_chassis_t::R].T_w, -20.0f, 20.0f));
-    owner->_wheel_drv[wl_chassis_t::L]->send_torque(fp32_constrain(owner->_leg_data[wl_chassis_t::L].T_w, -20.0f, 20.0f));
+    owner->_wheel_drv[wl_chassis_t::R]->send_torque(fp32_constrain(-owner->_leg_data[wl_chassis_t::R].T_w + owner->_T_w_gain, -20.0f, 20.0f));
+    owner->_wheel_drv[wl_chassis_t::L]->send_torque(fp32_constrain(owner->_leg_data[wl_chassis_t::L].T_w + owner->_T_w_gain, -20.0f, 20.0f));
     owner->_motor_drv[wl_chassis_t::RF]->send_torque(
                         -owner->_leg_data[wl_chassis_t::R].T[0]);
     owner->_motor_drv[wl_chassis_t::RB]->send_torque(

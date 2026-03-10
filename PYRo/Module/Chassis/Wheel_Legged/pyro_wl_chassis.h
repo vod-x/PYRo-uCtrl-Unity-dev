@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-07 15:14:47
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-03-10 14:17:38
+ * @LastEditTime: 2026-03-10 18:59:50
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -76,7 +76,12 @@ right leg, left leg */
     /* Yaw PID configuration for the chassis control.*/
     wl_pid_cfg_t yaw_pid_cfg;
     wl_pid_cfg_t g_yaw_pid_cfg;
-
+   
+   /* PID controllers to control the bias between right leg angle and left 
+      leg angle */
+   wl_pid_cfg_t delta_pid_cfg;
+   wl_pid_cfg_t d_delta_pid_cfg;
+   
     /* LQR coefficients for the chassis control. 2 raw x 6 column, 12 values
        in total. Every value has 3 coefficients.*/
     float *lqr_coef;
@@ -204,6 +209,14 @@ private:
     pid_t* _g_yaw_pid;
     float _yaw_ref;
     float _g_yaw_ref;
+
+   /* PID controllers to control the bias between right leg angle and left 
+      leg angle */
+   pid_t* _delta_pid;
+   pid_t* _d_delta_pid;
+   float _delta_mea;
+   float _d_delta_mea;
+   float _d_delta_ref;
     /* LQR coefficients for the chassis control. 2 raw x 6 column, 12 values
        in total. Every value has 3 coefficients.*/
     float _lqr_cof[48];
@@ -224,6 +237,7 @@ private:
     /* data of each leg */
     float _T_w_gain;
     float _x_gain;
+   float T_l_gain; 
     struct leg_data_t
     {
         /* Angle between big rod and direction of movement(rad) */

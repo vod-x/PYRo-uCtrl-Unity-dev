@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-27 20:38:05
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-03-08 21:23:49
+ * @LastEditTime: 2026-03-10 19:16:12
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -156,19 +156,33 @@ wl_chassis_cfg_t infantry2_chassis_cfg = {
         }
     },
     .yaw_pid_cfg = {
-        .kp = 4.0f,
+        .kp = 8.0f,
         .ki = 0.0f,
         .kd = 0.0f,
         .integral_limit = 0.0f,
-        .max_out = 20.0f,
+        .max_out = 30.0f,
     },
     .g_yaw_pid_cfg = {
-        .kp = 0.5f,
+        .kp = 6.0f,
         .ki = 0.0f,
         .kd = 0.0f,
         .integral_limit = 0.0f,
-        .max_out = 3.0f
+        .max_out = 40.0f
     },
+    .delta_pid_cfg = {
+          .kp = 10.0f,
+          .ki = 0.0f,
+          .kd = 0.0f,
+          .integral_limit = 0.0f,
+          .max_out = 20.0f,
+     },
+    .d_delta_pid_cfg = {
+          .kp = 8.0f,
+          .ki = 0.0f,
+          .kd = 0.0f,
+          .integral_limit = 0.0f,
+          .max_out = 20.0f,
+     },
     .lqr_coef = infantry2_lqr_coef,
     .wheel_radius = 0.06f,
     .reduction_ratio = 13.94f,

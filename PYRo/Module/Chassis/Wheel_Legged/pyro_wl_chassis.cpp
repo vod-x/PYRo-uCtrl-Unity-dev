@@ -144,6 +144,22 @@ status_t wl_chassis_t::_init()
     {
         return PYRO_NO_MEMORY;
     }
+    _delta_pid = new pid_t(_module_deps.delta_pid_cfg.kp, _module_deps.delta_pid_cfg.ki, 
+                            _module_deps.delta_pid_cfg.kd, 
+                            _module_deps.delta_pid_cfg.integral_limit,
+                            _module_deps.delta_pid_cfg.max_out);
+    if(!_delta_pid)    
+    {
+        return PYRO_NO_MEMORY;
+    }
+    _d_delta_pid = new pid_t(_module_deps.d_delta_pid_cfg.kp, _module_deps.d_delta_pid_cfg.ki, 
+                            _module_deps.d_delta_pid_cfg.kd, 
+                            _module_deps.d_delta_pid_cfg.integral_limit,
+                            _module_deps.d_delta_pid_cfg.max_out);
+    if(!_d_delta_pid)
+    {
+        return PYRO_NO_MEMORY;
+    }
     /* get INS drv */
     _ins_drv = ins_drv_t::get_instance();
 
