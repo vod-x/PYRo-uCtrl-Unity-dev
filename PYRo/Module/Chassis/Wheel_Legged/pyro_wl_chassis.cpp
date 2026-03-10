@@ -28,7 +28,7 @@ status_t wl_chassis_t::get_cur_angle(float *r_angle, float *l_angle)
     return PYRO_OK;
 }
 
-status_t wl_chassis_t::get_cur_leg(float *r_leg, float *l_leg)
+status_t wl_chassis_t::get_cur_length(float *r_leg, float *l_leg)
 {
     if(!l_leg || !r_leg)
     {

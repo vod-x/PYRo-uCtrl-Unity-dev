@@ -138,7 +138,7 @@ public:
    wl_chassis_t &operator=(const wl_chassis_t &) = delete;
 
    status_t get_cur_angle(float *r_angle, float *l_angle);
-   status_t get_cur_leg(float *r_leg, float *l_leg);
+   status_t get_cur_length(float *r_leg, float *l_leg);
 private:
     /**
      * @description:
@@ -308,6 +308,7 @@ private:
             void enter(wl_chassis_t *owner) override;
             void execute(wl_chassis_t *owner) override;
             void exit(wl_chassis_t *owner) override;
+            void calc_target_value(wl_chassis_t *owner);
         }_state_ready;
         class state_normal_t : public state_t<wl_chassis_t>
         {

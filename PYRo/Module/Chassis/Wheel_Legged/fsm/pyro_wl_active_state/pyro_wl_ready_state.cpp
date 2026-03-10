@@ -2,24 +2,51 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-28 15:55:50
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-03-10 14:28:28
+ * @LastEditTime: 2026-03-10 16:20:54
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
  */
 #include "pyro_wl_chassis.h"
 #include "pyro_algo_common.h"
+
+#define LENGTH_SPEED (0.1f/1000.0f)
+#define ANGLE_SPEED (PI/1000.0f)
+#define TARGET_LENGTH 0.17f
+#define TARGET_ANGLE (PI/2.0f)
 namespace pyro
 {
+
+ float target_length[2] = {0.0f, 0.0f};
+ float target_angle[2] = {0.0f, 0.0f};
+ float cur_length[2] = {0.0f, 0.0f};
+ float cur_angle[2] = {0.0f, 0.0f};
 void wl_chassis_t::fsm_active_t::state_ready_t::enter(wl_chassis_t *owner)
 {
+    /* record the current angle and length of the legs */
+    owner->get_cur_angle(&cur_angle[wl_chassis_t::R], 
+                        &cur_angle[wl_chassis_t::L]);
+    owner->get_cur_length(&cur_length[wl_chassis_t::R], 
+                    &cur_length[wl_chassis_t::L]);
+    /* set the target angle and length of the legs as the current values */
+    target_length[wl_chassis_t::R] = cur_length[wl_chassis_t::R];
+    target_length[wl_chassis_t::L] = cur_length[wl_chassis_t::L];
+    target_angle[wl_chassis_t::R] = cur_angle[wl_chassis_t::R];
+    target_angle[wl_chassis_t::L] = cur_angle[wl_chassis_t::L];
 }
 
 void wl_chassis_t::fsm_active_t::state_ready_t::execute(wl_chassis_t *owner)
 {
+
+    /* calculate the target angle and length of the legs, add a small bias in 
+        each period */
+    calc_target_value(owner);
+
+    /* Calculate the target force of VMC for each leg */
+    /* Right leg */
     owner->_leg_data[wl_chassis_t::R].ref_d_l=
             owner->_F_pid[wl_chassis_t::R]->
-        calculate(owner->_cmd->r_leg, 
+        calculate(target_length[wl_chassis_t::R], 
         owner->_leg_data[wl_chassis_t::R].l);
     owner->_leg_data[wl_chassis_t::R].F[0]=
             owner->_F_pid[wl_chassis_t::R]->
@@ -28,7 +55,7 @@ void wl_chassis_t::fsm_active_t::state_ready_t::execute(wl_chassis_t *owner)
     /* Left leg */
     owner->_leg_data[wl_chassis_t::L].ref_d_l=
         owner->_F_pid[wl_chassis_t::L]->
-        calculate(owner->_cmd->l_leg,
+        calculate(target_length[wl_chassis_t::L],
         owner->_leg_data[wl_chassis_t::L].l);
     owner->_leg_data[wl_chassis_t::L].F[0]=
         owner->_F_pid[wl_chassis_t::L]->
@@ -38,17 +65,17 @@ void wl_chassis_t::fsm_active_t::state_ready_t::execute(wl_chassis_t *owner)
     /* Calculate the target torque of VMC for each leg */
     /* Right leg */
     float diff;
-    if(owner->_cmd->r_angle - owner->_leg_data[wl_chassis_t::R].alpha > PI)
+    if(target_angle[wl_chassis_t::R] - owner->_leg_data[wl_chassis_t::R].alpha > PI)
     {
-        diff = -2 * PI + (owner->_cmd->r_angle - owner->_leg_data[wl_chassis_t::R].alpha);
+        diff = -2 * PI + (target_angle[wl_chassis_t::R] - owner->_leg_data[wl_chassis_t::R].alpha);
     }
-    else if(owner->_cmd->r_angle - owner->_leg_data[wl_chassis_t::R].alpha < -PI)
+    else if(target_angle[wl_chassis_t::R] - owner->_leg_data[wl_chassis_t::R].alpha < -PI)
     {
-        diff = 2 * PI + (owner->_cmd->r_angle - owner->_leg_data[wl_chassis_t::R].alpha);
+        diff = 2 * PI + (target_angle[wl_chassis_t::R] - owner->_leg_data[wl_chassis_t::R].alpha);
     }
     else
     {
-        diff = owner->_cmd->r_angle - owner->_leg_data[wl_chassis_t::R].alpha;
+        diff = target_angle[wl_chassis_t::R] - owner->_leg_data[wl_chassis_t::R].alpha;
     }
     owner->_leg_data[wl_chassis_t::R].ref_d_alpha=
         owner->_T_pid[wl_chassis_t::R]->
@@ -59,21 +86,21 @@ void wl_chassis_t::fsm_active_t::state_ready_t::execute(wl_chassis_t *owner)
         calculate(owner->_leg_data[wl_chassis_t::R].ref_d_alpha,
         owner->_leg_data[wl_chassis_t::R].d_alpha);
     /* Left leg */
-    if(owner->_cmd->l_angle - owner->_leg_data[wl_chassis_t::L].alpha > PI)
+    if(target_angle[wl_chassis_t::L] - owner->_leg_data[wl_chassis_t::L].alpha > PI)
     {
-        diff = -2 * PI + (owner->_cmd->l_angle - owner->_leg_data[wl_chassis_t::L].alpha);
+        diff = -2 * PI + (target_angle[wl_chassis_t::L] - owner->_leg_data[wl_chassis_t::L].alpha);
     }
-    else if(owner->_cmd->l_angle - owner->_leg_data[wl_chassis_t::L].alpha < -PI)
+    else if(target_angle[wl_chassis_t::L] - owner->_leg_data[wl_chassis_t::L].alpha < -PI)
     {
-        diff = 2 * PI + (owner->_cmd->l_angle - owner->_leg_data[wl_chassis_t::L].alpha);
+        diff = 2 * PI + (target_angle[wl_chassis_t::L] - owner->_leg_data[wl_chassis_t::L].alpha);
     }
     else
     {
-        diff = owner->_cmd->l_angle - owner->_leg_data[wl_chassis_t::L].alpha;
+        diff = target_angle[wl_chassis_t::L] - owner->_leg_data[wl_chassis_t::L].alpha;
     }
     owner->_leg_data[wl_chassis_t::L].ref_d_alpha=
         owner->_T_pid[wl_chassis_t::L]->
-        calculate(owner->_leg_data[wl_chassis_t::L].alpha + diff,
+        calculate(target_angle[wl_chassis_t::L],
         owner->_leg_data[wl_chassis_t::L].alpha);
     owner->_leg_data[wl_chassis_t::L].F[1]=
         owner->_T_pid[wl_chassis_t::L]->
@@ -110,6 +137,47 @@ void wl_chassis_t::fsm_active_t::state_ready_t::execute(wl_chassis_t *owner)
 }
 void wl_chassis_t::fsm_active_t::state_ready_t::exit(wl_chassis_t *owner)
 {
+}
+
+void wl_chassis_t::fsm_active_t::state_ready_t::calc_target_value(wl_chassis_t *owner)
+{
+    /* calculate the target angle and length of the legs, add a small bias in 
+        each period */
+    /* target length */
+    for(uint8_t i = 0; i < 2; i++)
+    {
+        if(0.01f > abs(target_length[i] - TARGET_LENGTH))
+        {
+            continue;
+        }
+        if(cur_length[i] < TARGET_LENGTH)
+        {
+            target_length[i] += LENGTH_SPEED;
+        }
+        else if(cur_length[i] > TARGET_LENGTH)
+        {
+            target_length[i] -= LENGTH_SPEED;
+        }
+    }
+    for(uint8_t i = 0; i < 2; i++)
+    {
+        if(0.05f > abs(target_angle[i] - TARGET_ANGLE))
+        {
+            continue;
+        }
+        if((cur_angle[i] < -TARGET_ANGLE) || (cur_angle[i] > TARGET_ANGLE))
+        {
+            target_angle[i] -= ANGLE_SPEED;
+            target_angle[i] = wrap2pi_f32(target_angle[i]);
+        }
+        else if((cur_angle[i] > -TARGET_ANGLE) & (cur_angle[i] < TARGET_ANGLE))
+        {
+             target_angle[i] += ANGLE_SPEED;
+             target_angle[i] = wrap2pi_f32(target_angle[i]);
+        }
+
+    /* target angle */
+}
 }
 
 }

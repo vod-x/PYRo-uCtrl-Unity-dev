@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-26 20:18:33
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-03-10 14:25:25
+ * @LastEditTime: 2026-03-10 15:52:15
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -41,7 +41,7 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
     {
         infantry2_chassis_ptr->get_cur_angle(&infantry2_chassis_cmd_ptr->r_angle,
                               &infantry2_chassis_cmd_ptr->l_angle);
-        infantry2_chassis_ptr->get_cur_leg(&infantry2_chassis_cmd_ptr->r_leg,
+        infantry2_chassis_ptr->get_cur_length(&infantry2_chassis_cmd_ptr->r_leg,
                             &infantry2_chassis_cmd_ptr->l_leg);
     }
     switch (p_ctrl->rc.s_r.state) 
