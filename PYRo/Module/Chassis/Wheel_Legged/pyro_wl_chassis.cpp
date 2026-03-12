@@ -38,6 +38,37 @@ status_t wl_chassis_t::get_cur_length(float *r_leg, float *l_leg)
     *l_leg = _leg_data[L].l;
     return PYRO_OK;
 }
+
+status_t wl_chassis_t::get_cur_p_torque(float *r_torque, float *l_torque)
+{
+    if(!r_torque || !l_torque)
+    {
+        return PYRO_PARAM_ERROR;
+    }
+    *r_torque = _leg_data[R].F[1];
+    *l_torque = _leg_data[L].F[1];
+    return PYRO_OK;
+}
+
+uint8_t wl_chassis_t::get_status_flag(wl_cmd_t::active_mode_t mode)
+{
+    switch(mode)
+    {
+        case wl_cmd_t::READY:
+            return _active_mode_flag.ready;
+        case wl_cmd_t::TEST:
+            return _active_mode_flag.test;
+        case wl_cmd_t::REVERSE:
+            return _active_mode_flag.reverse;
+        case wl_cmd_t::OVER_STEP:
+            return _active_mode_flag.over_step;
+        case wl_cmd_t::NORMAL:
+            return _active_mode_flag.normal;
+        default:
+            return 0;
+    }
+}
+
 status_t wl_chassis_t::_init()
 {
     status_t ret;

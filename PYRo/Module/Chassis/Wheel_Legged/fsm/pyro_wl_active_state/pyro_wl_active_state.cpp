@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-26 20:03:11
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-03-10 14:14:26
+ * @LastEditTime: 2026-03-11 19:57:29
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -48,6 +48,19 @@ void wl_chassis_t::fsm_active_t::on_execute(wl_chassis_t *owner)
     if(owner->_cmd->active_mode == wl_cmd_t::TEST)
     {
         this->change_state(&_state_test);
+    }
+    if(owner->_cmd->active_mode == wl_cmd_t::OVER_STEP)
+    {
+
+        if((0 == owner->_active_mode_flag.ready) && (0 == owner->_active_mode_flag.over_step))
+        {
+            this->change_state(&_state_ready);
+        }
+        if((1 == owner->_active_mode_flag.ready) && (0 == owner->_active_mode_flag.over_step))
+        {
+            this->change_state(&_state_normal);
+        }
+        this->change_state(&_state_over_step);
     }
      
 }

@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-28 15:55:50
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-03-11 19:54:42
+ * @LastEditTime: 2026-03-11 19:55:02
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -21,7 +21,7 @@ namespace pyro
  static float target_angle[2] = {0.0f, 0.0f};
  static float cur_length[2] = {0.0f, 0.0f};
  static float cur_angle[2] = {0.0f, 0.0f};
-void wl_chassis_t::fsm_active_t::state_ready_t::enter(wl_chassis_t *owner)
+void wl_chassis_t::fsm_active_t::state_over_step_t::enter(wl_chassis_t *owner)
 {
     /* record the current angle and length of the legs */
     owner->get_cur_angle(&cur_angle[wl_chassis_t::R], 
@@ -33,15 +33,14 @@ void wl_chassis_t::fsm_active_t::state_ready_t::enter(wl_chassis_t *owner)
     target_length[wl_chassis_t::L] = cur_length[wl_chassis_t::L];
     target_angle[wl_chassis_t::R] = cur_angle[wl_chassis_t::R];
     target_angle[wl_chassis_t::L] = cur_angle[wl_chassis_t::L];
-
-    owner->_active_mode_flag.ready = 0;
+    
+    owner->_active_mode_flag.over_step = 0;
 }
 
-void wl_chassis_t::fsm_active_t::state_ready_t::execute(wl_chassis_t *owner)
+void wl_chassis_t::fsm_active_t::state_over_step_t::execute(wl_chassis_t *owner)
 {
 
-    /* calculate the target angle and length of the legs, add a small bias in 
-        each period */
+
     calc_target_value(owner);
 
     /* Calculate the target force of VMC for each leg */
@@ -109,10 +108,6 @@ void wl_chassis_t::fsm_active_t::state_ready_t::execute(wl_chassis_t *owner)
         calculate(owner->_leg_data[wl_chassis_t::L].ref_d_alpha,
         owner->_leg_data[wl_chassis_t::L].d_alpha);
     
-    // owner->_leg_data[wl_chassis_t::R].F[0] = 0.0f;
-    // owner->_leg_data[wl_chassis_t::L].F[0] = 0.0f;
-    // owner->_leg_data[wl_chassis_t::R].F[1] = 0.0f;
-    // owner->_leg_data[wl_chassis_t::L].F[1] = 0.0f;
     /* Transfer the force and torque of virtual rod to the practical torque of
        motors by VMC matrix. */
     for(uint8_t i = 0; i < 2; i++)
@@ -132,16 +127,12 @@ void wl_chassis_t::fsm_active_t::state_ready_t::execute(wl_chassis_t *owner)
                         owner->_leg_data[wl_chassis_t::L].T[0]);
     owner->_motor_drv[wl_chassis_t::LB]->send_torque(
                         owner->_leg_data[wl_chassis_t::L].T[1]);
-    // for(uint8_t i = 0; i < 4; i++)
-    // {
-    //     owner->_motor_drv[i]->send_torque(0);
-    // }    
 }
-void wl_chassis_t::fsm_active_t::state_ready_t::exit(wl_chassis_t *owner)
+void wl_chassis_t::fsm_active_t::state_over_step_t::exit(wl_chassis_t *owner)
 {
 }
 
-void wl_chassis_t::fsm_active_t::state_ready_t::calc_target_value(wl_chassis_t *owner)
+void wl_chassis_t::fsm_active_t::state_over_step_t::calc_target_value(wl_chassis_t *owner)
 {
     /* calculate the target angle and length of the legs, add a small bias in 
         each period */
@@ -178,14 +169,13 @@ void wl_chassis_t::fsm_active_t::state_ready_t::calc_target_value(wl_chassis_t *
              target_angle[i] += ANGLE_SPEED;
              target_angle[i] = wrap2pi_f32(target_angle[i]);
         }
-
     }
     if((0.01f > abs(target_length[wl_chassis_t::R] - TARGET_LENGTH)) &&
        (0.01f > abs(target_length[wl_chassis_t::L] - TARGET_LENGTH)) &&
        (0.05f > abs(target_angle[wl_chassis_t::R] - TARGET_ANGLE)) &&
        (0.05f > abs(target_angle[wl_chassis_t::L] - TARGET_ANGLE)))
     {
-        owner->_active_mode_flag.ready = 1;
+        owner->_active_mode_flag.over_step = 1;
     }
 }
 

@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-07 15:14:47
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-03-10 18:59:50
+ * @LastEditTime: 2026-03-11 19:47:23
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -125,6 +125,7 @@ struct wl_cmd_t final : public cmd_base_t
         READY = 1,
         TEST = 2,
         REVERSE = 3,
+        OVER_STEP = 4,
     }active_mode;
 
     /* Construct function, set zero values */
@@ -144,6 +145,8 @@ public:
 
    status_t get_cur_angle(float *r_angle, float *l_angle);
    status_t get_cur_length(float *r_leg, float *l_leg);
+   status_t get_cur_p_torque(float *r_torque, float *l_torque);
+   uint8_t get_status_flag(wl_cmd_t::active_mode_t mode);
 private:
     /**
      * @description:
@@ -307,6 +310,15 @@ private:
         uint16_t solver_error;
     }_cnt;
 
+   struct
+   {
+      uint8_t normal = 0;
+      uint8_t ready = 0;
+      uint8_t test = 0;
+      uint8_t reverse = 0;
+      uint8_t over_step = 0;
+   }_active_mode_flag;
+
     class fsm_active_t : public fsm_t<wl_chassis_t>
     {
     public:
@@ -337,6 +349,13 @@ private:
             void execute(wl_chassis_t *owner) override;
             void exit(wl_chassis_t *owner) override;
         }_state_reverse;
+        class state_over_step_t : public state_t<wl_chassis_t>
+        {
+            void enter(wl_chassis_t *owner) override;
+            void execute(wl_chassis_t *owner) override;
+            void exit(wl_chassis_t *owner) override;
+            void calc_target_value(wl_chassis_t *owner);
+        }_state_over_step;
 
         void on_enter(wl_chassis_t *owner) override;
         void on_execute(wl_chassis_t *owner) override;

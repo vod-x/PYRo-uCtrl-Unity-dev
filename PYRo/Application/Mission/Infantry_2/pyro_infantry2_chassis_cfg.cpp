@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-27 20:38:05
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-03-11 15:47:46
+ * @LastEditTime: 2026-03-11 22:30:31
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -23,10 +23,10 @@
 #define TRANS_K1 100000.0f
 //the offsets of motors, which is the angle between the zero point of motor and
 // the forward direction of robot, counter clockwise is positive(rad)
-#define R_MOTOR1_OFFSET 2.94f
-#define R_MOTOR2_OFFSET -0.293f
-#define L_MOTOR1_OFFSET -0.58f
-#define L_MOTOR2_OFFSET 4.33f
+#define R_MOTOR1_OFFSET 2.007f
+#define R_MOTOR2_OFFSET 2.108f
+#define L_MOTOR1_OFFSET -1.42f
+#define L_MOTOR2_OFFSET -0.087f
 // the cofficients of lqr gain, 48 values in total, every value has 3 cofficients,
 #define LQR_GAIN \
 -0.9011, 28.0123, -73.7301, 71.8956,-1.1297, 47.5880, -122.3684, 119.7066,-6.9477, 11.6042, 6.1111, -26.4958,-3.0261, 4.6318, 3.7137, -12.5568,1.3602, -130.6724, 250.9476, -229.9261,0.4183, -17.9931, 21.1370, -23.2696,-5.2101, -22.4893, 136.1133, -181.4845,-9.4292, -37.9112, 232.0343, -310.6141,-1.9928, -81.2538, 170.7247, -132.4417,-0.4345, -35.1011, 71.8893, -54.0596,8.5519, 206.4342, -807.6488, 951.0299,1.6627, 32.8605, -115.5700, 133.4264
