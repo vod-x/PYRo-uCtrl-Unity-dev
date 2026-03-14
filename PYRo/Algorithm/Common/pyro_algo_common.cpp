@@ -1,10 +1,26 @@
+/*
+ * @Author: vod-x vod_x@outlook.com
+ * @Date: 2026-03-08 15:12:51
+ * @LastEditors: vod-x vod_x@outlook.com
+ * @LastEditTime: 2026-03-14 15:26:06
+ * @FilePath: \Wheel-Legged-Robot\embedded_system\PYRo\Algorithm\Common\pyro_algo_common.cpp
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+ */
 #include "pyro_algo_common.h"
 
 namespace pyro
 {
 float wrap2pi_f32(float input)
 {
-    return fmodf(input, 2 * PI);
+
+    float ret = fmodf(input, 2 * PI);
+    if (ret >= PI) {
+        ret -= 2.0f * PI;
+    } else if (ret < -PI) {
+        ret += 2.0f * PI;
+    }
+    return ret;
+    
 }
 
 float radps_to_rpm(const float radps)

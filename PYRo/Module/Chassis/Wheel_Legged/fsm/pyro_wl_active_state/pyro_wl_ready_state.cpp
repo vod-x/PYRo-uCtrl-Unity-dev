@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-28 15:55:50
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-03-11 19:54:42
+ * @LastEditTime: 2026-03-14 14:51:51
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -102,7 +102,7 @@ void wl_chassis_t::fsm_active_t::state_ready_t::execute(wl_chassis_t *owner)
     }
     owner->_leg_data[wl_chassis_t::L].ref_d_alpha=
         owner->_T_pid[wl_chassis_t::L]->
-        calculate(target_angle[wl_chassis_t::L],
+        calculate(owner->_leg_data[wl_chassis_t::L].alpha+diff,
         owner->_leg_data[wl_chassis_t::L].alpha);
     owner->_leg_data[wl_chassis_t::L].F[1]=
         owner->_T_pid[wl_chassis_t::L]->

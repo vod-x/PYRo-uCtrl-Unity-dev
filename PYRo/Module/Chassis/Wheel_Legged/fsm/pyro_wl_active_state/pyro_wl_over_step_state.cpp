@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-28 15:55:50
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-03-11 19:55:02
+ * @LastEditTime: 2026-03-14 15:27:50
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -11,9 +11,9 @@
 #include "pyro_algo_common.h"
 
 #define LENGTH_SPEED (0.1f/1000.0f)
-#define ANGLE_SPEED (PI/1000.0f)
+#define ANGLE_SPEED (2.0f * PI/1000.0f)
 #define TARGET_LENGTH 0.17f
-#define TARGET_ANGLE (PI/2.0f)
+#define TARGET_ANGLE (-2.0f * PI/3.0f)
 namespace pyro
 {
 
@@ -101,7 +101,7 @@ void wl_chassis_t::fsm_active_t::state_over_step_t::execute(wl_chassis_t *owner)
     }
     owner->_leg_data[wl_chassis_t::L].ref_d_alpha=
         owner->_T_pid[wl_chassis_t::L]->
-        calculate(target_angle[wl_chassis_t::L],
+        calculate(owner->_leg_data[wl_chassis_t::L].alpha+diff,
         owner->_leg_data[wl_chassis_t::L].alpha);
     owner->_leg_data[wl_chassis_t::L].F[1]=
         owner->_T_pid[wl_chassis_t::L]->
@@ -155,20 +155,20 @@ void wl_chassis_t::fsm_active_t::state_over_step_t::calc_target_value(wl_chassis
     /* target angle */
     for(uint8_t i = 0; i < 2; i++)
     {
-        if(0.05f > abs(target_angle[i] - TARGET_ANGLE))
+        if(0.3f > abs(target_angle[i] - TARGET_ANGLE))
         {
             continue;
         }
-        if((cur_angle[i] < -TARGET_ANGLE) || (cur_angle[i] > TARGET_ANGLE))
-        {
-            target_angle[i] -= ANGLE_SPEED;
-            target_angle[i] = wrap2pi_f32(target_angle[i]);
-        }
-        else if((cur_angle[i] > -TARGET_ANGLE) && (cur_angle[i] < TARGET_ANGLE))
-        {
+        // if((cur_angle[i] < -TARGET_ANGLE) || (cur_angle[i] > TARGET_ANGLE))
+        // {
+        //     target_angle[i] -= ANGLE_SPEED;
+        //     target_angle[i] = wrap2pi_f32(target_angle[i]);
+        // }
+        // else if((cur_angle[i] > -TARGET_ANGLE) && (cur_angle[i] < TARGET_ANGLE))
+        // {
              target_angle[i] += ANGLE_SPEED;
              target_angle[i] = wrap2pi_f32(target_angle[i]);
-        }
+        // }
     }
     if((0.01f > abs(target_length[wl_chassis_t::R] - TARGET_LENGTH)) &&
        (0.01f > abs(target_length[wl_chassis_t::L] - TARGET_LENGTH)) &&
