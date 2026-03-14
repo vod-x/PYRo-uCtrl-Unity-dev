@@ -2,7 +2,7 @@
  * @Author: Vod vod0575@outlook
  * @Date: 2026-02-06 15:27:37
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-03-10 09:33:37
+ * @LastEditTime: 2026-03-12 11:39:40
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -132,28 +132,28 @@ status_t wl_chassis_t::_init()
             return PYRO_NO_MEMORY;
         }
         /* Init d_T pid */
-        _d_T_pid[i] = new pid_t(_module_deps.F_pid_cfg[i].kp, _module_deps.F_pid_cfg[i].ki, 
-                            _module_deps.F_pid_cfg[i].kd, 
-                            _module_deps.F_pid_cfg[i].integral_limit,
-                            _module_deps.F_pid_cfg[i].max_out);
+        _d_T_pid[i] = new pid_t(_module_deps.d_T_pid_cfg[i].kp, _module_deps.d_T_pid_cfg[i].ki, 
+                            _module_deps.d_T_pid_cfg[i].kd, 
+                            _module_deps.d_T_pid_cfg[i].integral_limit,
+                            _module_deps.d_T_pid_cfg[i].max_out);
         if(!_d_T_pid[i])
         {
             return PYRO_NO_MEMORY;
         }
         /* Init F pid */
-        _F_pid[i] = new pid_t(_module_deps.d_F_pid_cfg[i].kp, _module_deps.d_F_pid_cfg[i].ki, 
-                            _module_deps.d_F_pid_cfg[i].kd, 
-                            _module_deps.d_F_pid_cfg[i].integral_limit,
-                            _module_deps.d_F_pid_cfg[i].max_out);
+        _F_pid[i] = new pid_t(_module_deps.F_pid_cfg[i].kp, _module_deps.F_pid_cfg[i].ki, 
+                            _module_deps.F_pid_cfg[i].kd, 
+                            _module_deps.F_pid_cfg[i].integral_limit,
+                            _module_deps.F_pid_cfg[i].max_out);
         if(!_F_pid[i])        
         {
             return PYRO_NO_MEMORY;
         }
         /* Init d_F pid */
-        _d_F_pid[i] = new pid_t(_module_deps.d_T_pid_cfg[i].kp, _module_deps.d_T_pid_cfg[i].ki, 
-                            _module_deps.d_T_pid_cfg[i].kd, 
-                            _module_deps.d_T_pid_cfg[i].integral_limit,
-                            _module_deps.d_T_pid_cfg[i].max_out);
+        _d_F_pid[i] = new pid_t(_module_deps.d_F_pid_cfg[i].kp, _module_deps.d_F_pid_cfg[i].ki, 
+                            _module_deps.d_F_pid_cfg[i].kd, 
+                            _module_deps.d_F_pid_cfg[i].integral_limit,
+                            _module_deps.d_F_pid_cfg[i].max_out);
         if(!_d_F_pid[i])
         {
             return PYRO_NO_MEMORY;

@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-28 13:11:52
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-03-10 19:45:00
+ * @LastEditTime: 2026-03-14 14:00:34
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -18,7 +18,7 @@ uint32_t clear_cnt;
 void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
 {
     clear_cnt++;
-    if(clear_cnt > 5000)
+    if((clear_cnt > 5000)&&(owner->_cmd->vx == 0.0f))
     {
         clear_cnt = 0;
         for(uint8_t i = 0; i < 2; i++)
@@ -98,6 +98,11 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
     // owner->_leg_data[wl_chassis_t::L].F[0] = 0.0f;
     // owner->_leg_data[wl_chassis_t::R].F[1] = 2.0f;
     // owner->_leg_data[wl_chassis_t::L].F[1] = 0.0f;
+    if((owner->_cmd->r_leg == 0.33f) && (owner->_cmd->l_leg == 0.33f))
+    {
+        owner->_leg_data[wl_chassis_t::R].F[0] = 90.0f;
+        owner->_leg_data[wl_chassis_t::L].F[0] = 90.0f;
+    }
     /* Calculate the target torque of VMC for each leg */
     for(uint8_t i = 0; i < 2; i++)
     {
@@ -115,14 +120,14 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
         }
 
         owner->_leg_data[i].T_w = (owner->_leg_data[i].lqr_gain[0] * (owner->_leg_data[i].x_gain - owner->_leg_data[i].x) + 
-                                  owner->_leg_data[i].lqr_gain[1] * (owner->_leg_data[i].d_x_gain - owner->_leg_data[i].dx) + 
+                                  owner->_leg_data[i].lqr_gain[1] * (0.0f - owner->_leg_data[i].dx) + 
                                   owner->_leg_data[i].lqr_gain[2] * (0 - owner->_leg_data[i].gamma) + 
                                   owner->_leg_data[i].lqr_gain[3] * (0 - owner->_leg_data[i].d_gamma) + 
                                   owner->_leg_data[i].lqr_gain[4] * (0 - owner->_leg_data[i].beta) + 
                                   owner->_leg_data[i].lqr_gain[5] * (0 - owner->_leg_data[i].d_beta))
                                   / owner->_reduction_ratio /0.3f * (3591.0f/187.0f);
         owner->_leg_data[i].F[1] = -(owner->_leg_data[i].lqr_gain[6] * (owner->_leg_data[i].x_gain - owner->_leg_data[i].x) + 
-                                  owner->_leg_data[i].lqr_gain[7] * (owner->_leg_data[i].d_x_gain - owner->_leg_data[i].dx) + 
+                                  owner->_leg_data[i].lqr_gain[7] * (0.0F - owner->_leg_data[i].dx) + 
                                   owner->_leg_data[i].lqr_gain[8] * (0 - owner->_leg_data[i].gamma) + 
                                   owner->_leg_data[i].lqr_gain[9] * (0 - owner->_leg_data[i].d_gamma) + 
                                   owner->_leg_data[i].lqr_gain[10] * (0 - owner->_leg_data[i].beta) + 
