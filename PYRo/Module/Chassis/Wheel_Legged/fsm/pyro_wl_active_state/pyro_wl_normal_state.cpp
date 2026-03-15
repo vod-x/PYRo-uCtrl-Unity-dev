@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-28 13:11:52
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-03-14 14:00:34
+ * @LastEditTime: 2026-03-14 16:17:03
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -21,11 +21,11 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
     if((clear_cnt > 5000)&&(owner->_cmd->vx == 0.0f))
     {
         clear_cnt = 0;
-        for(uint8_t i = 0; i < 2; i++)
-        {
-            owner->_leg_data[i].x = 0.0f;
-            owner->_leg_data[i].x_gain = 0.0f;
-        }
+        // for(uint8_t i = 0; i < 2; i++)
+        // {
+        //     owner->_leg_data[i].x = 0.0f;
+        //     owner->_leg_data[i].x_gain = 0.0f;
+        // }
     }
     calc_support_force(owner);
     if(owner->_leg_data[wl_chassis_t::R].P < 0 || owner->_leg_data[wl_chassis_t::L].P < 0)
@@ -98,11 +98,11 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
     // owner->_leg_data[wl_chassis_t::L].F[0] = 0.0f;
     // owner->_leg_data[wl_chassis_t::R].F[1] = 2.0f;
     // owner->_leg_data[wl_chassis_t::L].F[1] = 0.0f;
-    if((owner->_cmd->r_leg == 0.33f) && (owner->_cmd->l_leg == 0.33f))
-    {
-        owner->_leg_data[wl_chassis_t::R].F[0] = 90.0f;
-        owner->_leg_data[wl_chassis_t::L].F[0] = 90.0f;
-    }
+    // if((owner->_cmd->r_leg == 0.33f) && (owner->_cmd->l_leg == 0.33f))
+    // {
+    //     owner->_leg_data[wl_chassis_t::R].F[0] = 90.0f;
+    //     owner->_leg_data[wl_chassis_t::L].F[0] = 90.0f;
+    // }
     /* Calculate the target torque of VMC for each leg */
     for(uint8_t i = 0; i < 2; i++)
     {
