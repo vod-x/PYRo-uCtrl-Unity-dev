@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-26 20:18:33
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-03-14 14:46:28
+ * @LastEditTime: 2026-03-16 19:43:59
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -53,18 +53,19 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
             break;
         case dr16_drv_t::sw_state_t::SW_MID:
             infantry2_chassis_cmd_ptr->mode = pyro::cmd_base_t::mode_t::ACTIVE;
-            if(p_ctrl->rc.s_l.state == dr16_drv_t::sw_state_t::SW_UP)
-            {
-                ready_mode(rc_ctrl);
-            }
-            else if(p_ctrl->rc.s_l.state == dr16_drv_t::sw_state_t::SW_MID)
-            {
-                normal_mode(rc_ctrl);
-            }
-            else
-            {
-                over_step_mode(rc_ctrl);
-            }
+            test_mode(rc_ctrl);
+            // if(p_ctrl->rc.s_l.state == dr16_drv_t::sw_state_t::SW_UP)
+            // {
+            //     ready_mode(rc_ctrl);
+            // }
+            // else if(p_ctrl->rc.s_l.state == dr16_drv_t::sw_state_t::SW_MID)
+            // {
+            //     normal_mode(rc_ctrl);
+            // }
+            // else
+            // {
+            //     over_step_mode(rc_ctrl);
+            // }
             break;
         case dr16_drv_t::sw_state_t::SW_DOWN:
             infantry2_chassis_cmd_ptr->mode = pyro::cmd_base_t::mode_t::ACTIVE;
@@ -166,7 +167,7 @@ void normal_mode(void const *rc_ctrl)
        infantry2_chassis_cmd_ptr->l_leg, 0.14f, 0.33f);
 
     infantry2_chassis_cmd_ptr->yaw -= (p_ctrl->rc.ch_lx * PI / 500.0f);
-    infantry2_chassis_cmd_ptr->vx = (p_ctrl->rc.ch_ly * 2.0f);
+    infantry2_chassis_cmd_ptr->vx = (p_ctrl->rc.ch_ly * 4.0f);
 
     infantry2_chassis_cmd_ptr->yaw = loop_fp32_constrain(
         infantry2_chassis_cmd_ptr->yaw, -PI, PI);

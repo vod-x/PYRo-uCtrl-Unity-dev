@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-28 15:55:50
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-03-14 14:51:51
+ * @LastEditTime: 2026-03-17 04:04:43
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -16,6 +16,8 @@
 #define TARGET_ANGLE (PI/2.0f)
 namespace pyro
 {
+extern pid_t wheel_disable_pid[2];
+static uint8_t wheel_disable_flag[2] = {0, 0};
 
  static float target_length[2] = {0.0f, 0.0f};
  static float target_angle[2] = {0.0f, 0.0f};
@@ -33,6 +35,10 @@ void wl_chassis_t::fsm_active_t::state_ready_t::enter(wl_chassis_t *owner)
     target_length[wl_chassis_t::L] = cur_length[wl_chassis_t::L];
     target_angle[wl_chassis_t::R] = cur_angle[wl_chassis_t::R];
     target_angle[wl_chassis_t::L] = cur_angle[wl_chassis_t::L];
+    for(uint8_t i = 0; i < 2; i++)
+    {
+        wheel_disable_flag[i] = 1;
+    }
 
     owner->_active_mode_flag.ready = 0;
 }
@@ -40,6 +46,25 @@ void wl_chassis_t::fsm_active_t::state_ready_t::enter(wl_chassis_t *owner)
 void wl_chassis_t::fsm_active_t::state_ready_t::execute(wl_chassis_t *owner)
 {
 
+    for(uint8_t i = 0; i < 2; i++)
+    {
+        if(1 == wheel_disable_flag[i])
+        {
+            float t = wheel_disable_pid[i].calculate(0.0f,
+                 owner->_wheel_drv[i]->get_current_rotate());
+            owner->_wheel_drv[i]->send_torque(t);
+        }
+        else 
+        {
+            owner->_wheel_drv[i]->send_torque(0.0f);
+        
+        }
+        if(0.1f > abs(owner->_wheel_drv[i]->get_current_rotate()))
+        {
+            wheel_disable_flag[i] = 0;
+            owner->_wheel_drv[i]->disable();
+        }
+    }
     /* calculate the target angle and length of the legs, add a small bias in 
         each period */
     calc_target_value(owner);
