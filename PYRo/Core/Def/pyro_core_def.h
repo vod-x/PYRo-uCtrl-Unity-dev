@@ -50,6 +50,12 @@ constexpr float PI = 3.14159265358979323846f;
         while (1)                                                              \
             ;                                                                  \
     }                                  
+#define CHECK_NEW_RET(ptr)                                                     \
+    if (nullptr == ptr)                                                        \
+    {                                                                          \
+        return PYRO_NO_MEMORY;                                                 \
+    }
+
 #ifdef USE_LOG
 #define PYRO_ASSERT_RET(expr)                                                  \
     ((expr) ? PYRO_OK : log((uint8_t *)__FILE__, __LINE__))
