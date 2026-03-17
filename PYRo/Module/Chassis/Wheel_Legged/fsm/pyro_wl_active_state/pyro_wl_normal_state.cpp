@@ -174,6 +174,7 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
 }
 void wl_chassis_t::fsm_active_t::state_normal_t::exit(wl_chassis_t *owner)
 {
+    owner->_active_mode_flag.ready = 0;
 }
 
 void wl_chassis_t::fsm_active_t::state_normal_t::calc_support_force(wl_chassis_t *owner)

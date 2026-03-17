@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-26 20:18:33
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-03-16 19:43:59
+ * @LastEditTime: 2026-03-17 04:41:42
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -75,7 +75,14 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
             }
             else if(p_ctrl->rc.s_l.state == dr16_drv_t::sw_state_t::SW_MID)
             {
-                normal_mode(rc_ctrl);
+                if(0 == infantry2_chassis_ptr->get_status_flag(wl_cmd_t::READY))
+                {
+                    ready_mode(rc_ctrl);
+                }
+                else
+                {
+                    normal_mode(rc_ctrl);
+                }
             }
             else
             {
