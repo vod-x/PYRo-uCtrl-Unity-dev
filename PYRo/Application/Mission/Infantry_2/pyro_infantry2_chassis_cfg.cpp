@@ -91,6 +91,11 @@ wl_chassis_cfg_t infantry2_chassis_cfg = {
             .can = can_hub_t::can2,
         }
     },
+    .yaw_motor_cfg = {
+        .tx_id = dji_motor_tx_frame_t::id_5,
+        .can = can_hub_t::can3,
+    },
+    .yaw_offset = -1.203f,
     .T_pid_cfg = {
         {
             .kp = 8.0f,

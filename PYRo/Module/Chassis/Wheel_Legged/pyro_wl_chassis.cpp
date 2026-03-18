@@ -2,7 +2,7 @@
  * @Author: Vod vod0575@outlook
  * @Date: 2026-02-06 15:27:37
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-03-12 11:39:40
+ * @LastEditTime: 2026-03-18 16:09:34
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -10,6 +10,7 @@
 
 #include "pyro_wl_chassis.h"
 #include "pyro_dwt_drv.h"
+#include "pyro_algo_common.h"
 
  namespace pyro
  {
@@ -112,6 +113,14 @@ status_t wl_chassis_t::_init()
         {
             return PYRO_NO_MEMORY;
         }
+    }
+    /* Initialize gimbal motor driver */
+    _yaw_motor_drv = new dji_gm_6020_motor_drv_t(_module_deps.yaw_motor_cfg.tx_id,
+                                                  _module_deps.yaw_motor_cfg.can);
+    _yaw_offset = _module_deps.yaw_offset;
+    if(!_yaw_motor_drv)
+    {
+        return PYRO_NO_MEMORY;
     }
     /* Initialize VMC matrix */
     for(uint8_t i = 0; i < 2; i++)
@@ -246,6 +255,11 @@ void wl_chassis_t::_update_feedback()
     _leg_data[L].x += (_leg_data[L].dx + last_dx[L])/2 * 0.001f;
     last_dx[L] = _leg_data[L].dx;
 
+    _yaw_motor_drv->update_feedback();
+    gimbal_yaw = wrap2pi_f32(_yaw_motor_drv->get_current_position() + _yaw_offset);
+    gimbal_g_yaw = _yaw_motor_drv->get_current_rotate();
+
+    
     /* kinematic solve the current states of the chassis */
     for(uint8_t i = 0; i < 2; i++)
     {

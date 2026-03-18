@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-26 20:18:33
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-03-17 04:41:42
+ * @LastEditTime: 2026-03-18 20:47:39
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -11,13 +11,44 @@
 #include "pyro_rc_hub.h"
 #include "pyro_ins.h"
 #include "pyro_algo_common.h"
+#include "pyro_com_canrx.h"
+
+#define USE_GIMBAL_COM
+// #define USE_DR16
+#if defined(USE_GIMBAL_COM) && defined(USE_DR16)
+#error "Gimbal COM and DR16 cannot be used at the same time"   
+#endif
 
 using namespace pyro;
 wl_chassis_t *infantry2_chassis_ptr = nullptr;
 wl_cmd_t     *infantry2_chassis_cmd_ptr = nullptr;
+wl_cmd_t     *last_infantry2_chassis_cmd_ptr = nullptr;
 dr16_drv_t::dr16_ctrl_t const *infantry2_rc_ctrl_ptr = nullptr;
 extern wl_chassis_cfg_t infantry2_chassis_cfg;
 
+union GimbalToChassisComm {
+
+    __attribute__((packed)) struct {
+        int32_t vx    : 6; //  正方向： 向前
+        int32_t vy    : 6; // 正方向： 向左
+        uint32_t mode : 4;
+    } msg;
+
+    std::array<uint8_t, 8> buffer;
+}gimbal_rx;
+
+struct cmd
+{
+    float vx;
+    float vy;
+    float turn_angle;
+    float v;
+    enum
+    {
+        PASSIVE = 0b00,
+        ACTIVE = 0b01,
+    }mode;
+}cmd, last_cmd;
 
 extern "C"
 {
@@ -30,13 +61,51 @@ void reverse_mode(void const *rc_ctrl);
 void over_step_mode(void const *rc_ctrl);
 void infantry2_chassis_rc2cmd(void const *rc_ctrl)
 {
-    static pyro::cmd_base_t::mode_t last_mode = pyro::cmd_base_t::mode_t::PASSIVE; 
+
+static pyro::cmd_base_t::mode_t last_mode = pyro::cmd_base_t::mode_t::PASSIVE; 
+#if defined(USE_GIMBAL_COM)
+    can_rx_drv_t::get_data(pyro::can_hub_t::which_can::can3, 0x100,gimbal_rx.buffer);
+    cmd.vx = (float)gimbal_rx.msg.vx / 10.0f;
+    cmd.vy = (float)gimbal_rx.msg.vy / 10.0f;
+    cmd.v = sqrtf(cmd.vx * cmd.vx + cmd.vy * cmd.vy);
+    cmd.turn_angle = atan2f(cmd.vy, cmd.vx);
+    if(gimbal_rx.msg.mode == cmd::PASSIVE)
+    {
+        cmd.mode = cmd::PASSIVE;
+    }
+    else if(gimbal_rx.msg.mode == cmd::ACTIVE)
+    {
+        cmd.mode = cmd::ACTIVE;
+    }
+#endif
+#if defined(USE_DR16)
     pyro::read_scope_lock lock(
             pyro::rc_hub_t::get_instance(
          pyro::rc_hub_t::DR16)->get_lock());
    static auto *p_ctrl =
             static_cast<dr16_drv_t::dr16_ctrl_t const *>(rc_ctrl);  
-    
+#endif
+#if defined (USE_GIMBAL_COM)
+    if(cmd.mode == cmd::PASSIVE)
+    {
+        passive_mode(rc_ctrl);
+    }
+    else if(cmd.mode == cmd::ACTIVE)
+    {
+        infantry2_chassis_cmd_ptr->mode = pyro::cmd_base_t::mode_t::ACTIVE;
+        if(0 == infantry2_chassis_ptr->get_status_flag(wl_cmd_t::READY))
+        {
+            ready_mode(rc_ctrl);
+        }
+        else
+        {
+            normal_mode(rc_ctrl);
+        }
+    }
+    memcpy(&last_cmd, &cmd, sizeof(cmd));
+#endif
+
+#if defined(USE_DR16) 
     if(last_mode == pyro::cmd_base_t::mode_t::PASSIVE && 
         p_ctrl->rc.s_l.state == pyro::dr16_drv_t::sw_state_t::SW_DOWN)
     {
@@ -93,6 +162,7 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
             break;
     
     }
+#endif
 
     last_mode = infantry2_chassis_cmd_ptr->mode;
 }
@@ -109,6 +179,8 @@ void infantry2_chassis_main_tread(void *argument)
 
 status_t infantry2_chassis_init(void *argument)
 {
+
+    can_rx_drv_t::subscribe(pyro::can_hub_t::which_can::can3, 0x100);
     infantry2_chassis_cmd_ptr = new wl_cmd_t();
     infantry2_chassis_ptr = wl_chassis_t::instance();
     infantry2_rc_ctrl_ptr = static_cast<pyro::dr16_drv_t::dr16_ctrl_t const *>(
@@ -166,6 +238,13 @@ void normal_mode(void const *rc_ctrl)
         infantry2_chassis_cmd_ptr->l_leg = 0.17f;
         ready_flag =0;
     }
+#if defined (USE_GIMBAL_COM)
+    infantry2_chassis_cmd_ptr->vx = cmd.vx;
+    infantry2_chassis_cmd_ptr->yaw += (cmd.vy * PI / 1500.0f);
+    infantry2_chassis_cmd_ptr->r_leg += (cmd.vy / 4000.0f);
+    infantry2_chassis_cmd_ptr->l_leg += (cmd.vy / 4000.0f);
+#endif
+#if defined (USE_DR16)
     infantry2_chassis_cmd_ptr->r_leg += (p_ctrl->rc.ch_ry / 2000.0f);
     infantry2_chassis_cmd_ptr->l_leg += (p_ctrl->rc.ch_ry / 2000.0f);
     infantry2_chassis_cmd_ptr->r_leg = fp32_constrain(
@@ -175,9 +254,9 @@ void normal_mode(void const *rc_ctrl)
 
     infantry2_chassis_cmd_ptr->yaw -= (p_ctrl->rc.ch_lx * PI / 500.0f);
     infantry2_chassis_cmd_ptr->vx = (p_ctrl->rc.ch_ly * 4.0f);
-
     infantry2_chassis_cmd_ptr->yaw = loop_fp32_constrain(
         infantry2_chassis_cmd_ptr->yaw, -PI, PI);
+#endif
 }
 void reverse_mode(void const *rc_ctrl)
 {

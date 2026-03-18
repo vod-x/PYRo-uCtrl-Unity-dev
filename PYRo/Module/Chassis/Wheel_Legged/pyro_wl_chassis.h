@@ -66,6 +66,8 @@ struct wl_chassis_cfg_t
     /* Wheel motor configuration. The order of array is: right wheel, left
        wheel */
     wl_dji_motor_cfg_t wheel_motor_cfg[2];
+    wl_dji_motor_cfg_t  yaw_motor_cfg;
+    float yaw_offset;
     /* PID configuration for the chassis control. The order of array is: 
 right leg, left leg */
     wl_pid_cfg_t T_pid_cfg[2];
@@ -207,6 +209,7 @@ private:
     float yaw, pitch, roll;
     float g_yaw, g_pitch, g_roll;
     float a_x, a_y, a_z;
+    float gimbal_yaw, gimbal_g_yaw;
 
     pid_t* _yaw_pid;
     pid_t* _g_yaw_pid;
@@ -230,10 +233,13 @@ private:
 
     /* DJI wheel motors driver, the order of array is: right wheel, left wheel*/
     dji_m3508_motor_drv_t *_wheel_drv[2];
+    /* gimbal motor driver */
+    dji_gm_6020_motor_drv_t *_yaw_motor_drv;
     /* Linear velocity of wheel equals angular velocity of wheel x wheel radius
        x reduction ratio */
     float _wheel_radius;
     float _reduction_ratio;
+    float _yaw_offset;
     /* Offset angle to eliminate the bias of installation(rad), order is same
        as _motor_drv array */
     float _motor_offset[4];
