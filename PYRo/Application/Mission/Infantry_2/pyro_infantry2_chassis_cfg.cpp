@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-27 20:38:05
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-03-17 02:32:31
+ * @LastEditTime: 2026-03-28 15:42:12
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -95,7 +95,7 @@ wl_chassis_cfg_t infantry2_chassis_cfg = {
         .tx_id = dji_motor_tx_frame_t::id_5,
         .can = can_hub_t::can3,
     },
-    .yaw_offset = -1.203f,
+    .yaw_offset = 1.92f,
     .T_pid_cfg = {
         {
             .kp = 8.0f,
