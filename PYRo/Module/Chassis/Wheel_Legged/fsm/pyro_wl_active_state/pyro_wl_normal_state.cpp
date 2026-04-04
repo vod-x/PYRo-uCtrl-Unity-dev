@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-28 13:11:52
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-03-28 15:52:07
+ * @LastEditTime: 2026-04-04 15:25:51
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -21,11 +21,11 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
     if((clear_cnt > 5000)&&(owner->_cmd->vx == 0.0f))
     {
         clear_cnt = 0;
-        for(uint8_t i = 0; i < 2; i++)
-        {
-            owner->_leg_data[i].x = 0.0f;
-            owner->_leg_data[i].x_gain = 0.0f;
-        }
+        // for(uint8_t i = 0; i < 2; i++)
+        // {
+        //     owner->_leg_data[i].x = 0.0f;
+        //     owner->_leg_data[i].x_gain = 0.0f;
+        // }
     }
     calc_support_force(owner);
     if(owner->_leg_data[wl_chassis_t::R].P < 0 || owner->_leg_data[wl_chassis_t::L].P < 0)
@@ -47,15 +47,15 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
     {
         diff = yaw_ref - owner->yaw;
     }
-    // g_yaw_ref = owner->_yaw_pid->calculate(owner->yaw + diff, owner->yaw);
-    // owner->_yaw_ref = yaw_ref;
-    // owner->_g_yaw_ref = g_yaw_ref;
-    // owner->_T_w_gain = owner->_g_yaw_pid->calculate(g_yaw_ref, owner->g_yaw); 
-
-    g_yaw_ref = owner->_yaw_pid->calculate(0.0f, -owner->gimbal_yaw);
+    g_yaw_ref = owner->_yaw_pid->calculate(owner->yaw + diff, owner->yaw);
     owner->_yaw_ref = yaw_ref;
     owner->_g_yaw_ref = g_yaw_ref;
-    owner->_T_w_gain = owner->_g_yaw_pid->calculate(g_yaw_ref, -owner->gimbal_g_yaw); 
+    owner->_T_w_gain = owner->_g_yaw_pid->calculate(g_yaw_ref, owner->g_yaw); 
+
+    // g_yaw_ref = owner->_yaw_pid->calculate(0.0f, -owner->gimbal_yaw);
+    // owner->_yaw_ref = yaw_ref;
+    // owner->_g_yaw_ref = g_yaw_ref;
+    // owner->_T_w_gain = owner->_g_yaw_pid->calculate(g_yaw_ref, -owner->gimbal_g_yaw); 
 
     owner->_delta_mea = owner->_leg_data[wl_chassis_t::R].alpha 
                             - owner->_leg_data[wl_chassis_t::L].alpha;

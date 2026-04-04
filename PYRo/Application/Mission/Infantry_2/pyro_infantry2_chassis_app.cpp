@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-26 20:18:33
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-03-28 15:59:14
+ * @LastEditTime: 2026-04-04 18:43:04
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -13,8 +13,8 @@
 #include "pyro_algo_common.h"
 #include "pyro_com_canrx.h"
 
-#define USE_GIMBAL_COM
-// #define USE_DR16
+// #define USE_GIMBAL_COM
+#define USE_DR16
 #if defined(USE_GIMBAL_COM) && defined(USE_DR16)
 #error "Gimbal COM and DR16 cannot be used at the same time"   
 #endif
@@ -101,7 +101,6 @@ static pyro::cmd_base_t::mode_t last_mode = pyro::cmd_base_t::mode_t::PASSIVE;
     else if(cmd.mode == cmd::ACTIVE)
     {
         infantry2_chassis_cmd_ptr->mode = pyro::cmd_base_t::mode_t::ACTIVE;
-        normal_mode(rc_ctrl);
         if(0 == infantry2_chassis_ptr->get_status_flag(wl_cmd_t::READY))
         {
             ready_mode(rc_ctrl);
@@ -230,8 +229,8 @@ void ready_mode(void const *rc_ctrl)
             static_cast<dr16_drv_t::dr16_ctrl_t const *>(rc_ctrl);  
     infantry2_chassis_cmd_ptr->l_angle = PI/2.0f;
     infantry2_chassis_cmd_ptr->r_angle = PI/2.0f;
-    infantry2_chassis_cmd_ptr->l_leg = 0.17f;
-    infantry2_chassis_cmd_ptr->r_leg = 0.17f;
+    infantry2_chassis_cmd_ptr->l_leg = 0.23f;
+    infantry2_chassis_cmd_ptr->r_leg = 0.23f;
     infantry2_chassis_cmd_ptr->active_mode = wl_cmd_t::READY;
     ready_flag = 1;
 }
@@ -243,8 +242,8 @@ void normal_mode(void const *rc_ctrl)
 
     if(ready_flag == 1)
     {
-        infantry2_chassis_cmd_ptr->r_leg = 0.17f;
-        infantry2_chassis_cmd_ptr->l_leg = 0.17f;
+        infantry2_chassis_cmd_ptr->r_leg = 0.20f;
+        infantry2_chassis_cmd_ptr->l_leg = 0.20f;
         ready_flag =0;
     }
 #if defined (USE_GIMBAL_COM)

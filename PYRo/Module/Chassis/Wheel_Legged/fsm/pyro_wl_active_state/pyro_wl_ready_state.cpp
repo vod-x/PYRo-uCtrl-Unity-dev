@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-28 15:55:50
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-03-17 04:04:43
+ * @LastEditTime: 2026-04-04 18:53:43
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -12,7 +12,8 @@
 
 #define LENGTH_SPEED (0.1f/1000.0f)
 #define ANGLE_SPEED (PI/1000.0f)
-#define TARGET_LENGTH 0.17f
+#define TARGET_LENGTH 0.20f
+// #define TARGET_ANGLE (2.0f * PI/3.0f)
 #define TARGET_ANGLE (PI/2.0f)
 namespace pyro
 {
