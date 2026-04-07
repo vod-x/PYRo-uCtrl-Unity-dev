@@ -88,7 +88,7 @@ add_executable(${CMAKE_PROJECT_NAME}
         PYRo/Algorithm/EKF/QuaternionEKF.cpp
         PYRo/Algorithm/KF/kalman_filter.cpp
         PYRo/Algorithm/Common/pyro_algo_common.cpp
-        PYRo/Algorithm/KF/pyro_kalman_filter.cpp
+        PYRo/Algorithm/KF/kf.cpp
 
         # --- Component ---
         PYRo/Component/CRC/PYRo_crc.cpp

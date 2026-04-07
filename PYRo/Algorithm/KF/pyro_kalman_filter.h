@@ -1,3 +1,11 @@
+/*
+ * @Author: vod-x vod_x@outlook.com
+ * @Date: 2026-03-17 20:37:19
+ * @LastEditors: vod-x vod_x@outlook.com
+ * @LastEditTime: 2026-04-06 14:37:02
+ * @FilePath: \Wheel-Legged-Robot\embedded_system\PYRo\Algorithm\KF\pyro_kalman_filter.h
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+ */
 #ifndef __PYRO_KALMAN_FILTER_H
 #define __PYRO_KALMAN_FILTER_H
 
