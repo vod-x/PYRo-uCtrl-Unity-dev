@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-07 15:14:47
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-03-11 19:47:23
+ * @LastEditTime: 2026-04-07 21:26:54
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -17,6 +17,7 @@
 #include "pyro_dji_motor_drv.h"
 #include "pyro_ins.h"
 #include "pyro_algo_pid.h"
+#include "kf.h"
 
 namespace pyro
 {
@@ -51,6 +52,18 @@ struct wl_pid_cfg_t
     float max_out;
 };
 
+struct wl_kf_cfg_t
+{
+   float *x_init;
+   float *P_init;
+   float *A;
+   float *B;
+   float *H;
+   float *G;
+   float *Q;
+   float *R;
+};
+
 /* Configuration structure for wheel-legged chassis, every parameter
    should be set here */
 struct wl_chassis_cfg_t
@@ -78,12 +91,13 @@ right leg, left leg */
     /* Yaw PID configuration for the chassis control.*/
     wl_pid_cfg_t yaw_pid_cfg;
     wl_pid_cfg_t g_yaw_pid_cfg;
-   
    /* PID controllers to control the bias between right leg angle and left 
       leg angle */
    wl_pid_cfg_t delta_pid_cfg;
    wl_pid_cfg_t d_delta_pid_cfg;
    
+   /* Kalman filter configuration for the wheel velocity */
+   wl_kf_cfg_t wheel_kf_cfg[2]; 
     /* LQR coefficients for the chassis control. 2 raw x 6 column, 12 values
        in total. Every value has 3 coefficients.*/
     float *lqr_coef;
@@ -304,7 +318,16 @@ private:
         float P;
         float jx,jy;
         float d_jx, d_jy;
+
+        /* Kalman filter output for velocity, acceleration, and angular velocity */
+        float kf_v;
+        float kf_a;
+        float kf_w;
+        /* position which is integrated from kf_v */
+        float kf_x;
     } _leg_data[2];
+   /* Kalman filter for the wheel velocity */
+   kf_t _wheel_kf[2];
     pid_t *_T_pid[2];
     pid_t *_d_T_pid[2];
     pid_t *_F_pid[2];

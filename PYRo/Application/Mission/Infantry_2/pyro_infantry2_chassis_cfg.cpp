@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-27 20:38:05
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-04-07 19:06:42
+ * @LastEditTime: 2026-04-08 16:55:05
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -23,10 +23,13 @@
 #define TRANS_K1 100000.0f
 //the offsets of motors, which is the angle between the zero point of motor and
 // the forward direction of robot, counter clockwise is positive(rad)
-#define R_MOTOR1_OFFSET -1.01f
-#define R_MOTOR2_OFFSET 6.98f
-#define L_MOTOR1_OFFSET 3.02f
-#define L_MOTOR2_OFFSET -4.92f
+#define R_MOTOR1_OFFSET -2.664f
+#define R_MOTOR2_OFFSET 1.33115f
+#define L_MOTOR1_OFFSET 1.64320564f
+#define L_MOTOR2_OFFSET 2.7037f
+
+#define WHEEL_DISTANCE 0.424f
+#define CONTROL_PERIOD 0.001f
 // the cofficients of lqr gain, 48 values in total, every value has 3 cofficients,
 #define LQR_GAIN \
 -0.7384, 15.5299, -33.6676, 27.7284,-1.0985, 27.2977, -57.4699, 47.3223,-5.8615, 1.0591, 35.8236, -53.6888,-1.9687, 0.2838, 11.5108, -17.1008,0.9780, -82.3603, 122.4377, -86.4762,0.4005, -11.4668, 7.8941, -5.9573,-3.2751, -53.5089, 238.9716, -290.7465,-6.3920, -94.4756, 423.8370, -516.9769,0.3510, -96.9238, 117.9820, -14.1251,0.8511, -29.9554, 29.1440, 7.9927,0.8429, 382.4450, -1384.2292, 1554.3647,0.8321, 63.8334, -216.7350, 239.9878
@@ -188,6 +191,78 @@ wl_chassis_cfg_t infantry2_chassis_cfg = {
           .integral_limit = 0.0f,
           .max_out = 20.0f,
      },
+    .wheel_kf_cfg = {
+        {
+            .x_init = (float[3]){0.0f, 0.0f, 0.0f},
+            .P_init = (float[9]){
+                1.0f, 0.0f, 0.0f,
+                0.0f, 1.0f, 0.0f,
+                0.0f, 0.0f, 1.0f
+            },
+            .A = (float[9]){
+                1.0f,  CONTROL_PERIOD, -WHEEL_DISTANCE / 2.0f,
+                0.0f,  1.0f,   0.0f,
+                0.0f,  0.0f,   1.0f
+            },
+            .B = (float[3]){
+                0.0f, 0.0f, 0.0f
+            },
+            .H = (float[9]){
+                1.0f,  0.001f, 0.0f,
+                0.0f,  1.0f,   0.001f,
+                0.0f,  0.0f,   1.0f
+            },
+            .G = (float[6]){
+                CONTROL_PERIOD * CONTROL_PERIOD / 2.0f, 0.0f,
+                CONTROL_PERIOD,                         0.0f,
+                0.0f,                                   CONTROL_PERIOD
+            },
+            .Q = (float[4]){
+                0.1f, 0.0f,
+                0.0f, 0.1f
+            },
+            .R = (float[9]){
+                0.5f, 0.0f, 0.0f,
+                0.0f, 0.5f, 0.0f,
+                0.0f, 0.0f, 0.5f
+            }
+        },
+        {
+            .x_init = (float[3]){0.0f, 0.0f, 0.0f},
+            .P_init = (float[9]){
+                1.0f, 0.0f, 0.0f,
+                0.0f, 1.0f, 0.0f,
+                0.0f, 0.0f, 1.0f
+            },
+            .A = (float[9]){
+                1.0f,  0.001f, 0.0f,
+                0.0f,  1.0f,   0.001f,
+                0.0f,  0.0f,   1.0f
+            },
+            .B = (float[3]){
+                0.0f, 0.0f, 0.0f
+            },
+            .H = (float[9]){
+                1.0f,  0.001f, 0.0f,
+                0.0f,  1.0f,   0.001f,
+                0.0f,  0.0f,   1.0f
+            },
+            .G = (float[6]){
+                CONTROL_PERIOD * CONTROL_PERIOD / 2.0f, 0.0f,
+                CONTROL_PERIOD,                         0.0f,
+                0.0f,                                   CONTROL_PERIOD
+            },
+            .Q = (float[4]){
+                0.1f, 0.0f,
+                0.0f, 0.1f
+            },
+            .R = (float[9]){
+                0.5f, 0.0f, 0.0f,
+                0.5f, 1.5f, 1.5f,
+                1.5f, 1.5f, 2.5f
+            },
+        }
+    },
     .lqr_coef = infantry2_lqr_coef,
     .wheel_radius = 0.06f,
     .reduction_ratio = 13.94f,

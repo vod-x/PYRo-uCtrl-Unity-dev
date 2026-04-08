@@ -43,7 +43,7 @@
 
 $$
 \begin{aligned}
-\mathbf{x}_k &= \mathbf{A}\,\mathbf{x}_{k-1} + \mathbf{B}\,\mathbf{u}_{k-1} + \mathbf{w}_{k-1} \\
+\mathbf{x}_k &= \mathbf{A}\,\mathbf{x}_{k-1} + \mathbf{B}\,\mathbf{u}_{k-1} + \mathbf{G}\,\mathbf{w}_{k-1} \\
 \mathbf{z}_k &= \mathbf{H}\,\mathbf{x}_k + \mathbf{v}_k
 \end{aligned}
 $$
@@ -53,17 +53,21 @@ $$
 | $\mathbf{x}_k$ | 状态向量 | $n \times 1$ |
 | $\mathbf{u}_k$ | 控制输入向量 | $m \times 1$ |
 | $\mathbf{z}_k$ | 观测（量测）向量 | $p \times 1$ |
+| $\mathbf{w}_k$ | 过程噪声向量，$\mathbf{w}_k \sim \mathcal{N}(0, \mathbf{Q})$ | $w \times 1$ |
+| $\mathbf{v}_k$ | 量测噪声，$\mathbf{v}_k \sim \mathcal{N}(0, \mathbf{R})$ | $p \times 1$ |
 | $\mathbf{A}$ | 状态转移矩阵 | $n \times n$ |
 | $\mathbf{B}$ | 控制输入矩阵 | $n \times m$ |
 | $\mathbf{H}$ | 观测矩阵 | $p \times n$ |
-| $\mathbf{w}_k$ | 过程噪声，$\mathbf{w}_k \sim \mathcal{N}(0, \mathbf{Q})$ | $n \times 1$ |
-| $\mathbf{v}_k$ | 量测噪声，$\mathbf{v}_k \sim \mathcal{N}(0, \mathbf{R})$ | $p \times 1$ |
+| $\mathbf{G}$ | 噪声传递矩阵（噪声输入矩阵） | $n \times w$ |
+| $\mathbf{Q}$ | 过程噪声协方差 | $w \times w$ |
+| $\mathbf{R}$ | 量测噪声协方差 | $p \times p$ |
 
 代码中的维度参数对应：
 
 - `x_size` → $n$ (状态维度)
 - `u_size` → $m$ (控制维度)
 - `z_size` → $p$ (量测维度)
+- `w_size` → $w$ (过程噪声维度)
 
 ### 1.2 预测步骤 (Predict)
 
@@ -75,13 +79,15 @@ $$
 
 - 对应代码变量：`_vec_xhat_minus = A * _vec_xhat + B * _vec_u`
 
-**先验误差协方差**：描述先验估计值的不确定性。
+**先验误差协方差**：描述先验估计值的不确定性。噪声传递矩阵 $\mathbf{G}$ 将过程噪声从噪声空间 $\mathbb{R}^w$ 映射到状态空间 $\mathbb{R}^n$。
 
 $$
-\mathbf{P}_k^- = \mathbf{A}\,\mathbf{P}_{k-1}\,\mathbf{A}^T + \mathbf{Q}
+\mathbf{P}_k^- = \mathbf{A}\,\mathbf{P}_{k-1}\,\mathbf{A}^T + \mathbf{G}\,\mathbf{Q}\,\mathbf{G}^T
 $$
 
-- 对应代码变量：`_mat_P_minus = A * P * A^T + Q`
+- 对应代码变量：`_mat_P_minus = A * P * A^T + G * Q * G^T`
+
+> **为何引入 G？** 在许多实际系统中，过程噪声维度 $w$ 与状态维度 $n$ 不同。例如对于位置-速度系统 ($n=2$)，噪声可能只有加速度噪声 ($w=1$)，此时 $\mathbf{G} = [\Delta t^2/2;\; \Delta t]$（$2 \times 1$），$\mathbf{Q} = [\sigma_a^2]$（$1 \times 1$）。若令 $\mathbf{G} = \mathbf{I}_n$，则退化为旧公式 $\mathbf{P}_k^- = \mathbf{A}\mathbf{P}_{k-1}\mathbf{A}^T + \mathbf{Q}$。
 
 ### 1.3 更新步骤 (Update)
 
@@ -253,12 +259,13 @@ kf_t::kf_t(uint8_t x_size, uint8_t u_size, uint8_t z_size)
 
 | 变量 | 类型 | 维度 | 说明 |
 |------|------|------|------|
-| `_x_size`, `_u_size`, `_z_size` | `uint8_t` | — | 维度参数 |
+| `_x_size`, `_u_size`, `_z_size`, `_w_size` | `uint8_t` | — | 维度参数 |
 | `_is_init` | `bool` | — | 初始化标志位 |
 | `_mat_A` | `mat` | $n \times n$ | 状态转移矩阵 |
 | `_mat_B` | `mat` | $n \times m$ | 控制输入矩阵 |
 | `_mat_H` | `mat` | $p \times n$ | 观测矩阵 |
-| `_mat_Q` | `mat` | $n \times n$ | 过程噪声协方差 |
+| `_mat_G` | `mat` | $n \times w$ | 噪声传递矩阵 |
+| `_mat_Q` | `mat` | $w \times w$ | 过程噪声协方差 |
 | `_mat_R` | `mat` | $p \times p$ | 量测噪声协方差 |
 | `_mat_K` | `mat` | $n \times p$ | 卡尔曼增益 |
 | `_mat_P` | `mat` | $n \times n$ | 后验误差协方差 |
@@ -272,10 +279,12 @@ kf_t::kf_t(uint8_t x_size, uint8_t u_size, uint8_t z_size)
 | `_tmp_z_1` | `mat` | $p \times 1$ | 量测空间中间变量 |
 | `_tmp_xx_1`, `_tmp_xx_2`, `_tmp_xx_3` | `mat` | $n \times n$ | 协方差运算中间变量 |
 | `_mat_Ht` | `mat` | $n \times p$ | $H^T$ |
+| `_mat_Gt` | `mat` | $w \times n$ | $G^T$ |
 | `_mat_Kt` | `mat` | $p \times n$ | $K^T$ |
 | `_mat_S` | `mat` | $p \times p$ | 新息协方差 |
 | `_mat_S_inv` | `mat` | $p \times p$ | 新息协方差逆 |
 | `_tmp_xz_1`, `_tmp_xz_2` | `mat` | $n \times p$ | 增益计算 / Joseph 公式中间变量 |
+| `_tmp_xw_1` | `mat` | $n \times w$ | $G \cdot Q$ 协方差预测中间变量 |
 
 > **为何预分配临时变量？**  
 > 嵌入式系统中，`update()` 每控制周期调用一次（如 1kHz）。若每次在栈上构造 dsppp 矩阵则频繁分配/释放堆内存，不符合实时性要求。将所有临时矩阵作为成员变量一次性分配，更新时仅写入数据。
@@ -287,7 +296,7 @@ kf_t::kf_t(uint8_t x_size, uint8_t u_size, uint8_t z_size)
 ### 4.1 构造函数
 
 ```cpp
-kf_t(uint8_t x_size, uint8_t u_size, uint8_t z_size);
+kf_t(uint8_t x_size, uint8_t u_size, uint8_t z_size, uint8_t w_size);
 ```
 
 | 参数 | 含义 |
@@ -295,6 +304,7 @@ kf_t(uint8_t x_size, uint8_t u_size, uint8_t z_size);
 | `x_size` | 状态向量维度 $n$ |
 | `u_size` | 控制输入维度 $m$ |
 | `z_size` | 量测向量维度 $p$ |
+| `w_size` | 过程噪声向量维度 $w$ |
 
 构造后滤波器处于**未初始化**状态（`_is_init = false`），不能调用 `update()`。
 
@@ -304,16 +314,16 @@ kf_t(uint8_t x_size, uint8_t u_size, uint8_t z_size);
 
 ```cpp
 // 重载 1：默认 x₀ = 0, P₀ = I
-status_t init(float *A, float *B, float *H, float *Q, float *R);
+status_t init(float *A, float *B, float *H, float *G, float *Q, float *R);
 
 // 重载 2：自定义 x₀, 默认 P₀ = I
-status_t init(float *A, float *B, float *H, float *Q, float *R, float *x0);
+status_t init(float *A, float *B, float *H, float *G, float *Q, float *R, float *x0);
 
 // 重载 3：默认 x₀ = 0, 自定义 P₀
-status_t init(float *A, float *B, float *H, float *Q, float *R, std::nullptr_t, float *P0);
+status_t init(float *A, float *B, float *H, float *G, float *Q, float *R, std::nullptr_t, float *P0);
 
 // 重载 4：自定义 x₀ 和 P₀
-status_t init(float *A, float *B, float *H, float *Q, float *R, float *x0, float *P0);
+status_t init(float *A, float *B, float *H, float *G, float *Q, float *R, float *x0, float *P0);
 ```
 
 **重载消歧设计**：重载 3 使用 `std::nullptr_t` 占位参数来表达「x₀ 使用默认值（零向量）」，避免 `init(A,B,H,Q,R, nullptr, P0)` 与重载 2 产生歧义（因为 `nullptr` 可隐式转换为 `float*`）。
@@ -341,6 +351,69 @@ status_t update(float *measure_vec, float *control_vec, float *estimated_ret);
 | `estimated_ret` | 输出缓冲区，写入后验状态估计 $\hat{\mathbf{x}}_k$，长度 `x_size` |
 
 每个控制周期调用一次，完成一轮预测 + 更新。
+
+### 4.4 get_state()
+
+```cpp
+status_t get_state(float *out) const;
+```
+
+| 参数 | 含义 |
+|------|------|
+| `out` | 输出缓冲区，写入当前后验状态估计 $\hat{\mathbf{x}}_{k|k}$，长度 `x_size` |
+
+随时可调用（无需等待下一次 `update()`），用于在控制周期之外读取最新滤波结果。
+
+| 返回值 | 含义 |
+|--------|------|
+| `PYRO_OK` | 成功 |
+| `PYRO_PARAM_ERROR` | `out` 为空指针 |
+| `PYRO_NOT_FOUND` | 滤波器未初始化 |
+
+---
+
+### 4.5 reset()
+
+提供三个重载，用于在运行时将滤波器状态重置到指定值，同时清零 K、P⁻、u、z。
+
+#### 重载 1 — 归零重置
+
+```cpp
+status_t reset();
+```
+
+将状态向量清零，协方差矩阵恢复为单位阵。适用于完全重新开始的场景。
+
+#### 重载 2 — 指定 x₀ 与 P₀
+
+```cpp
+status_t reset(float *x0_data, float *P0_data);
+```
+
+| 参数 | 含义 |
+|------|------|
+| `x0_data` | 新状态向量数据，长度 `x_size` |
+| `P0_data` | 新协方差矩阵数据（row-major），shape `x_size × x_size`，需通过对称/非负/有限校验 |
+
+#### 重载 3 — 仅重置状态向量
+
+```cpp
+status_t reset(float *x0_data);
+```
+
+仅更新状态向量，保留当前协方差矩阵 P。
+
+| 参数 | 含义 |
+|------|------|
+| `x0_data` | 新状态向量数据，长度 `x_size` |
+
+#### 公共返回值
+
+| 返回值 | 含义 |
+|--------|------|
+| `PYRO_OK` | 成功 |
+| `PYRO_PARAM_ERROR` | 指针为空 / P₀ 校验不通过（重载 2） |
+| `PYRO_NOT_FOUND` | 滤波器未初始化 |
 
 ---
 
@@ -393,12 +466,16 @@ _vec_xhat_minus = _tmp_x_1 + _tmp_x_2;
 
 ### Step 5：先验协方差预测
 
-$$\mathbf{P}_k^- = \mathbf{A}\,\mathbf{P}_{k-1}\,\mathbf{A}^T + \mathbf{Q}$$
+$$\mathbf{P}_k^- = \mathbf{A}\,\mathbf{P}_{k-1}\,\mathbf{A}^T + \mathbf{G}\,\mathbf{Q}\,\mathbf{G}^T$$
 
 ```cpp
 _tmp_xx_1 = _mat_A * _mat_P;         // n×n · n×n → n×n
 _tmp_xx_2 = _mat_A.transpose();       // n×n
-_mat_P_minus = _tmp_xx_1 * _tmp_xx_2 + _mat_Q;
+_mat_P_minus = _tmp_xx_1 * _tmp_xx_2; // A * P * A^T
+_tmp_xw_1 = _mat_G * _mat_Q;         // n×w · w×w → n×w
+_mat_Gt = _mat_G.transpose();         // w×n
+_tmp_xx_1 = _tmp_xw_1 * _mat_Gt;     // n×w · w×n → n×n  (G*Q*G^T)
+_mat_P_minus = _mat_P_minus + _tmp_xx_1;
 ```
 
 ### Step 6：新息协方差
@@ -485,15 +562,15 @@ for (int i = 0; i < _x_size; ++i)
 ## 7. 初始化流程 (init_impl)
 
 ```
-init_impl(A, B, H, Q, R, x0, P0)
+init_impl(A, B, H, G, Q, R, x0, P0)
     │
-    ├─ Step 1: 检查 A/B/H/Q/R 指针非空
+    ├─ Step 1: 检查 A/B/H/G/Q/R 指针非空
     │
     ├─ Step 2: 检查 _is_init 防止重复初始化
     │
     ├─ Step 2.1: 若 P0 ≠ nullptr，调用 validate_covariance_data() 校验
     │
-    ├─ Step 3: fill_mat() 填充 A, B, H, Q, R
+    ├─ Step 3: fill_mat() 填充 A, B, H, G, Q, R
     │
     ├─ Step 4: 初始化后验状态 x̂₀
     │   ├─ x0 == nullptr → clear_vector(_vec_xhat)    // 零向量
@@ -554,29 +631,30 @@ if (diag < 0.0f) return false;
 ```cpp
 #include "kf.h"
 
-// 2 维状态, 1 维控制, 1 维量测
-pyro::kf_t kf(2, 1, 1);
+// 2 维状态, 1 维控制, 1 维量测, 1 维过程噪声
+pyro::kf_t kf(2, 1, 1, 1);
 
 // 系统矩阵 (row-major float 数组)
 float A[] = {1.0f, 0.01f, 0.0f, 1.0f};  // 2x2
 float B[] = {0.0f, 0.01f};               // 2x1
 float H[] = {1.0f, 0.0f};                // 1x2
-float Q[] = {0.001f, 0.0f, 0.0f, 0.001f};
+float G[] = {0.005f, 0.01f};             // 2x1  (dt²/2, dt) 加速度噪声映射
+float Q[] = {1.0f};                       // 1x1  加速度噪声方差 σ²_a
 float R[] = {0.1f};
 
 // --- 方式 1: 默认初始化 (x₀=0, P₀=I) ---
-kf.init(A, B, H, Q, R);
+kf.init(A, B, H, G, Q, R);
 
 // --- 方式 2: 自定义初始状态 ---
 float x0[] = {1.0f, 0.0f};
-kf.init(A, B, H, Q, R, x0);
+kf.init(A, B, H, G, Q, R, x0);
 
 // --- 方式 3: 自定义初始协方差 ---
 float P0[] = {10.0f, 0.0f, 0.0f, 10.0f};
-kf.init(A, B, H, Q, R, nullptr, P0);
+kf.init(A, B, H, G, Q, R, nullptr, P0);
 
 // --- 方式 4: 同时自定义 x₀ 和 P₀ ---
-kf.init(A, B, H, Q, R, x0, P0);
+kf.init(A, B, H, G, Q, R, x0, P0);
 
 // 周期调用 update()
 float z[1], u[1], x_est[2];
@@ -631,5 +709,5 @@ _vec_xhat = _vec_xhat_minus + _mat_K * (_vec_z - _tmp_z_1);
 
 ---
 
-*文档生成日期: 2026-04-06*  
-*适用代码版本: kf.h / kf.cpp (Joseph 形式, 四重载 init, P₀ 校验)*
+*文档生成日期: 2026-04-07*  
+*适用代码版本: kf.h / kf.cpp (噪声传递矩阵 G, Joseph 形式, 四重载 init, P₀ 校验)*

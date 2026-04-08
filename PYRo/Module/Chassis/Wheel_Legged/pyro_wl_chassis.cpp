@@ -2,7 +2,7 @@
  * @Author: Vod vod0575@outlook
  * @Date: 2026-02-06 15:27:37
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-03-18 16:09:34
+ * @LastEditTime: 2026-04-08 00:54:23
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -14,7 +14,8 @@
 
  namespace pyro
  {
-wl_chassis_t::wl_chassis_t() : module_base_t("wl_chassis", 0, 512)
+wl_chassis_t::wl_chassis_t() : module_base_t("wl_chassis", 0, 512),
+    _wheel_kf{kf_t(3, 1, 3, 2), kf_t(3, 1, 3, 2)}
 {
 }
 
@@ -200,6 +201,19 @@ status_t wl_chassis_t::_init()
     {
         return PYRO_NO_MEMORY;
     }
+    /* Initialize Kalman filter for the wheel velocity */
+    for(uint8_t i = 0; i < 2; i++)
+    {
+        ret = _wheel_kf[i].init(_module_deps.wheel_kf_cfg[i].A, 
+                                 _module_deps.wheel_kf_cfg[i].B, 
+                                 _module_deps.wheel_kf_cfg[i].H, 
+                                 _module_deps.wheel_kf_cfg[i].G,
+                                 _module_deps.wheel_kf_cfg[i].Q, 
+                                 _module_deps.wheel_kf_cfg[i].R,
+                                 _module_deps.wheel_kf_cfg[i].x_init,
+                                 _module_deps.wheel_kf_cfg[i].P_init);
+        CHECK_PYRO_RET(ret);
+    }
     /* get INS drv */
     _ins_drv = ins_drv_t::get_instance();
 
@@ -317,7 +331,27 @@ void wl_chassis_t::_update_feedback()
             _cnt.solver_error++;
         }
     }
-
+    /* update Kalman filter for wheel velocity */
+    float kf_x[3];
+    float kf_u;
+    float kf_z[3];
+    float kf_estimated[3];
+    for(uint8_t i = 0; i < 2; i++)
+    {
+        kf_x[0] = _leg_data[i].kf_v;
+        kf_x[1] = _leg_data[i].kf_a;
+        kf_x[2] = _leg_data[i].kf_w;
+        kf_u = 0.0f;
+        kf_z[0] = _leg_data[i].dx;
+        kf_z[1] = a_x;
+        kf_z[2] = g_yaw;   
+        // _wheel_kf[i].update(kf_x, &kf_u, kf_z);
+        // _wheel_kf[i].get_state(kf_estimated);
+        _leg_data[i].kf_v = kf_estimated[0];
+        _leg_data[i].kf_a = kf_estimated[1];
+        _leg_data[i].kf_w = kf_estimated[2];
+        _leg_data[i].kf_x += _leg_data[i].kf_v * 0.001f;
+    }
 }
 
 void wl_chassis_t::_fsm_execute()

@@ -19,9 +19,10 @@ public:
      * @param {uint8_t} x_size Size of the state estimate vector
      * @param {uint8_t} u_size Size of the control input vector
      * @param {uint8_t} z_size Size of the measurement vector
+     * @param {uint8_t} w_size Size of the process noise vector
      * @return {*}
      */
-    kf_t(uint8_t x_size, uint8_t u_size, uint8_t z_size);
+    kf_t(uint8_t x_size, uint8_t u_size, uint8_t z_size, uint8_t w_size);
     ~kf_t() = default;
 
     /**
@@ -29,6 +30,7 @@ public:
      * @param {float} *A_data State transition matrix data
      * @param {float} *B_data Control input matrix data
      * @param {float} *H_data Measurement matrix data
+     * @param {float} *G_data Noise transition matrix data
      * @param {float} *Q_data Process noise covariance matrix data
      * @param {float} *R_data Measurement noise covariance matrix data
      * @return {status_t}
@@ -36,13 +38,13 @@ public:
      *          PYRO_PARAM_ERROR if any pointer is null
      *          PYRO_ALREADY_INIT if the filter is already initialized
      */
-    status_t init(float *A_data, float *B_data, float *H_data, float *Q_data, float *R_data);
+    status_t init(float *A_data, float *B_data, float *H_data, float *G_data, float *Q_data, float *R_data);
 
     /**
      * @description: Initialize with custom initial posterior state x0, default P0 = I
      * @param {float} *x0_data Initial state vector data, length = x_size
      */
-    status_t init(float *A_data, float *B_data, float *H_data, float *Q_data, float *R_data,
+    status_t init(float *A_data, float *B_data, float *H_data, float *G_data, float *Q_data, float *R_data,
                   float *x0_data);
 
     /**
@@ -50,7 +52,7 @@ public:
      * @param {std::nullptr_t} Null placeholder for x0
      * @param {float} *P0_data Initial covariance matrix data (row-major), shape = x_size x x_size
      */
-    status_t init(float *A_data, float *B_data, float *H_data, float *Q_data, float *R_data,
+    status_t init(float *A_data, float *B_data, float *H_data, float *G_data, float *Q_data, float *R_data,
                   std::nullptr_t, float *P0_data);
 
     /**
@@ -58,7 +60,7 @@ public:
      * @param {float} *x0_data Initial state vector data, length = x_size
      * @param {float} *P0_data Initial covariance matrix data (row-major), shape = x_size x x_size
      */
-    status_t init(float *A_data, float *B_data, float *H_data, float *Q_data, float *R_data,
+    status_t init(float *A_data, float *B_data, float *H_data, float *G_data, float *Q_data, float *R_data,
                   float *x0_data, float *P0_data);
 
     /**
@@ -73,6 +75,41 @@ public:
      *          PYRO_ERROR if matrix inverse fails
      */
     status_t update(float *measure_vec, float *control_vec, float *estimated_ret);
+
+    /**
+     * @description: Get the current posterior state estimate x_{k|k}
+     * @param {float} *out Output buffer, length must be >= x_size
+     * @return {status_t}
+     *          PYRO_OK if successful
+     *          PYRO_PARAM_ERROR if out is null
+     *          PYRO_NOT_FOUND if the filter is not initialized
+     */
+    status_t get_state(float *out) const;
+
+    /**
+     * @description: Reset state vector to zero and error covariance to identity
+     * @return {status_t}
+     *          PYRO_OK if successful
+     *          PYRO_NOT_FOUND if the filter is not initialized
+     */
+    status_t reset();
+
+    /**
+     * @description: Reset state vector and error covariance to given values
+     * @param {float} *x0_data New state vector data, length = x_size
+     * @param {float} *P0_data New covariance matrix data (row-major), shape = x_size x x_size
+     * @return {status_t}
+     *          PYRO_OK if successful
+     *          PYRO_PARAM_ERROR if any pointer is null or P0 validation fails
+     *          PYRO_NOT_FOUND if the filter is not initialized
+     */
+    status_t reset(float *x0_data, float *P0_data);
+
+    /**
+     * @description: Reset only state vector, keep current covariance
+     * @param {float} *x0_data New state vector data, length = x_size
+     */
+    status_t reset(float *x0_data);
 
 private:
     /* Matrix / vector utility helpers */
@@ -137,13 +174,14 @@ private:
      * @param {float} *A_data State transition matrix data
      * @param {float} *B_data Control input matrix data
      * @param {float} *H_data Measurement matrix data
+     * @param {float} *G_data Noise transition matrix data
      * @param {float} *Q_data Process noise covariance matrix data
      * @param {float} *R_data Measurement noise covariance matrix data
      * @param {const float} *x0_data Optional initial state vector data, nullptr -> zero vector
      * @param {const float} *P0_data Optional initial covariance matrix data, nullptr -> identity matrix
      * @return {status_t}
      */
-    status_t init_impl(float *A_data, float *B_data, float *H_data, float *Q_data, float *R_data,
+    status_t init_impl(float *A_data, float *B_data, float *H_data, float *G_data, float *Q_data, float *R_data,
                        const float *x0_data, const float *P0_data);
 
     /* Problem size definition */
@@ -153,6 +191,8 @@ private:
     uint8_t _u_size;
     /* Measurement vector dimension: z in R^{z_size} */
     uint8_t _z_size;
+    /* Process noise vector dimension: w in R^{w_size} */
+    uint8_t _w_size;
 
     /* Initialization flag, true after successful init() */
     bool _is_init;
@@ -164,7 +204,9 @@ private:
     mat _mat_B;
     /* Measurement matrix H (z_size x x_size) */
     mat _mat_H;
-    /* Process noise covariance Q (x_size x x_size) */
+    /* Noise transition matrix G (x_size x w_size) */
+    mat _mat_G;
+    /* Process noise covariance Q (w_size x w_size) */
     mat _mat_Q;
     /* Measurement noise covariance R (z_size x z_size) */
     mat _mat_R;
@@ -205,6 +247,8 @@ private:
     /* x_size x x_size: A_j = (I - K*H) in Joseph form */
     mat _tmp_xx_3;
 
+    /* Transposed noise transition matrix G^T (w_size x x_size) */
+    mat _mat_Gt;
     /* Transposed measurement matrix H^T (x_size x z_size) */
     mat _mat_Ht;
     /* Transposed Kalman gain K^T (z_size x x_size) */
@@ -219,6 +263,8 @@ private:
     mat _tmp_xz_1;
     /* x_size x z_size: K*R intermediate for Joseph form */
     mat _tmp_xz_2;
+    /* x_size x w_size: G*Q intermediate for covariance prediction */
+    mat _tmp_xw_1;
 };
 }
 #endif
