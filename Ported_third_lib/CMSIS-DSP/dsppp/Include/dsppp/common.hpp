@@ -3,7 +3,9 @@
 #pragma once 
 
 #include <cstdint>
+#if defined(DSPPP_DEBUG_IOSTREAM)
 #include <iostream>
+#endif
 
 // For compiler detection
 #include "arch.hpp"
@@ -75,8 +77,11 @@ namespace arm_cmsis_dsp {
 template <typename T>
 void PrintType(void)
 {
-    //T t;
+#if defined(DSPPP_DEBUG_IOSTREAM)
     std::cout << __PRETTY_FUNCTION__ << "\r\n";
+#else
+    (void)0;
+#endif
 };
 
 /*! @} */

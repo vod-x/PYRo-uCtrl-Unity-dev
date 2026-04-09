@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-26 20:18:33
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-04-04 18:43:04
+ * @LastEditTime: 2026-04-08 19:04:50
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -181,7 +181,7 @@ void infantry2_chassis_main_tread(void *argument)
     {
         infantry2_chassis_rc2cmd(infantry2_rc_ctrl_ptr);
         infantry2_chassis_ptr->set_command(*infantry2_chassis_cmd_ptr);
-        vTaskDelay(2);
+        vTaskDelay(1);
     }
 }
 

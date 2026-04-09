@@ -2,7 +2,7 @@
  * @Author: Vod vod0575@outlook
  * @Date: 2026-02-06 15:27:37
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-04-08 00:54:23
+ * @LastEditTime: 2026-04-09 13:27:59
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -11,10 +11,13 @@
 #include "pyro_wl_chassis.h"
 #include "pyro_dwt_drv.h"
 #include "pyro_algo_common.h"
+#include "pyro_dwt_drv.h"
 
  namespace pyro
- {
-wl_chassis_t::wl_chassis_t() : module_base_t("wl_chassis", 0, 512),
+{
+    float time;
+    float last_time;
+wl_chassis_t::wl_chassis_t() : module_base_t("wl_chassis", 0, 2048),
     _wheel_kf{kf_t(3, 1, 3, 2), kf_t(3, 1, 3, 2)}
 {
 }
@@ -216,12 +219,16 @@ status_t wl_chassis_t::_init()
     }
     /* get INS drv */
     _ins_drv = ins_drv_t::get_instance();
+    yaw = pitch = roll = 0.0f;
+    g_yaw = g_pitch = g_roll = 0.0f;
+    a_x = a_y = a_z = 0.0f;
 
     return ret;
 }
 
 void wl_chassis_t::_update_feedback()
 {
+    last_time = dwt_drv_t::get_timeline_s();
     static uint32_t dwt_cnt;
     static float last_dx[2];
     /* Update INS data */
@@ -278,7 +285,6 @@ void wl_chassis_t::_update_feedback()
     for(uint8_t i = 0; i < 2; i++)
     {
         status_t ret;
-        float time;
         float last_d_l = _leg_data[i].d_l;
         float last_d_beta = _leg_data[i].d_beta;
         ret = _kinematic_solver.solve(_leg_data[i].theta1, 
@@ -332,21 +338,16 @@ void wl_chassis_t::_update_feedback()
         }
     }
     /* update Kalman filter for wheel velocity */
-    float kf_x[3];
-    float kf_u;
-    float kf_z[3];
-    float kf_estimated[3];
+    float kf_u = 0.0f;
+    float kf_z[3] = {0.0f, 0.0f, 0.0f};
+    float kf_estimated[3] = {0.0f, 0.0f, 0.0f};
     for(uint8_t i = 0; i < 2; i++)
     {
-        kf_x[0] = _leg_data[i].kf_v;
-        kf_x[1] = _leg_data[i].kf_a;
-        kf_x[2] = _leg_data[i].kf_w;
         kf_u = 0.0f;
         kf_z[0] = _leg_data[i].dx;
         kf_z[1] = a_x;
         kf_z[2] = g_yaw;   
-        // _wheel_kf[i].update(kf_x, &kf_u, kf_z);
-        // _wheel_kf[i].get_state(kf_estimated);
+        _wheel_kf[i].update(kf_z, &kf_u, kf_estimated);
         _leg_data[i].kf_v = kf_estimated[0];
         _leg_data[i].kf_a = kf_estimated[1];
         _leg_data[i].kf_w = kf_estimated[2];
@@ -362,5 +363,6 @@ void wl_chassis_t::_fsm_execute()
     else if (cmd_base_t::mode_t::ACTIVE == _cmd->mode)
         _fsm.change_state(&_state_active);
     _fsm.execute(this);
+    time = dwt_drv_t::get_timeline_s() - last_time;
 }
  }

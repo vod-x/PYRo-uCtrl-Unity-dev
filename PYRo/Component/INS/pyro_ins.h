@@ -39,8 +39,8 @@ private:
     static TaskHandle_t _ins_task_handle;
     void __ins_task();
     static void __static_ins_task(void *argument);
-    status_t __transform_b2n(float* v_b, float* v_n, float*n2b_q);
-    status_t __transform_n2b(float* v_n, float* v_b, float*n2b_q); 
+    status_t __transform_b2n(float* v_b, float* v_n, float*b2n_q);
+    status_t __transform_n2b(float* v_n, float* v_b, float*b2n_q); 
 public:
     static ins_drv_t* get_instance(void);
     status_t init();

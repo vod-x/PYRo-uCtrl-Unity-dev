@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-27 20:38:05
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-04-08 16:55:05
+ * @LastEditTime: 2026-04-09 13:35:13
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -200,7 +200,7 @@ wl_chassis_cfg_t infantry2_chassis_cfg = {
                 0.0f, 0.0f, 1.0f
             },
             .A = (float[9]){
-                1.0f,  CONTROL_PERIOD, -WHEEL_DISTANCE / 2.0f,
+                1.0f,  CONTROL_PERIOD, 0.0f,
                 0.0f,  1.0f,   0.0f,
                 0.0f,  0.0f,   1.0f
             },
@@ -208,8 +208,8 @@ wl_chassis_cfg_t infantry2_chassis_cfg = {
                 0.0f, 0.0f, 0.0f
             },
             .H = (float[9]){
-                1.0f,  0.001f, 0.0f,
-                0.0f,  1.0f,   0.001f,
+                1.0f,  0.0f, -WHEEL_DISTANCE / 2.0f,
+                0.0f,  1.0f,   0.0f,
                 0.0f,  0.0f,   1.0f
             },
             .G = (float[6]){
@@ -235,16 +235,16 @@ wl_chassis_cfg_t infantry2_chassis_cfg = {
                 0.0f, 0.0f, 1.0f
             },
             .A = (float[9]){
-                1.0f,  0.001f, 0.0f,
-                0.0f,  1.0f,   0.001f,
+                1.0f,  CONTROL_PERIOD,  0.0f,
+                0.0f,  1.0f,   0.0f,
                 0.0f,  0.0f,   1.0f
             },
             .B = (float[3]){
                 0.0f, 0.0f, 0.0f
             },
             .H = (float[9]){
-                1.0f,  0.001f, 0.0f,
-                0.0f,  1.0f,   0.001f,
+                1.0f,  0.0f, WHEEL_DISTANCE / 2.0f,
+                0.0f,  1.0f,   0.0f,
                 0.0f,  0.0f,   1.0f
             },
             .G = (float[6]){
@@ -258,8 +258,8 @@ wl_chassis_cfg_t infantry2_chassis_cfg = {
             },
             .R = (float[9]){
                 0.5f, 0.0f, 0.0f,
-                0.5f, 1.5f, 1.5f,
-                1.5f, 1.5f, 2.5f
+                0.0f, 0.5f, 0.0f,
+                0.0f, 0.0f, 0.5f
             },
         }
     },

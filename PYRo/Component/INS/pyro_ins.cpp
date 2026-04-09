@@ -342,40 +342,40 @@ status_t ins_drv_t::get_acc_without_g_n(float *a_x, float *a_y,
     return PYRO_OK;
 }
 
-status_t ins_drv_t::__transform_b2n(float *v_b, float *v_n, float *n2b_q)
+status_t ins_drv_t::__transform_b2n(float *v_b, float *v_n, float *b2n_q)
 {
-    if(v_b == nullptr || v_n == nullptr || n2b_q == nullptr)
+    if(v_b == nullptr || v_n == nullptr || b2n_q == nullptr)
     {
         return PYRO_ERROR;
     }
-    /* Take the conjugate of n2b_q, because the R(q)' = R(q*) */
-    float q[4];
-    q[0] = n2b_q[0];
-    q[1] = -n2b_q[1];
-    q[2] = -n2b_q[2];
-    q[3] = -n2b_q[3];
-    v_n[0] = 1 - 2 * (q[2] * q[2] + q[3] * q[3]) * v_b[0] 
-           + 2 * (q[1] * q[2] - q[0] * q[3])     * v_b[1] 
-           + 2 * (q[1] * q[3] + q[0] * q[2])     * v_b[2];
+    /* QEKF_INS.q is b2n quaternion, R(q) = R_b2n, use q directly */
+    float *q = b2n_q;
+    v_n[0] = (1 - 2 * (q[2] * q[2] + q[3] * q[3])) * v_b[0] 
+           + (2 * (q[1] * q[2] - q[0] * q[3]))     * v_b[1] 
+           + (2 * (q[1] * q[3] + q[0] * q[2]))     * v_b[2];
 
-    v_n[1] = 2 * (q[1] * q[2] + q[0] * q[3])     * v_b[0]
-           + 1 - 2 * (q[1] * q[1] + q[3] * q[3]) * v_b[1]
-           + 2 * (q[2] * q[3] - q[0] * q[1])     * v_b[2];
+    v_n[1] = (2 * (q[1] * q[2] + q[0] * q[3]))     * v_b[0]
+           + (1 - 2 * (q[1] * q[1] + q[3] * q[3])) * v_b[1]
+           + (2 * (q[2] * q[3] - q[0] * q[1]))     * v_b[2];
 
-    v_n[2] = 2 * (q[1] * q[3] - q[0] * q[2])     * v_b[0]
-           + 2 * (q[2] * q[3] + q[0] * q[1])     * v_b[1]
-           + 1 - 2 * (q[1] * q[1] + q[2] * q[2]) * v_b[2];
+    v_n[2] = (2 * (q[1] * q[3] - q[0] * q[2]))     * v_b[0]
+           + (2 * (q[2] * q[3] + q[0] * q[1]))     * v_b[1]
+           + (1 - 2 * (q[1] * q[1] + q[2] * q[2])) * v_b[2];
     return PYRO_OK;
 }
 
-status_t ins_drv_t::__transform_n2b(float *v_n, float *v_b, float *n2b_q)
+status_t ins_drv_t::__transform_n2b(float *v_n, float *v_b, float *b2n_q)
 {
-    if(v_n == nullptr || v_b == nullptr || n2b_q == nullptr)
+    if(v_n == nullptr || v_b == nullptr || b2n_q == nullptr)
     {
         return PYRO_ERROR;
     }
-
-    float *q = n2b_q;
+    /* QEKF_INS.q is b2n quaternion, R(q)^T = R(q*) = R_n2b, conjugate q */
+    float q[4];
+    q[0] = b2n_q[0];
+    q[1] = -b2n_q[1];
+    q[2] = -b2n_q[2];
+    q[3] = -b2n_q[3];
     v_b[0] = (1 - 2 * (q[2] * q[2] + q[3] * q[3])) * v_n[0] 
            + (2 * (q[1] * q[2] - q[0] * q[3]))     * v_n[1] 
            + (2 * (q[1] * q[3] + q[0] * q[2]))     * v_n[2];

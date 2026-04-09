@@ -16,6 +16,12 @@
 
 namespace pyro
 {
+extern "C"{
+    uint64_t get_dwt_us()
+    {
+        return pyro::dwt_drv_t::get_timeline_us();
+    }
+}
 /**
  * @brief Initializes the DWT peripheral.
  */
