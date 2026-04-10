@@ -15,7 +15,6 @@ class vofa_drv_t
     static vofa_drv_t &get_instance(uint8_t max_length);
     void thread();
 
-  private:
     void init();
     void add_data(float *data);
     void add_data(float *data, uint8_t len);

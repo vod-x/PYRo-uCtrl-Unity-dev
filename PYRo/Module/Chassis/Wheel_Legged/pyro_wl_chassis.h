@@ -153,6 +153,7 @@ struct wl_cmd_t final : public cmd_base_t
 class wl_chassis_t final : public module_base_t<wl_chassis_t, wl_cmd_t, wl_chassis_cfg_t>
 {
    friend class module_base_t<wl_chassis_t, wl_cmd_t, wl_chassis_cfg_t>;
+   friend class vofa_drv_t;
 
 public:
    
@@ -222,7 +223,7 @@ private:
 
     float yaw, pitch, roll;
     float g_yaw, g_pitch, g_roll;
-    float a_x, a_y, a_z;
+    float a_x, a_y, a_z, a_forward;
     float gimbal_yaw, gimbal_g_yaw;
 
     pid_t* _yaw_pid;

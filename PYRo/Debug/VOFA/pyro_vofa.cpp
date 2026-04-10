@@ -5,8 +5,9 @@
 
 #include "cstring"
 #include "pyro_core_config.h"
+#include "pyro_wl_chassis.h"
 
-
+extern pyro::wl_chassis_t *infantry2_chassis_ptr;
 namespace pyro
 {
 vofa_drv_t::vofa_drv_t(uint8_t max_length, uart_drv_t *uart)
@@ -95,6 +96,18 @@ void vofa_drv_t::send()
 
 void vofa_drv_t::thread()
 {
+    add_data(&infantry2_chassis_ptr->_leg_data[0].kf_v);
+    add_data(&infantry2_chassis_ptr->_leg_data[0].kf_x);
+    add_data(&infantry2_chassis_ptr->_leg_data[0].kf_w);
+    add_data(&infantry2_chassis_ptr->_leg_data[0].x);
+    add_data(&infantry2_chassis_ptr->_leg_data[0].dx);
+    add_data(&infantry2_chassis_ptr->_leg_data[1].kf_v);
+    add_data(&infantry2_chassis_ptr->_leg_data[1].kf_x);
+    add_data(&infantry2_chassis_ptr->_leg_data[1].kf_w);
+    add_data(&infantry2_chassis_ptr->_leg_data[1].x);
+    add_data(&infantry2_chassis_ptr->_leg_data[1].dx);
+    add_data(&infantry2_chassis_ptr->a_forward);
+    add_data(&infantry2_chassis_ptr->g_yaw);
     while (true)
     {
         update_data();

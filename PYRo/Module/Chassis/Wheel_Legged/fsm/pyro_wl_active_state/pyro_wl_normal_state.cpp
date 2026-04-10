@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-28 13:11:52
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-04-08 16:39:03
+ * @LastEditTime: 2026-04-09 14:36:18
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -124,15 +124,15 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
             }
         }
 
-        owner->_leg_data[i].T_w = (owner->_leg_data[i].lqr_gain[0] * (owner->_leg_data[i].x_gain - owner->_leg_data[i].x) + 
-                                  owner->_leg_data[i].lqr_gain[1] * (0.0f - owner->_leg_data[i].dx) + 
+        owner->_leg_data[i].T_w = (owner->_leg_data[i].lqr_gain[0] * (owner->_leg_data[i].x_gain - owner->_leg_data[i].kf_x) + 
+                                  owner->_leg_data[i].lqr_gain[1] * (0.0f - owner->_leg_data[i].kf_v) + 
                                   owner->_leg_data[i].lqr_gain[2] * (0 - owner->_leg_data[i].gamma) + 
                                   owner->_leg_data[i].lqr_gain[3] * (0 - owner->_leg_data[i].d_gamma) + 
                                   owner->_leg_data[i].lqr_gain[4] * (0 - owner->_leg_data[i].beta) + 
                                   owner->_leg_data[i].lqr_gain[5] * (0 - owner->_leg_data[i].d_beta))
                                   / owner->_reduction_ratio /0.3f * (3591.0f/187.0f);
-        owner->_leg_data[i].F[1] = -(owner->_leg_data[i].lqr_gain[6] * (owner->_leg_data[i].x_gain - owner->_leg_data[i].x) + 
-                                  owner->_leg_data[i].lqr_gain[7] * (0.0F - owner->_leg_data[i].dx) + 
+        owner->_leg_data[i].F[1] = -(owner->_leg_data[i].lqr_gain[6] * (owner->_leg_data[i].x_gain - owner->_leg_data[i].kf_x) + 
+                                  owner->_leg_data[i].lqr_gain[7] * (0.0F - owner->_leg_data[i].kf_v) + 
                                   owner->_leg_data[i].lqr_gain[8] * (0 - owner->_leg_data[i].gamma) + 
                                   owner->_leg_data[i].lqr_gain[9] * (0 - owner->_leg_data[i].d_gamma) + 
                                   owner->_leg_data[i].lqr_gain[10] * (0 - owner->_leg_data[i].beta) + 

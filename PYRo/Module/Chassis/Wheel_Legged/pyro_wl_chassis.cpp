@@ -2,7 +2,7 @@
  * @Author: Vod vod0575@outlook
  * @Date: 2026-02-06 15:27:37
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-04-09 13:27:59
+ * @LastEditTime: 2026-04-09 22:08:19
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -12,6 +12,8 @@
 #include "pyro_dwt_drv.h"
 #include "pyro_algo_common.h"
 #include "pyro_dwt_drv.h"
+#include "pyro_vofa.h"
+#define WHEEL_DISTANCE 0.424f
 
  namespace pyro
 {
@@ -77,6 +79,7 @@ uint8_t wl_chassis_t::get_status_flag(wl_cmd_t::active_mode_t mode)
 status_t wl_chassis_t::_init()
 {
     status_t ret;
+
 
     /* Initialize kinematic solver with given coefficients. */
     ret = _kinematic_solver.init(&_module_deps.phi_k, 
@@ -228,7 +231,7 @@ status_t wl_chassis_t::_init()
 
 void wl_chassis_t::_update_feedback()
 {
-    last_time = dwt_drv_t::get_timeline_s();
+    last_time = dwt_drv_t::get_timeline_ms();
     static uint32_t dwt_cnt;
     static float last_dx[2];
     /* Update INS data */
@@ -236,7 +239,7 @@ void wl_chassis_t::_update_feedback()
     {
         _ins_drv->get_rads_b(&yaw, &pitch, &roll);
         _ins_drv->get_gyro_b(&g_yaw, &g_pitch, &g_roll);
-        _ins_drv->get_acc_without_g_n(&a_x, &a_y, &a_z);
+        _ins_drv->get_acc_without_g_b(&a_x, &a_y, &a_z);
     }
     /* Update the feedback of joint motors and wheel motors. */
     for(uint8_t i = 0; i < 4; i++)
@@ -341,11 +344,19 @@ void wl_chassis_t::_update_feedback()
     float kf_u = 0.0f;
     float kf_z[3] = {0.0f, 0.0f, 0.0f};
     float kf_estimated[3] = {0.0f, 0.0f, 0.0f};
+    /* Project body-frame acceleration onto horizontal plane.
+       Body x-axis tilts with pitch, so horizontal forward accel =
+       a_x_b * cos(pitch) + a_z_b * sin(pitch) */
+     a_forward = a_x * arm_cos_f32(pitch) - a_z * arm_sin_f32(pitch);
+    /* Average left/right wheel speed to obtain v_center directly.
+       dx_R = v + (d/2)*w,  dx_L = v - (d/2)*w  →  mean = v
+       Rotation cancels exactly, no gyro involved, immune to gyro bias. */
+    float v_obs = (_leg_data[R].dx + _leg_data[L].dx) / 2.0f;
     for(uint8_t i = 0; i < 2; i++)
     {
         kf_u = 0.0f;
-        kf_z[0] = _leg_data[i].dx;
-        kf_z[1] = a_x;
+        kf_z[0] = v_obs;
+        kf_z[1] = a_forward;
         kf_z[2] = g_yaw;   
         _wheel_kf[i].update(kf_z, &kf_u, kf_estimated);
         _leg_data[i].kf_v = kf_estimated[0];
@@ -363,6 +374,6 @@ void wl_chassis_t::_fsm_execute()
     else if (cmd_base_t::mode_t::ACTIVE == _cmd->mode)
         _fsm.change_state(&_state_active);
     _fsm.execute(this);
-    time = dwt_drv_t::get_timeline_s() - last_time;
+    time = dwt_drv_t::get_timeline_ms() - last_time;
 }
  }

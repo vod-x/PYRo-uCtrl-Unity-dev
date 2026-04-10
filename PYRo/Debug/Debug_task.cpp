@@ -2,6 +2,7 @@
 #include "pyro_core_config.h"
 #include "task.h"
 
+#define VOFA_DEBUG_EN 1
 extern "C"
 {
     extern void pyro_vofa_task(void *arg);

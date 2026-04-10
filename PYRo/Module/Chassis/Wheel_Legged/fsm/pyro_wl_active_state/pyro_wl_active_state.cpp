@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-26 20:03:11
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-03-11 19:57:29
+ * @LastEditTime: 2026-04-09 14:32:55
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -29,6 +29,10 @@ void wl_chassis_t::fsm_active_t::on_enter(wl_chassis_t *owner)
     owner->_leg_data[wl_chassis_t::L].x = 0.0f;
     owner->_leg_data[wl_chassis_t::R].x_gain = 0.0f;
     owner->_leg_data[wl_chassis_t::L].x_gain = 0.0f;
+    owner->_leg_data[wl_chassis_t::R].kf_x = 0.0f;
+    owner->_leg_data[wl_chassis_t::L].kf_x = 0.0f;
+    owner->_wheel_kf[wl_chassis_t::R].reset();
+    owner->_wheel_kf[wl_chassis_t::L].reset();
 }
 
 void wl_chassis_t::fsm_active_t::on_execute(wl_chassis_t *owner)

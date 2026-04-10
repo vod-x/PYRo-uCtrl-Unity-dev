@@ -208,9 +208,9 @@ wl_chassis_cfg_t infantry2_chassis_cfg = {
                 0.0f, 0.0f, 0.0f
             },
             .H = (float[9]){
-                1.0f,  0.0f, -WHEEL_DISTANCE / 2.0f,
-                0.0f,  1.0f,   0.0f,
-                0.0f,  0.0f,   1.0f
+                1.0f,  0.0f, 0.0f,
+                0.0f,  1.0f, 0.0f,
+                0.0f,  0.0f, 1.0f
             },
             .G = (float[6]){
                 CONTROL_PERIOD * CONTROL_PERIOD / 2.0f, 0.0f,
@@ -218,13 +218,13 @@ wl_chassis_cfg_t infantry2_chassis_cfg = {
                 0.0f,                                   CONTROL_PERIOD
             },
             .Q = (float[4]){
-                0.1f, 0.0f,
-                0.0f, 0.1f
+                10000.0f, 0.0f,
+                0.0f,     10000.0f
             },
             .R = (float[9]){
-                0.5f, 0.0f, 0.0f,
-                0.0f, 0.5f, 0.0f,
-                0.0f, 0.0f, 0.5f
+                0.05f, 0.0f,  0.0f,
+                0.0f,  0.5f,  0.0f,
+                0.0f,  0.0f,  0.005f
             }
         },
         {
@@ -243,9 +243,9 @@ wl_chassis_cfg_t infantry2_chassis_cfg = {
                 0.0f, 0.0f, 0.0f
             },
             .H = (float[9]){
-                1.0f,  0.0f, WHEEL_DISTANCE / 2.0f,
-                0.0f,  1.0f,   0.0f,
-                0.0f,  0.0f,   1.0f
+                1.0f,  0.0f, 0.0f,
+                0.0f,  1.0f, 0.0f,
+                0.0f,  0.0f, 1.0f
             },
             .G = (float[6]){
                 CONTROL_PERIOD * CONTROL_PERIOD / 2.0f, 0.0f,
@@ -253,13 +253,13 @@ wl_chassis_cfg_t infantry2_chassis_cfg = {
                 0.0f,                                   CONTROL_PERIOD
             },
             .Q = (float[4]){
-                0.1f, 0.0f,
-                0.0f, 0.1f
+                10000.0f, 0.0f,
+                0.0f,     10000.0f
             },
             .R = (float[9]){
-                0.5f, 0.0f, 0.0f,
-                0.0f, 0.5f, 0.0f,
-                0.0f, 0.0f, 0.5f
+                0.05f, 0.0f,  0.0f,
+                0.0f,  0.5f,  0.0f,
+                0.0f,  0.0f,  0.005f
             },
         }
     },
