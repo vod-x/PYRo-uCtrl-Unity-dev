@@ -285,6 +285,7 @@ void wl_chassis_t::_update_feedback()
 
     
     /* kinematic solve the current states of the chassis */
+    time = dwt_drv_t::get_delta_t(&dwt_cnt);
     for(uint8_t i = 0; i < 2; i++)
     {
         status_t ret;
@@ -316,7 +317,6 @@ void wl_chassis_t::_update_feedback()
 
          /* The second differential of beta is calculated by data, which may be
             noisy but can reflect the real dynamic of the chassis. */
-        time = dwt_drv_t::get_delta_t(&dwt_cnt);
         _leg_data[i].d2_beta = (_leg_data[i].d_beta - last_d_beta) / time;
          /* The second differential of l is calculated by data, which may be
             noisy but can reflect the real dynamic of the chassis. */

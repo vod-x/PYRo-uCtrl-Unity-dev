@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-28 13:11:52
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-04-09 14:36:18
+ * @LastEditTime: 2026-04-12 20:50:25
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -11,6 +11,7 @@
 #include "pyro_algo_common.h"
 namespace pyro
 {
+extern pid_t wheel_disable_pid[2];
 void wl_chassis_t::fsm_active_t::state_normal_t::enter(wl_chassis_t *owner)
 {
 }
@@ -27,12 +28,32 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
         //     owner->_leg_data[i].x_gain = 0.0f;
         // }
     }
+    /* Calculate the support force for each leg, if the support force is less 
+       than threadhold, it means the leg is in the air, which may cause 
+       instability. */
     calc_support_force(owner);
-    if(owner->_leg_data[wl_chassis_t::R].P < 0 || owner->_leg_data[wl_chassis_t::L].P < 0)
+    constexpr uint8_t AERIAL_DEBOUNCE = 5;
+    // if(!owner->_flag.is_aerial)
     {
-        /* If the support force is negative, it means the leg is in the air, which may cause instability. */
-        owner->_cnt.solver_error++;
+        /* On ground: detect takeoff by support force, with debounce to avoid
+           false triggers caused by F[1]/l amplification at short leg lengths */
+        if(owner->_leg_data[wl_chassis_t::R].P < -70.0f 
+            || owner->_leg_data[wl_chassis_t::L].P < -70.0f)
+        {
+            owner->_flag.aerial_cnt++;
+            if(owner->_flag.aerial_cnt >= AERIAL_DEBOUNCE)
+            {
+                owner->_flag.is_aerial = 1;
+                owner->_flag.aerial_cnt = 0;
+            }
+        }
+        else
+        {
+            owner->_flag.is_aerial = 0;
+            owner->_flag.aerial_cnt = 0;
+        }
     }
+    
     float yaw_ref, g_yaw_ref, diff;
     yaw_ref = owner->_cmd->yaw;
     if(yaw_ref - owner->yaw > PI)
@@ -99,15 +120,7 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
         owner->_F_pid[wl_chassis_t::L]->
         calculate(owner->_leg_data[wl_chassis_t::L].ref_d_l,
         owner->_leg_data[wl_chassis_t::L].d_l);
-    // owner->_leg_data[wl_chassis_t::R].F[0] = 0.0f;
-    // owner->_leg_data[wl_chassis_t::L].F[0] = 0.0f;
-    // owner->_leg_data[wl_chassis_t::R].F[1] = 2.0f;
-    // owner->_leg_data[wl_chassis_t::L].F[1] = 0.0f;
-    // if((owner->_cmd->r_leg == 0.33f) && (owner->_cmd->l_leg == 0.33f))
-    // {
-    //     owner->_leg_data[wl_chassis_t::R].F[0] = 90.0f;
-    //     owner->_leg_data[wl_chassis_t::L].F[0] = 90.0f;
-    // }
+
     /* Calculate the target torque of VMC for each leg */
     for(uint8_t i = 0; i < 2; i++)
     {
@@ -123,25 +136,34 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
                                                           owner->_lqr_cof[(j * 6 + k) * 4 + 3] * l * l * l ;
             }
         }
-
-        owner->_leg_data[i].T_w = (owner->_leg_data[i].lqr_gain[0] * (owner->_leg_data[i].x_gain - owner->_leg_data[i].kf_x) + 
-                                  owner->_leg_data[i].lqr_gain[1] * (0.0f - owner->_leg_data[i].kf_v) + 
-                                  owner->_leg_data[i].lqr_gain[2] * (0 - owner->_leg_data[i].gamma) + 
-                                  owner->_leg_data[i].lqr_gain[3] * (0 - owner->_leg_data[i].d_gamma) + 
-                                  owner->_leg_data[i].lqr_gain[4] * (0 - owner->_leg_data[i].beta) + 
-                                  owner->_leg_data[i].lqr_gain[5] * (0 - owner->_leg_data[i].d_beta))
-                                  / owner->_reduction_ratio /0.3f * (3591.0f/187.0f);
-        owner->_leg_data[i].F[1] = -(owner->_leg_data[i].lqr_gain[6] * (owner->_leg_data[i].x_gain - owner->_leg_data[i].kf_x) + 
-                                  owner->_leg_data[i].lqr_gain[7] * (0.0F - owner->_leg_data[i].kf_v) + 
-                                  owner->_leg_data[i].lqr_gain[8] * (0 - owner->_leg_data[i].gamma) + 
-                                  owner->_leg_data[i].lqr_gain[9] * (0 - owner->_leg_data[i].d_gamma) + 
-                                  owner->_leg_data[i].lqr_gain[10] * (0 - owner->_leg_data[i].beta) + 
-                                  owner->_leg_data[i].lqr_gain[11] * (0 - owner->_leg_data[i].d_beta));
+        if(owner->_flag.is_aerial)
+        {
+            owner->_leg_data[i].F[1] = -( 
+                                      owner->_leg_data[i].lqr_gain[10] * (0 - owner->_leg_data[i].beta) + 
+                                      owner->_leg_data[i].lqr_gain[11] * (0 - owner->_leg_data[i].d_beta));
+        
+        }
+        else 
+        {
+            owner->_leg_data[i].T_w = (owner->_leg_data[i].lqr_gain[0] * (owner->_leg_data[i].x_gain - owner->_leg_data[i].kf_x) + 
+                                      owner->_leg_data[i].lqr_gain[1] * (0.0f - owner->_leg_data[i].kf_v) + 
+                                      owner->_leg_data[i].lqr_gain[2] * (0 - owner->_leg_data[i].gamma) + 
+                                      owner->_leg_data[i].lqr_gain[3] * (0 - owner->_leg_data[i].d_gamma) + 
+                                      owner->_leg_data[i].lqr_gain[4] * (0 - owner->_leg_data[i].beta) + 
+                                      owner->_leg_data[i].lqr_gain[5] * (0 - owner->_leg_data[i].d_beta))
+                                      / owner->_reduction_ratio /0.3f * (3591.0f/187.0f);
+            owner->_leg_data[i].F[1] = -(owner->_leg_data[i].lqr_gain[6] * (owner->_leg_data[i].x_gain - owner->_leg_data[i].kf_x) + 
+                                      owner->_leg_data[i].lqr_gain[7] * (0.0F - owner->_leg_data[i].kf_v) + 
+                                      owner->_leg_data[i].lqr_gain[8] * (0 - owner->_leg_data[i].gamma) + 
+                                      owner->_leg_data[i].lqr_gain[9] * (0 - owner->_leg_data[i].d_gamma) + 
+                                      owner->_leg_data[i].lqr_gain[10] * (0 - owner->_leg_data[i].beta) + 
+                                      owner->_leg_data[i].lqr_gain[11] * (0 - owner->_leg_data[i].d_beta));
                                   
+        }
     }
     owner->_leg_data[wl_chassis_t::R].F[1] += owner->T_l_gain;
     owner->_leg_data[wl_chassis_t::L].F[1] -= owner->T_l_gain;
-    
+
 
     /* Transfer the force and torque of virtual rod to the practical torque of
        motors by VMC matrix. */
@@ -154,8 +176,20 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
 
     /* Send torque to motors. The direction of right motors is opposite to the
        torque direction due to installation*/
-    owner->_wheel_drv[wl_chassis_t::R]->send_torque(fp32_constrain(-owner->_leg_data[wl_chassis_t::R].T_w + owner->_T_w_gain, -20.0f, 20.0f));
-    owner->_wheel_drv[wl_chassis_t::L]->send_torque(fp32_constrain(owner->_leg_data[wl_chassis_t::L].T_w + owner->_T_w_gain, -20.0f, 20.0f));
+    if(owner->_flag.is_aerial)
+    {
+        for(uint8_t i = 0; i < 2; i++)
+        {
+            owner->_wheel_drv[i]->send_torque(wheel_disable_pid[i].calculate(0.0f,
+              owner->_wheel_drv[i]->get_current_rotate()));
+        }
+    }
+    else
+    {
+
+        owner->_wheel_drv[wl_chassis_t::R]->send_torque(fp32_constrain(-owner->_leg_data[wl_chassis_t::R].T_w + owner->_T_w_gain, -20.0f, 20.0f));
+        owner->_wheel_drv[wl_chassis_t::L]->send_torque(fp32_constrain(owner->_leg_data[wl_chassis_t::L].T_w + owner->_T_w_gain, -20.0f, 20.0f));
+    }
     owner->_motor_drv[wl_chassis_t::RF]->send_torque(
                         -owner->_leg_data[wl_chassis_t::R].T[0]);
     owner->_motor_drv[wl_chassis_t::RB]->send_torque(
@@ -175,7 +209,6 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
     //                     0.0f);
     // owner->_motor_drv[wl_chassis_t::LB]->send_torque(
     //                     0.0f);
-    // vTaskDelay(1);
 }
 void wl_chassis_t::fsm_active_t::state_normal_t::exit(wl_chassis_t *owner)
 {
@@ -193,7 +226,7 @@ void wl_chassis_t::fsm_active_t::state_normal_t::calc_support_force(wl_chassis_t
          + owner->_leg_data[i].F[1] * arm_sin_f32(owner->_leg_data[i].beta) / owner->_leg_data[i].l
          + owner->a_z 
          - owner->_leg_data[i].d2_l * arm_cos_f32(owner->_leg_data[i].beta)
-         + owner->_leg_data[i].d_l * owner->_leg_data[i].d_beta * arm_sin_f32(owner->_leg_data[i].beta)
+         + 2.0f * owner->_leg_data[i].d_l * owner->_leg_data[i].d_beta * arm_sin_f32(owner->_leg_data[i].beta)
          + owner->_leg_data[i].l * owner->_leg_data[i].d2_beta * arm_sin_f32(owner->_leg_data[i].beta)
          + owner->_leg_data[i].l * owner->_leg_data[i].d_beta * owner->_leg_data[i].d_beta * arm_cos_f32(owner->_leg_data[i].beta);
         

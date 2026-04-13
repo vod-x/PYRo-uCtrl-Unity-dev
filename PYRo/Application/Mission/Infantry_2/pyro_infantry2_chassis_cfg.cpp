@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-27 20:38:05
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-04-09 13:35:13
+ * @LastEditTime: 2026-04-12 15:52:00
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -23,10 +23,10 @@
 #define TRANS_K1 100000.0f
 //the offsets of motors, which is the angle between the zero point of motor and
 // the forward direction of robot, counter clockwise is positive(rad)
-#define R_MOTOR1_OFFSET -2.664f
-#define R_MOTOR2_OFFSET 1.33115f
-#define L_MOTOR1_OFFSET 1.64320564f
-#define L_MOTOR2_OFFSET 2.7037f
+#define R_MOTOR1_OFFSET  1.30f
+#define R_MOTOR2_OFFSET  -4.34f
+#define L_MOTOR1_OFFSET 1.40f
+#define L_MOTOR2_OFFSET  0.15f
 
 #define WHEEL_DISTANCE 0.424f
 #define CONTROL_PERIOD 0.001f

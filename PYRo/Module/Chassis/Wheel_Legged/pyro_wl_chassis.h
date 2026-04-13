@@ -339,6 +339,11 @@ private:
     {
         uint16_t solver_error;
     }_cnt;
+   struct
+   {
+      uint8_t is_aerial = 0;
+      uint8_t aerial_cnt = 0;
+   }_flag;
 
    struct
    {
