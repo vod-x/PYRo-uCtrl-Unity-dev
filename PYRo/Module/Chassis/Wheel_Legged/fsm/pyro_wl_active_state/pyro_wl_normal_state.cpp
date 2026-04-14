@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-28 13:11:52
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-04-12 20:50:25
+ * @LastEditTime: 2026-04-14 15:43:04
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -42,14 +42,14 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
         {
             owner->_flag.aerial_cnt++;
             if(owner->_flag.aerial_cnt >= AERIAL_DEBOUNCE)
-            {
-                owner->_flag.is_aerial = 1;
+    {
+        owner->_flag.is_aerial = 1;
                 owner->_flag.aerial_cnt = 0;
             }
-        }
-        else
-        {
-            owner->_flag.is_aerial = 0;
+    }
+    else
+    {
+        owner->_flag.is_aerial = 0;
             owner->_flag.aerial_cnt = 0;
         }
     }
@@ -103,21 +103,23 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
     last_d_x_gain[wl_chassis_t::L] = owner->_leg_data[wl_chassis_t::L].d_x_gain;
 
     /* Right leg */
+    owner->_leg_data[wl_chassis_t::R].ref_l = owner->_cmd->r_leg;
     owner->_leg_data[wl_chassis_t::R].ref_d_l=
         owner->_F_pid[wl_chassis_t::R]->
         calculate(owner->_cmd->r_leg, 
         owner->_leg_data[wl_chassis_t::R].l);
     owner->_leg_data[wl_chassis_t::R].F[0]=
-            owner->_F_pid[wl_chassis_t::R]->
+            owner->_d_F_pid[wl_chassis_t::R]->
              calculate(owner->_leg_data[wl_chassis_t::R].ref_d_l, 
         owner->_leg_data[wl_chassis_t::R].d_l);
     /* Left leg */
+    owner->_leg_data[wl_chassis_t::L].ref_l = owner->_cmd->l_leg;
     owner->_leg_data[wl_chassis_t::L].ref_d_l=
         owner->_F_pid[wl_chassis_t::L]->
         calculate(owner->_cmd->l_leg,
         owner->_leg_data[wl_chassis_t::L].l);
     owner->_leg_data[wl_chassis_t::L].F[0]=
-        owner->_F_pid[wl_chassis_t::L]->
+        owner->_d_F_pid[wl_chassis_t::L]->
         calculate(owner->_leg_data[wl_chassis_t::L].ref_d_l,
         owner->_leg_data[wl_chassis_t::L].d_l);
 
@@ -136,6 +138,7 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
                                                           owner->_lqr_cof[(j * 6 + k) * 4 + 3] * l * l * l ;
             }
         }
+owner->_flag.is_aerial = 0.0f;
         if(owner->_flag.is_aerial)
         {
             owner->_leg_data[i].F[1] = -( 
@@ -145,18 +148,18 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
         }
         else 
         {
-            owner->_leg_data[i].T_w = (owner->_leg_data[i].lqr_gain[0] * (owner->_leg_data[i].x_gain - owner->_leg_data[i].kf_x) + 
-                                      owner->_leg_data[i].lqr_gain[1] * (0.0f - owner->_leg_data[i].kf_v) + 
+            owner->_leg_data[i].T_w = (owner->_leg_data[i].lqr_gain[0] * (owner->_leg_data[i].x_gain - owner->_leg_data[i].x) + 
+                                      owner->_leg_data[i].lqr_gain[1] * (0.0f - owner->_leg_data[i].dx) + 
                                       owner->_leg_data[i].lqr_gain[2] * (0 - owner->_leg_data[i].gamma) + 
                                       owner->_leg_data[i].lqr_gain[3] * (0 - owner->_leg_data[i].d_gamma) + 
-                                      owner->_leg_data[i].lqr_gain[4] * (0 - owner->_leg_data[i].beta) + 
+                                      owner->_leg_data[i].lqr_gain[4] * (-0.1f - owner->_leg_data[i].beta) + 
                                       owner->_leg_data[i].lqr_gain[5] * (0 - owner->_leg_data[i].d_beta))
                                       / owner->_reduction_ratio /0.3f * (3591.0f/187.0f);
-            owner->_leg_data[i].F[1] = -(owner->_leg_data[i].lqr_gain[6] * (owner->_leg_data[i].x_gain - owner->_leg_data[i].kf_x) + 
-                                      owner->_leg_data[i].lqr_gain[7] * (0.0F - owner->_leg_data[i].kf_v) + 
+            owner->_leg_data[i].F[1] = -(owner->_leg_data[i].lqr_gain[6] * (owner->_leg_data[i].x_gain - owner->_leg_data[i].x) + 
+                                      owner->_leg_data[i].lqr_gain[7] * (0.0F - owner->_leg_data[i].dx) + 
                                       owner->_leg_data[i].lqr_gain[8] * (0 - owner->_leg_data[i].gamma) + 
                                       owner->_leg_data[i].lqr_gain[9] * (0 - owner->_leg_data[i].d_gamma) + 
-                                      owner->_leg_data[i].lqr_gain[10] * (0 - owner->_leg_data[i].beta) + 
+                                      owner->_leg_data[i].lqr_gain[10] * (-0.1f - owner->_leg_data[i].beta) + 
                                       owner->_leg_data[i].lqr_gain[11] * (0 - owner->_leg_data[i].d_beta));
                                   
         }

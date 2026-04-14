@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-26 20:18:33
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-04-13 09:57:23
+ * @LastEditTime: 2026-04-14 15:33:24
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -253,8 +253,8 @@ void normal_mode(void const *rc_ctrl)
     infantry2_chassis_cmd_ptr->l_leg += (cmd.vy / 4000.0f);
 #endif
 #if defined (USE_DR16)
-    infantry2_chassis_cmd_ptr->r_leg += (p_ctrl->rc.ch_ry / 500.0f);
-    infantry2_chassis_cmd_ptr->l_leg += (p_ctrl->rc.ch_ry / 500.0f);
+    infantry2_chassis_cmd_ptr->r_leg += (p_ctrl->rc.ch_ry / 2000.0f);
+    infantry2_chassis_cmd_ptr->l_leg += (p_ctrl->rc.ch_ry / 2000.0f);
 
     infantry2_chassis_cmd_ptr->yaw -= (p_ctrl->rc.ch_lx * PI / 500.0f);
     infantry2_chassis_cmd_ptr->vx = (p_ctrl->rc.ch_ly * 8.0f);

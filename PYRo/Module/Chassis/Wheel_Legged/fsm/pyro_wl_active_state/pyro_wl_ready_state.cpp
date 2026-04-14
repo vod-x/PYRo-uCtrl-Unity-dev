@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-28 15:55:50
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-04-08 16:40:02
+ * @LastEditTime: 2026-04-14 15:49:21
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -14,7 +14,7 @@
 #define ANGLE_SPEED (PI/1000.0f)
 #define TARGET_LENGTH 0.20f
 // #define TARGET_ANGLE (2.0f * PI/3.0f)
-#define TARGET_ANGLE (PI/2.0f)
+#define TARGET_ANGLE (PI/2.0f) -0.1f
 namespace pyro
 {
 extern pid_t wheel_disable_pid[2];
@@ -77,7 +77,7 @@ void wl_chassis_t::fsm_active_t::state_ready_t::execute(wl_chassis_t *owner)
         calculate(target_length[wl_chassis_t::R], 
         owner->_leg_data[wl_chassis_t::R].l);
     owner->_leg_data[wl_chassis_t::R].F[0]=
-            owner->_F_pid[wl_chassis_t::R]->
+            owner->_d_F_pid[wl_chassis_t::R]->
              calculate(owner->_leg_data[wl_chassis_t::R].ref_d_l, 
         owner->_leg_data[wl_chassis_t::R].d_l);
     /* Left leg */
@@ -86,7 +86,7 @@ void wl_chassis_t::fsm_active_t::state_ready_t::execute(wl_chassis_t *owner)
         calculate(target_length[wl_chassis_t::L],
         owner->_leg_data[wl_chassis_t::L].l);
     owner->_leg_data[wl_chassis_t::L].F[0]=
-        owner->_F_pid[wl_chassis_t::L]->
+        owner->_d_F_pid[wl_chassis_t::L]->
         calculate(owner->_leg_data[wl_chassis_t::L].ref_d_l,
         owner->_leg_data[wl_chassis_t::L].d_l);
 

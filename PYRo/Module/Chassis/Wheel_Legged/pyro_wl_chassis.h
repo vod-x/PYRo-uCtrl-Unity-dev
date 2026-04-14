@@ -272,6 +272,7 @@ private:
         float phi1, phi2;
         /* Polar radius of j9(m) */
         float l;
+        float ref_l;
         /* Differential of polar radius of j9(m/s) */
         float d_l;
         /* Second differential of polar radius of j9(m/s^2), calculated by data. */
