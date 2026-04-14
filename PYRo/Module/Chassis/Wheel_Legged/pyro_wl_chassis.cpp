@@ -2,7 +2,7 @@
  * @Author: Vod vod0575@outlook
  * @Date: 2026-02-06 15:27:37
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-04-09 22:08:19
+ * @LastEditTime: 2026-04-14 16:52:41
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -14,6 +14,9 @@
 #include "pyro_dwt_drv.h"
 #include "pyro_vofa.h"
 #define WHEEL_DISTANCE 0.424f
+/* IMU offset from yaw rotation center (midpoint of two wheels) along body x-axis.
+   Positive = IMU is in front of wheel axis. Measure and adjust this value. */
+#define IMU_OFFSET_X  0.2f
 
  namespace pyro
 {
@@ -347,7 +350,9 @@ void wl_chassis_t::_update_feedback()
     /* Project body-frame acceleration onto horizontal plane.
        Body x-axis tilts with pitch, so horizontal forward accel =
        a_x_b * cos(pitch) + a_z_b * sin(pitch) */
-     a_forward = a_x * arm_cos_f32(pitch) - a_z * arm_sin_f32(pitch);
+     a_forward = a_x * arm_cos_f32(pitch) - a_z * arm_sin_f32(pitch) + g_yaw * g_yaw * IMU_OFFSET_X;
+    /* Compensate centripetal acceleration caused by IMU offset from yaw axis.
+       a_x_measured = a_x_linear - w^2 * r_x  →  a_x_linear = a_x + w^2 * r_x */
     /* Average left/right wheel speed to obtain v_center directly.
        dx_R = v + (d/2)*w,  dx_L = v - (d/2)*w  →  mean = v
        Rotation cancels exactly, no gyro involved, immune to gyro bias. */
