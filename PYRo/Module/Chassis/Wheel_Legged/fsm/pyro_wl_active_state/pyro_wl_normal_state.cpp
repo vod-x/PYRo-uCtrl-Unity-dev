@@ -138,6 +138,8 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
                                                           owner->_lqr_cof[(j * 6 + k) * 4 + 3] * l * l * l ;
             }
         }
+
+        owner->_flag.is_aerial = 0;
         if(owner->_flag.is_aerial)
         {
             owner->_leg_data[i].F[1] = -( 

@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-28 13:11:52
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-03-10 10:56:39
+ * @LastEditTime: 2026-04-14 18:26:17
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -59,7 +59,7 @@ void wl_chassis_t::fsm_active_t::state_reverse_t::execute(wl_chassis_t *owner)
         calculate(owner->_leg_data[wl_chassis_t::R].alpha + diff,
         owner->_leg_data[wl_chassis_t::R].alpha);
     owner->_leg_data[wl_chassis_t::R].F[1]=
-        owner->_T_pid[wl_chassis_t::R]->
+        owner->_d_T_pid[wl_chassis_t::R]->
         calculate(owner->_leg_data[wl_chassis_t::R].ref_d_alpha,
         owner->_leg_data[wl_chassis_t::R].d_alpha);
     /* Left leg */
@@ -80,7 +80,7 @@ void wl_chassis_t::fsm_active_t::state_reverse_t::execute(wl_chassis_t *owner)
         calculate(owner->_leg_data[wl_chassis_t::L].alpha + diff,
         owner->_leg_data[wl_chassis_t::L].alpha);
     owner->_leg_data[wl_chassis_t::L].F[1]=
-        owner->_T_pid[wl_chassis_t::L]->
+        owner->_d_T_pid[wl_chassis_t::L]->
         calculate(owner->_leg_data[wl_chassis_t::L].ref_d_alpha,
         owner->_leg_data[wl_chassis_t::L].d_alpha);
     
