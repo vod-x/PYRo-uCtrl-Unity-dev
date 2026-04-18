@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-26 20:18:33
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-04-14 15:33:24
+ * @LastEditTime: 2026-04-18 18:32:09
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -59,6 +59,7 @@ void ready_mode(void const *rc_ctrl);
 void normal_mode(void const *rc_ctrl);
 void reverse_mode(void const *rc_ctrl);
 void over_step_mode(void const *rc_ctrl);
+void control_mode(void const *rc_ctrl);
 void infantry2_chassis_rc2cmd(void const *rc_ctrl)
 {
 
@@ -128,23 +129,18 @@ static pyro::cmd_base_t::mode_t last_mode = pyro::cmd_base_t::mode_t::PASSIVE;
         case dr16_drv_t::sw_state_t::SW_UP:
             passive_mode(rc_ctrl);
             break;
-        case dr16_drv_t::sw_state_t::SW_MID:
-            infantry2_chassis_cmd_ptr->mode = pyro::cmd_base_t::mode_t::ACTIVE;
-            test_mode(rc_ctrl);
-            // if(p_ctrl->rc.s_l.state == dr16_drv_t::sw_state_t::SW_UP)
-            // {
-            //     ready_mode(rc_ctrl);
-            // }
-            // else if(p_ctrl->rc.s_l.state == dr16_drv_t::sw_state_t::SW_MID)
-            // {
-            //     normal_mode(rc_ctrl);
-            // }
-            // else
-            // {
-            //     over_step_mode(rc_ctrl);
-            // }
-            break;
         case dr16_drv_t::sw_state_t::SW_DOWN:
+            infantry2_chassis_cmd_ptr->mode = pyro::cmd_base_t::mode_t::ACTIVE;
+            if(p_ctrl->rc.s_l.state == dr16_drv_t::sw_state_t::SW_UP)
+            {
+                test_mode(rc_ctrl);
+            }
+            else
+            {
+                control_mode(rc_ctrl);
+            }
+            break;
+        case dr16_drv_t::sw_state_t::SW_MID:
             infantry2_chassis_cmd_ptr->mode = pyro::cmd_base_t::mode_t::ACTIVE;
             if(p_ctrl->rc.s_l.state == dr16_drv_t::sw_state_t::SW_UP)
             {
@@ -152,6 +148,7 @@ static pyro::cmd_base_t::mode_t last_mode = pyro::cmd_base_t::mode_t::PASSIVE;
             }
             else if(p_ctrl->rc.s_l.state == dr16_drv_t::sw_state_t::SW_MID)
             {
+                infantry2_chassis_ptr->clear_status_flag(wl_cmd_t::OVER_STEP);
                 if(0 == infantry2_chassis_ptr->get_status_flag(wl_cmd_t::READY))
                 {
                     ready_mode(rc_ctrl);
@@ -163,7 +160,19 @@ static pyro::cmd_base_t::mode_t last_mode = pyro::cmd_base_t::mode_t::PASSIVE;
             }
             else
             {
-                reverse_mode(rc_ctrl);
+                if((0 == infantry2_chassis_ptr->get_status_flag(wl_cmd_t::OVER_STEP)))
+                {
+                    over_step_mode(rc_ctrl);
+                }
+                else if(1 == infantry2_chassis_ptr->get_status_flag(wl_cmd_t::OVER_STEP)&&
+                        0 == infantry2_chassis_ptr->get_status_flag(wl_cmd_t::READY))
+                {
+                    ready_mode(rc_ctrl);
+                }
+                else
+                {
+                    normal_mode(rc_ctrl);
+                }
             }
             break;
         default:
@@ -268,6 +277,12 @@ void normal_mode(void const *rc_ctrl)
 }
 void reverse_mode(void const *rc_ctrl)
 {
+   static auto *p_ctrl =
+            static_cast<dr16_drv_t::dr16_ctrl_t const *>(rc_ctrl);  
+    infantry2_chassis_cmd_ptr->active_mode = wl_cmd_t::REVERSE;
+}
+void control_mode(void const *rc_ctrl)
+{
 
    static auto *p_ctrl =
             static_cast<dr16_drv_t::dr16_ctrl_t const *>(rc_ctrl);  
@@ -285,17 +300,12 @@ void reverse_mode(void const *rc_ctrl)
        infantry2_chassis_cmd_ptr->r_leg, 0.14f, 0.37f);
     infantry2_chassis_cmd_ptr->l_leg = fp32_constrain(
        infantry2_chassis_cmd_ptr->l_leg, 0.14f, 0.37f);
-    infantry2_chassis_cmd_ptr->active_mode = wl_cmd_t::REVERSE;
+    infantry2_chassis_cmd_ptr->active_mode = wl_cmd_t::CONTROL;
 }
 void over_step_mode(void const *rc_ctrl)
 {
    static auto *p_ctrl =
             static_cast<dr16_drv_t::dr16_ctrl_t const *>(rc_ctrl);  
-    infantry2_chassis_cmd_ptr->l_angle = PI/2.0f;
-    infantry2_chassis_cmd_ptr->r_angle = PI/2.0f;
-    infantry2_chassis_cmd_ptr->l_leg = 0.17f;
-    infantry2_chassis_cmd_ptr->r_leg = 0.17f;
     infantry2_chassis_cmd_ptr->active_mode = wl_cmd_t::OVER_STEP;
-    ready_flag = 1;
 }
 }

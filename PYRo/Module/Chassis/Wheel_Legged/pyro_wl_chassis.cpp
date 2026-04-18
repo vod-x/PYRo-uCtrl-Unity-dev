@@ -2,7 +2,7 @@
  * @Author: Vod vod0575@outlook
  * @Date: 2026-02-06 15:27:37
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-04-14 16:52:41
+ * @LastEditTime: 2026-04-18 15:08:36
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -74,9 +74,39 @@ uint8_t wl_chassis_t::get_status_flag(wl_cmd_t::active_mode_t mode)
             return _active_mode_flag.over_step;
         case wl_cmd_t::NORMAL:
             return _active_mode_flag.normal;
+        case wl_cmd_t::CONTROL:
+            return _active_mode_flag.control;
         default:
             return 0;
     }
+}
+
+status_t wl_chassis_t::clear_status_flag(wl_cmd_t::active_mode_t mode)
+{
+    switch(mode)
+    {
+        case wl_cmd_t::READY:
+            _active_mode_flag.ready = 0;
+            break;
+        case wl_cmd_t::TEST:
+            _active_mode_flag.test = 0;
+            break;
+        case wl_cmd_t::REVERSE:
+            _active_mode_flag.reverse = 0;
+            break;
+        case wl_cmd_t::OVER_STEP:
+            _active_mode_flag.over_step = 0;
+            break;
+        case wl_cmd_t::NORMAL:
+            _active_mode_flag.normal = 0;
+            break;
+        case wl_cmd_t::CONTROL:
+            _active_mode_flag.control = 0;
+            break;
+        default:
+            return PYRO_PARAM_ERROR;
+    }
+    return PYRO_OK;
 }
 
 status_t wl_chassis_t::_init()

@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-28 15:55:50
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-04-18 14:18:49
+ * @LastEditTime: 2026-04-18 17:08:46
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -10,7 +10,7 @@
 #include "pyro_wl_chassis.h"
 #include "pyro_algo_common.h"
 
-#define LENGTH_SPEED (0.1f/1000.0f)
+#define LENGTH_SPEED (0.1f/800.0f)
 #define ANGLE_SPEED (PI/2000.0f)
 #define TARGET_LENGTH 0.20f
 // #define TARGET_ANGLE (2.0f * PI/3.0f)
@@ -259,15 +259,15 @@ void wl_chassis_t::fsm_active_t::state_ready_t::calc_target_value(wl_chassis_t *
     {
         for(uint8_t i = 0; i < 2; i++)
         {
-            if(cur_length[i] < TARGET_LENGTH)
+            if(target_length[i] < TARGET_LENGTH)
             {
                 target_length[i] += LENGTH_SPEED;
             }
-            else if(cur_length[i] > TARGET_LENGTH)
+            else if(target_length[i] > TARGET_LENGTH)
             {
                 target_length[i] -= LENGTH_SPEED;
             }
-            if(0.1f > abs(target_length[i] - TARGET_LENGTH))
+            if(0.01f > abs(target_length[i] - TARGET_LENGTH))
             {
                 target_length[i] = TARGET_LENGTH;
             }

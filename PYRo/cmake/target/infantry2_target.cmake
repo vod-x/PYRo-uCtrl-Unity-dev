@@ -10,6 +10,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
         PYRo/Module/Chassis/Wheel_Legged/fsm/pyro_wl_active_state/pyro_wl_normal_state.cpp
         PYRo/Module/Chassis/Wheel_Legged/fsm/pyro_wl_active_state/pyro_wl_reverse_state.cpp
         PYRo/Module/Chassis/Wheel_Legged/fsm/pyro_wl_active_state/pyro_wl_over_step_state.cpp
+        PYRo/Module/Chassis/Wheel_Legged/fsm/pyro_wl_active_state/pyro_wl_control_state.cpp
     )
 target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
         PYRo/Module/Chassis/Wheel_Legged

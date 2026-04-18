@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-28 15:55:50
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-03-14 15:27:50
+ * @LastEditTime: 2026-04-18 18:27:53
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -12,11 +12,11 @@
 
 #define LENGTH_SPEED (0.1f/1000.0f)
 #define ANGLE_SPEED (2.0f * PI/1000.0f)
-#define TARGET_LENGTH 0.17f
-#define TARGET_ANGLE (-2.0f * PI/3.0f)
+#define TARGET_ANGLE (-PI + 0.2f)
 namespace pyro
 {
 
+extern pid_t wheel_disable_pid[2];
  static float target_length[2] = {0.0f, 0.0f};
  static float target_angle[2] = {0.0f, 0.0f};
  static float cur_length[2] = {0.0f, 0.0f};
@@ -43,6 +43,12 @@ void wl_chassis_t::fsm_active_t::state_over_step_t::execute(wl_chassis_t *owner)
 
     calc_target_value(owner);
 
+    for(uint8_t i = 0; i < 2; i++)
+    {
+        float t = wheel_disable_pid[i].calculate(0.0f,
+             owner->_wheel_drv[i]->get_current_rotate());
+        owner->_wheel_drv[i]->send_torque(t);
+    }
     /* Calculate the target force of VMC for each leg */
     /* Right leg */
     owner->_leg_data[wl_chassis_t::R].ref_d_l=
@@ -83,7 +89,7 @@ void wl_chassis_t::fsm_active_t::state_over_step_t::execute(wl_chassis_t *owner)
         calculate(owner->_leg_data[wl_chassis_t::R].alpha + diff,
         owner->_leg_data[wl_chassis_t::R].alpha);
     owner->_leg_data[wl_chassis_t::R].F[1]=
-        owner->_T_pid[wl_chassis_t::R]->
+        owner->_d_T_pid[wl_chassis_t::R]->
         calculate(owner->_leg_data[wl_chassis_t::R].ref_d_alpha,
         owner->_leg_data[wl_chassis_t::R].d_alpha);
     /* Left leg */
@@ -104,7 +110,7 @@ void wl_chassis_t::fsm_active_t::state_over_step_t::execute(wl_chassis_t *owner)
         calculate(owner->_leg_data[wl_chassis_t::L].alpha+diff,
         owner->_leg_data[wl_chassis_t::L].alpha);
     owner->_leg_data[wl_chassis_t::L].F[1]=
-        owner->_T_pid[wl_chassis_t::L]->
+        owner->_d_T_pid[wl_chassis_t::L]->
         calculate(owner->_leg_data[wl_chassis_t::L].ref_d_alpha,
         owner->_leg_data[wl_chassis_t::L].d_alpha);
     
@@ -127,9 +133,16 @@ void wl_chassis_t::fsm_active_t::state_over_step_t::execute(wl_chassis_t *owner)
                         owner->_leg_data[wl_chassis_t::L].T[0]);
     owner->_motor_drv[wl_chassis_t::LB]->send_torque(
                         owner->_leg_data[wl_chassis_t::L].T[1]);
+    if(
+       (0.05f > abs(owner->_leg_data[wl_chassis_t::R].alpha - TARGET_ANGLE)) &&
+       (0.05f > abs(owner->_leg_data[wl_chassis_t::L].alpha - TARGET_ANGLE)))
+    {
+        owner->_active_mode_flag.over_step = 1;
+    }
 }
 void wl_chassis_t::fsm_active_t::state_over_step_t::exit(wl_chassis_t *owner)
 {
+    // owner->_active_mode_flag.over_step = 0;
 }
 
 void wl_chassis_t::fsm_active_t::state_over_step_t::calc_target_value(wl_chassis_t *owner)
@@ -137,45 +150,18 @@ void wl_chassis_t::fsm_active_t::state_over_step_t::calc_target_value(wl_chassis
     /* calculate the target angle and length of the legs, add a small bias in 
         each period */
     /* target length */
-    for(uint8_t i = 0; i < 2; i++)
-    {
-        if(0.01f > abs(target_length[i] - TARGET_LENGTH))
-        {
-            continue;
-        }
-        if(cur_length[i] < TARGET_LENGTH)
-        {
-            target_length[i] += LENGTH_SPEED;
-        }
-        else if(cur_length[i] > TARGET_LENGTH)
-        {
-            target_length[i] -= LENGTH_SPEED;
-        }
-    }
     /* target angle */
     for(uint8_t i = 0; i < 2; i++)
     {
-        if(0.3f > abs(target_angle[i] - TARGET_ANGLE))
+        if(0.05f > abs(target_angle[i] - TARGET_ANGLE))
         {
-            continue;
+            target_angle[i] = TARGET_ANGLE;
         }
-        // if((cur_angle[i] < -TARGET_ANGLE) || (cur_angle[i] > TARGET_ANGLE))
-        // {
-        //     target_angle[i] -= ANGLE_SPEED;
-        //     target_angle[i] = wrap2pi_f32(target_angle[i]);
-        // }
-        // else if((cur_angle[i] > -TARGET_ANGLE) && (cur_angle[i] < TARGET_ANGLE))
-        // {
-             target_angle[i] += ANGLE_SPEED;
-             target_angle[i] = wrap2pi_f32(target_angle[i]);
-        // }
-    }
-    if((0.01f > abs(target_length[wl_chassis_t::R] - TARGET_LENGTH)) &&
-       (0.01f > abs(target_length[wl_chassis_t::L] - TARGET_LENGTH)) &&
-       (0.05f > abs(target_angle[wl_chassis_t::R] - TARGET_ANGLE)) &&
-       (0.05f > abs(target_angle[wl_chassis_t::L] - TARGET_ANGLE)))
-    {
-        owner->_active_mode_flag.over_step = 1;
+        else 
+        {
+            target_angle[i] += ANGLE_SPEED;
+            target_angle[i] = wrap2pi_f32(target_angle[i]);
+        }
     }
 }
 

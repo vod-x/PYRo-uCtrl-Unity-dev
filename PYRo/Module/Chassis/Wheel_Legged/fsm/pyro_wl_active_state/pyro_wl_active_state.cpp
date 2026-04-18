@@ -56,16 +56,12 @@ void wl_chassis_t::fsm_active_t::on_execute(wl_chassis_t *owner)
     if(owner->_cmd->active_mode == wl_cmd_t::OVER_STEP)
     {
 
-        // if((0 == owner->_active_mode_flag.ready) && (0 == owner->_active_mode_flag.over_step))
-        // {
-        //     this->change_state(&_state_ready);
-        // }
-        // if((1 == owner->_active_mode_flag.ready) && (0 == owner->_active_mode_flag.over_step))
-        // {
-        //     this->change_state(&_state_normal);
-        // }
-        // this->change_state(&_state_over_step);
+
         this->change_state(&_state_over_step);
+    }
+    if(owner->_cmd->active_mode == wl_cmd_t::CONTROL)
+    {
+        this->change_state(&_state_control);
     }
      
 }
