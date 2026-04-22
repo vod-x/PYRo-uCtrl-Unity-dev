@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-28 13:11:52
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-04-21 17:07:04
+ * @LastEditTime: 2026-04-22 14:16:05
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -143,6 +143,13 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
     owner->_leg_data[wl_chassis_t::L].x_gain += (
         owner->_leg_data[wl_chassis_t::L].d_x_gain 
         + last_d_x_gain[wl_chassis_t::L]) / 2.0f /1000.0f;
+    for(uint8_t i = 0; i < 2; i++)
+    {
+        if(0.01f < abs(owner->_leg_data[i].d_x_gain) && 0.01f > abs(last_d_x_gain[i]))
+        {
+            owner->_leg_data[i].x_gain = owner->_leg_data[i].kf_x;
+        }
+    }
 
     last_d_x_gain[wl_chassis_t::R] = owner->_leg_data[wl_chassis_t::R].d_x_gain;
     last_d_x_gain[wl_chassis_t::L] = owner->_leg_data[wl_chassis_t::L].d_x_gain;
@@ -389,7 +396,7 @@ void wl_chassis_t::fsm_active_t::state_normal_t::calc_support_force(wl_chassis_t
         owner->_leg_data[i].P 
          = owner->_leg_data[i].F[0] * arm_cos_f32(owner->_leg_data[i].beta)
          + owner->_leg_data[i].F[1] * arm_sin_f32(owner->_leg_data[i].beta) / owner->_leg_data[i].l
-         + owner->a_z 
+         + owner->a_upward_lpf 
          - owner->_leg_data[i].d2_l * arm_cos_f32(owner->_leg_data[i].beta)
          + 2.0f * owner->_leg_data[i].d_l * owner->_leg_data[i].d_beta * arm_sin_f32(owner->_leg_data[i].beta)
          + owner->_leg_data[i].l * owner->_leg_data[i].d2_beta * arm_sin_f32(owner->_leg_data[i].beta)

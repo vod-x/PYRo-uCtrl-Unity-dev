@@ -110,37 +110,43 @@ void vofa_drv_t::thread()
     // add_data(&infantry2_chassis_ptr->a_forward);
     // add_data(&infantry2_chassis_ptr->g_yaw);
     /* force pid */
-    add_data(&infantry2_chassis_ptr->_leg_data[0].F[0]);
-    add_data(&infantry2_chassis_ptr->_leg_data[1].F[0]);
+    // add_data(&infantry2_chassis_ptr->_leg_data[0].F[0]);
+    // add_data(&infantry2_chassis_ptr->_leg_data[1].F[0]);
+    // add_data(&infantry2_chassis_ptr->_leg_data[0].l);
+    // add_data(&infantry2_chassis_ptr->_leg_data[1].l);
+    // add_data(&infantry2_chassis_ptr->_leg_data[0].ref_l);
+    // add_data(&infantry2_chassis_ptr->_leg_data[1].ref_l);
+    // add_data(&infantry2_chassis_ptr->_leg_data[0].d_l);
+    // add_data(&infantry2_chassis_ptr->_leg_data[1].d_l);
+    // add_data(&infantry2_chassis_ptr->_leg_data[0].ref_d_l);
+    // add_data(&infantry2_chassis_ptr->_leg_data[1].ref_d_l);
+    // add_data(&infantry2_chassis_ptr->_leg_data[0].P);
+    // add_data(&infantry2_chassis_ptr->_leg_data[1].P);
+    // add_data(&infantry2_chassis_ptr->a_upward_lpf);
+    // add_data(&infantry2_chassis_ptr->_flag.test);
+    /* lqr data */
+    add_data(&infantry2_chassis_ptr->_leg_data[0].kf_x);
+    add_data(&infantry2_chassis_ptr->_leg_data[1].kf_x);
+    add_data(&infantry2_chassis_ptr->_leg_data[0].x_gain);
+    add_data(&infantry2_chassis_ptr->_leg_data[1].x_gain);
+    add_data(&infantry2_chassis_ptr->_leg_data[0].kf_v);
+    add_data(&infantry2_chassis_ptr->_leg_data[1].kf_v);
+    add_data(&infantry2_chassis_ptr->_leg_data[0].d_x_gain);
+    add_data(&infantry2_chassis_ptr->_leg_data[1].d_x_gain);
+    add_data(&infantry2_chassis_ptr->_leg_data[0].gamma);
+    add_data(&infantry2_chassis_ptr->_leg_data[1].gamma);
+    add_data(&infantry2_chassis_ptr->_leg_data[0].d_gamma);
+    add_data(&infantry2_chassis_ptr->_leg_data[1].d_gamma);
+     add_data(&infantry2_chassis_ptr->_leg_data[0].beta);
+    add_data(&infantry2_chassis_ptr->_leg_data[1].beta);
+    add_data(&infantry2_chassis_ptr->_leg_data[0].d_beta);
+    add_data(&infantry2_chassis_ptr->_leg_data[1].d_beta);
+    add_data(&infantry2_chassis_ptr->_leg_data[0].T_w);
+    add_data(&infantry2_chassis_ptr->_leg_data[1].T_w);
+    add_data(&infantry2_chassis_ptr->_leg_data[0].F[1]);
+    add_data(&infantry2_chassis_ptr->_leg_data[1].F[1]);
     add_data(&infantry2_chassis_ptr->_leg_data[0].l);
     add_data(&infantry2_chassis_ptr->_leg_data[1].l);
-    add_data(&infantry2_chassis_ptr->_leg_data[0].ref_l);
-    add_data(&infantry2_chassis_ptr->_leg_data[1].ref_l);
-    add_data(&infantry2_chassis_ptr->_leg_data[0].d_l);
-    add_data(&infantry2_chassis_ptr->_leg_data[1].d_l);
-    add_data(&infantry2_chassis_ptr->_leg_data[0].ref_d_l);
-    add_data(&infantry2_chassis_ptr->_leg_data[1].ref_d_l);
-    add_data(&infantry2_chassis_ptr->_leg_data[0].P);
-    add_data(&infantry2_chassis_ptr->_leg_data[1].P);
-    add_data(&infantry2_chassis_ptr->a_upward_lpf);
-    add_data(&infantry2_chassis_ptr->_flag.test);
-    /* lqr data */
-    // add_data(&infantry2_chassis_ptr->_leg_data[0].x);
-    // add_data(&infantry2_chassis_ptr->_leg_data[1].x);
-    // add_data(&infantry2_chassis_ptr->_leg_data[0].dx);
-    // add_data(&infantry2_chassis_ptr->_leg_data[1].dx);
-    // add_data(&infantry2_chassis_ptr->_leg_data[0].gamma);
-    // add_data(&infantry2_chassis_ptr->_leg_data[1].gamma);
-    // add_data(&infantry2_chassis_ptr->_leg_data[0].d_gamma);
-    // add_data(&infantry2_chassis_ptr->_leg_data[1].d_gamma);
-    //  add_data(&infantry2_chassis_ptr->_leg_data[0].beta);
-    // add_data(&infantry2_chassis_ptr->_leg_data[1].beta);
-    // add_data(&infantry2_chassis_ptr->_leg_data[0].d_beta);
-    // add_data(&infantry2_chassis_ptr->_leg_data[1].d_beta);
-    // add_data(&infantry2_chassis_ptr->_leg_data[0].T_w);
-    // add_data(&infantry2_chassis_ptr->_leg_data[1].T_w);
-    // add_data(&infantry2_chassis_ptr->_leg_data[0].F[1]);
-    // add_data(&infantry2_chassis_ptr->_leg_data[1].F[1]);
     while (true)
     {
         update_data();
@@ -153,6 +159,6 @@ void vofa_drv_t::thread()
 
 extern "C" void pyro_vofa_task(void *arg)
 {
-    pyro::vofa_drv_t &vofa = pyro::vofa_drv_t::get_instance(15);
+    pyro::vofa_drv_t &vofa = pyro::vofa_drv_t::get_instance(20);
     vofa.thread();
 }
