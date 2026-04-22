@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-07 15:14:47
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-04-18 15:10:27
+ * @LastEditTime: 2026-04-19 13:02:36
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -225,7 +225,7 @@ private:
 
     float yaw, pitch, roll;
     float g_yaw, g_pitch, g_roll;
-    float a_x, a_y, a_z, a_forward;
+   float a_x, a_y, a_z, a_forward, a_upward, a_upward_lpf;
     float gimbal_yaw, gimbal_g_yaw;
 
     pid_t* _yaw_pid;
@@ -346,6 +346,7 @@ private:
    {
       uint8_t is_aerial = 0;
       uint8_t aerial_cnt = 0;
+      float test = 0;
    }_flag;
 
    struct

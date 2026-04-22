@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-26 19:51:12
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-03-10 13:53:03
+ * @LastEditTime: 2026-04-19 13:30:51
  * @Description: Wheel-legged chassis passive state implementation
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -15,8 +15,8 @@ namespace pyro
     
 static uint8_t wheel_disable_flag[2] = {0, 0};
 pid_t wheel_disable_pid[2] = {
-    pid_t(3.0f, 0.0f, 0.0f, 0.0f, 3.0f), 
-    pid_t(3.0f, 0.0f, 0.0f, 0.0f, 3.0f)};
+    pid_t(1.0f, 0.0f, 0.0f, 0.0f, 3.0f), 
+    pid_t(1.0f, 0.0f, 0.0f, 0.0f, 3.0f)};
 /**
  * @description: 
    When wheel-legged chassis enter passive state, it will call this function.

@@ -14,6 +14,7 @@
 #include "pyro_dwt_drv.h"
 #include "pyro_vofa.h"
 #define WHEEL_DISTANCE 0.424f
+#define SUPPORT_FORCE_ACC_LPF_RC 0.01f
 /* IMU offset from yaw rotation center (midpoint of two wheels) along body x-axis.
    Positive = IMU is in front of wheel axis. Measure and adjust this value. */
 #define IMU_OFFSET_X  0.2f
@@ -258,6 +259,7 @@ status_t wl_chassis_t::_init()
     yaw = pitch = roll = 0.0f;
     g_yaw = g_pitch = g_roll = 0.0f;
     a_x = a_y = a_z = 0.0f;
+    a_forward = a_upward = a_upward_lpf = 0.0f;
 
     return ret;
 }
@@ -377,10 +379,18 @@ void wl_chassis_t::_update_feedback()
     float kf_u = 0.0f;
     float kf_z[3] = {0.0f, 0.0f, 0.0f};
     float kf_estimated[3] = {0.0f, 0.0f, 0.0f};
-    /* Project body-frame acceleration onto horizontal plane.
-       Body x-axis tilts with pitch, so horizontal forward accel =
-       a_x_b * cos(pitch) + a_z_b * sin(pitch) */
-     a_forward = a_x * arm_cos_f32(pitch) - a_z * arm_sin_f32(pitch) + g_yaw * g_yaw * IMU_OFFSET_X;
+     /* Project body-frame acceleration to ground-aligned axes.
+         Pitch is defined as nose-down positive, so the body x-axis gains a
+         downward component as pitch increases. Resolve the measured
+         acceleration into forward and upward components before using it in
+         observers or support force estimation. */
+     a_forward = a_x * arm_cos_f32(pitch)
+                  + a_z * arm_sin_f32(pitch)
+                  + g_yaw * g_yaw * IMU_OFFSET_X;
+     a_upward = -a_x * arm_sin_f32(pitch)
+                 + a_z * arm_cos_f32(pitch);
+    a_upward_lpf = a_upward_lpf * SUPPORT_FORCE_ACC_LPF_RC / (time + SUPPORT_FORCE_ACC_LPF_RC)
+                 + a_upward * time / (time + SUPPORT_FORCE_ACC_LPF_RC);
     /* Compensate centripetal acceleration caused by IMU offset from yaw axis.
        a_x_measured = a_x_linear - w^2 * r_x  →  a_x_linear = a_x + w^2 * r_x */
     /* Average left/right wheel speed to obtain v_center directly.

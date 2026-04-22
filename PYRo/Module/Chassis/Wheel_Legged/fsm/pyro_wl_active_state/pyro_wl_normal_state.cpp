@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-28 13:11:52
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-04-14 16:54:56
+ * @LastEditTime: 2026-04-21 17:07:04
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -12,8 +12,22 @@
 namespace pyro
 {
 extern pid_t wheel_disable_pid[2];
+pid_t aerial_pid[2] = {
+    pid_t(1.0f, 0.0f, 0.0f, 0.0f, 100.0f), 
+    pid_t(1.0f, 0.0f, 0.0f, 0.0f, 100.0f)};
+pid_t aerial_d_pid[2] = {
+    pid_t(100.0f, 0.0f, 0.0f, 0.0f, 100.0f), 
+    pid_t(100.0f, 0.0f, 0.0f, 0.0f, 100.0f)};
+float test_length = 0.20f;
 void wl_chassis_t::fsm_active_t::state_normal_t::enter(wl_chassis_t *owner)
 {
+    owner->_flag.aerial_cnt = 0;
+    owner->_flag.is_aerial = 0;
+    owner->_flag.test = 0;
+    for(uint8_t i = 0; i < 2; i++)
+    {
+        owner->_leg_data[i].ref_l = owner->_cmd->l_leg;
+    }
 }
 uint32_t clear_cnt;
 void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
@@ -32,24 +46,55 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
        than threadhold, it means the leg is in the air, which may cause 
        instability. */
     calc_support_force(owner);
-    constexpr uint8_t AERIAL_DEBOUNCE = 5;
-    // if(!owner->_flag.is_aerial)
+    constexpr uint8_t AERIAL_DEBOUNCE = 150;
+    constexpr uint8_t LANDING_DEBOUNCE = 10;
+    constexpr float TAKEOFF_FORCE_THRESHOLD = -80.0f;
+    constexpr float LANDING_COMPRESSION_THRESHOLD = 0.05f;
+    constexpr float LANDING_UPWARD_ACC_THRESHOLD = 3.0f;
+    if(!owner->_flag.is_aerial)
     {
         /* On ground: detect takeoff by support force, with debounce to avoid
-           false triggers caused by F[1]/l amplification at short leg lengths */
-        if(owner->_leg_data[wl_chassis_t::R].P < -70.0f 
-            || owner->_leg_data[wl_chassis_t::L].P < -70.0f)
+           false triggers caused by F[1]/l amplification at short leg lengths. */
+        if(owner->_leg_data[wl_chassis_t::R].P < TAKEOFF_FORCE_THRESHOLD
+            || owner->_leg_data[wl_chassis_t::L].P < TAKEOFF_FORCE_THRESHOLD)
         {
             owner->_flag.aerial_cnt++;
             if(owner->_flag.aerial_cnt >= AERIAL_DEBOUNCE)
-    {
-        owner->_flag.is_aerial = 1;
+            {
+                owner->_flag.is_aerial = 1;
                 owner->_flag.aerial_cnt = 0;
             }
+        }
+        else
+        {
+            owner->_flag.aerial_cnt = 0;
+        }
     }
     else
     {
-        owner->_flag.is_aerial = 0;
+        const bool leg_compressed =
+            owner->_leg_data[wl_chassis_t::R].l
+                < (owner->_leg_data[wl_chassis_t::R].ref_l - LANDING_COMPRESSION_THRESHOLD)
+            || owner->_leg_data[wl_chassis_t::L].l
+                < (owner->_leg_data[wl_chassis_t::L].ref_l - LANDING_COMPRESSION_THRESHOLD);
+        const bool upward_impact =
+            owner->a_upward_lpf > LANDING_UPWARD_ACC_THRESHOLD;
+
+        /* In air: switch back to ground only when the leg is compressed and
+           a landing impact is observed in the ground-normal direction. */
+        if(leg_compressed && upward_impact)
+        {
+            owner->_flag.aerial_cnt++;
+            if(owner->_flag.aerial_cnt >= LANDING_DEBOUNCE)
+            {
+                owner->_flag.is_aerial = 0;
+                owner->_flag.aerial_cnt = 0;
+                owner->_flag.test = 1;
+                owner->get_cur_length(&owner->_leg_data[wl_chassis_t::R].ref_l, &owner->_leg_data[wl_chassis_t::L].ref_l);
+            }
+        }
+        else
+        {
             owner->_flag.aerial_cnt = 0;
         }
     }
@@ -102,26 +147,6 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
     last_d_x_gain[wl_chassis_t::R] = owner->_leg_data[wl_chassis_t::R].d_x_gain;
     last_d_x_gain[wl_chassis_t::L] = owner->_leg_data[wl_chassis_t::L].d_x_gain;
 
-    /* Right leg */
-    owner->_leg_data[wl_chassis_t::R].ref_l = owner->_cmd->r_leg;
-    owner->_leg_data[wl_chassis_t::R].ref_d_l=
-        owner->_F_pid[wl_chassis_t::R]->
-        calculate(owner->_cmd->r_leg, 
-        owner->_leg_data[wl_chassis_t::R].l);
-    owner->_leg_data[wl_chassis_t::R].F[0]=
-            owner->_d_F_pid[wl_chassis_t::R]->
-             calculate(owner->_leg_data[wl_chassis_t::R].ref_d_l, 
-        owner->_leg_data[wl_chassis_t::R].d_l);
-    /* Left leg */
-    owner->_leg_data[wl_chassis_t::L].ref_l = owner->_cmd->l_leg;
-    owner->_leg_data[wl_chassis_t::L].ref_d_l=
-        owner->_F_pid[wl_chassis_t::L]->
-        calculate(owner->_cmd->l_leg,
-        owner->_leg_data[wl_chassis_t::L].l);
-    owner->_leg_data[wl_chassis_t::L].F[0]=
-        owner->_d_F_pid[wl_chassis_t::L]->
-        calculate(owner->_leg_data[wl_chassis_t::L].ref_d_l,
-        owner->_leg_data[wl_chassis_t::L].d_l);
 
     /* Calculate the target torque of VMC for each leg */
     for(uint8_t i = 0; i < 2; i++)
@@ -139,19 +164,145 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
             }
         }
 
-        owner->_flag.is_aerial = 0;
+        // owner->_flag.is_aerial = 0;
         if(owner->_flag.is_aerial)
         {
             owner->_leg_data[i].F[1] = -( 
                                       owner->_leg_data[i].lqr_gain[10] * (0 - owner->_leg_data[i].beta) + 
                                       owner->_leg_data[i].lqr_gain[11] * (0 - owner->_leg_data[i].d_beta));
-        
+            /* Right leg */
+            if(0.005f < abs(0.37f - owner->_leg_data[wl_chassis_t::R].ref_l))
+            {
+                owner->_leg_data[wl_chassis_t::R].ref_l += 0.001f;
+            }
+            else
+            {
+                owner->_leg_data[wl_chassis_t::R].ref_l = 0.37f;
+            }
+            /* Left leg */
+            if(0.005f < abs(0.37f - owner->_leg_data[wl_chassis_t::L].ref_l))
+            {
+                owner->_leg_data[wl_chassis_t::L].ref_l += 0.001f;
+            }
+            else
+            {
+                owner->_leg_data[wl_chassis_t::L].ref_l = 0.37f;
+            }
+
+            owner->_leg_data[wl_chassis_t::R].ref_d_l=
+                aerial_pid[wl_chassis_t::R].
+                calculate(owner->_leg_data[wl_chassis_t::R].ref_l, 
+                owner->_leg_data[wl_chassis_t::R].l);
+            owner->_leg_data[wl_chassis_t::R].F[0]=
+                    aerial_d_pid[wl_chassis_t::R].
+                     calculate(owner->_leg_data[wl_chassis_t::R].ref_d_l, 
+                owner->_leg_data[wl_chassis_t::R].d_l)-30.0f;
+            /* Left leg */
+            owner->_leg_data[wl_chassis_t::L].ref_d_l=
+                aerial_pid[wl_chassis_t::L].
+                calculate(owner->_leg_data[wl_chassis_t::L].ref_l,
+                owner->_leg_data[wl_chassis_t::L].l);
+            owner->_leg_data[wl_chassis_t::L].F[0]=
+                aerial_d_pid[wl_chassis_t::L].
+                calculate(owner->_leg_data[wl_chassis_t::L].ref_d_l,
+                owner->_leg_data[wl_chassis_t::L].d_l)-30.0f    ;
         }
         else 
         {
+            if(!owner->_flag.test)
+            {
+
+                if(0.005f < abs(owner->_cmd->r_leg - owner->_leg_data[wl_chassis_t::R].ref_l))
+                {
+                    if(owner->_cmd->r_leg < owner->_leg_data[wl_chassis_t::R].ref_l)
+                    {
+                        owner->_leg_data[wl_chassis_t::R].ref_l -= 0.0001f;
+                    }
+                    else
+                    {
+                        owner->_leg_data[wl_chassis_t::R].ref_l += 0.0001f;
+                    }
+                }
+                else
+                {
+                    owner->_leg_data[wl_chassis_t::R].ref_l = owner->_cmd->r_leg;
+                }
+                if(0.005f < abs(owner->_cmd->l_leg - owner->_leg_data[wl_chassis_t::L].ref_l))
+                {
+                    if(owner->_cmd->l_leg < owner->_leg_data[wl_chassis_t::L].ref_l)
+                    {
+                        owner->_leg_data[wl_chassis_t::L].ref_l -= 0.0001f;
+                    }
+                    else
+                    {
+                        owner->_leg_data[wl_chassis_t::L].ref_l += 0.0001f;
+                    }
+                }
+                else
+                {
+                    owner->_leg_data[wl_chassis_t::L].ref_l = owner->_cmd->l_leg;
+                }
+            }
+            else 
+            {
+                if(0.005f < abs(test_length - owner->_leg_data[wl_chassis_t::R].ref_l))
+                {
+                    if(test_length < owner->_leg_data[wl_chassis_t::R].ref_l)
+                    {
+                        owner->_leg_data[wl_chassis_t::R].ref_l -= 0.001f;
+                    }
+                    else
+                    {
+                        owner->_leg_data[wl_chassis_t::R].ref_l += 0.001f;
+                    }
+                }
+                else
+                {
+                    owner->_leg_data[wl_chassis_t::R].ref_l = test_length;
+                }
+                if(0.005f < abs(test_length - owner->_leg_data[wl_chassis_t::L].ref_l))
+                {
+                    if(test_length < owner->_leg_data[wl_chassis_t::L].ref_l)
+                    {
+                        owner->_leg_data[wl_chassis_t::L].ref_l -= 0.001f;
+                    }
+                    else
+                    {
+                        owner->_leg_data[wl_chassis_t::L].ref_l += 0.001f;
+                    }
+                }
+                else
+                {
+                    owner->_leg_data[wl_chassis_t::L].ref_l = test_length;
+                }
+                if((owner->_leg_data[wl_chassis_t::R].ref_l == test_length) && (owner->_leg_data[wl_chassis_t::L].ref_l == test_length))
+                {
+                    owner->_flag.test = 0;
+
+                }
+            
+            }
+            /* Right leg */
+            owner->_leg_data[wl_chassis_t::R].ref_d_l=
+                owner->_F_pid[wl_chassis_t::R]->
+                calculate(owner->_leg_data[wl_chassis_t::R].ref_l, 
+                owner->_leg_data[wl_chassis_t::R].l);
+            owner->_leg_data[wl_chassis_t::R].F[0]=
+                    owner->_d_F_pid[wl_chassis_t::R]->
+                     calculate(owner->_leg_data[wl_chassis_t::R].ref_d_l, 
+                owner->_leg_data[wl_chassis_t::R].d_l);
+            /* Left leg */
+            owner->_leg_data[wl_chassis_t::L].ref_d_l=
+                owner->_F_pid[wl_chassis_t::L]->
+                calculate(owner->_leg_data[wl_chassis_t::L].ref_l,
+                owner->_leg_data[wl_chassis_t::L].l);
+            owner->_leg_data[wl_chassis_t::L].F[0]=
+                owner->_d_F_pid[wl_chassis_t::L]->
+                calculate(owner->_leg_data[wl_chassis_t::L].ref_d_l,
+                owner->_leg_data[wl_chassis_t::L].d_l);
             owner->_leg_data[i].T_w = (
                                       owner->_leg_data[i].lqr_gain[0] * (owner->_leg_data[i].x_gain - owner->_leg_data[i].kf_x) + 
-                                      owner->_leg_data[i].lqr_gain[1] * (0.0f - owner->_leg_data[i].kf_v) + 
+                                      owner->_leg_data[i].lqr_gain[1] * (owner->_leg_data[i].d_x_gain - owner->_leg_data[i].kf_v) + 
                                     //   owner->_leg_data[i].lqr_gain[0] * (owner->_leg_data[i].x_gain - owner->_leg_data[i].x) + 
                                     //   owner->_leg_data[i].lqr_gain[1] * (0.0f - owner->_leg_data[i].dx) + 
                                       owner->_leg_data[i].lqr_gain[2] * (0 - owner->_leg_data[i].gamma) + 
@@ -161,7 +312,7 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
                                       / owner->_reduction_ratio /0.3f * (3591.0f/187.0f);
             owner->_leg_data[i].F[1] = -(
                                       owner->_leg_data[i].lqr_gain[6] * (owner->_leg_data[i].x_gain - owner->_leg_data[i].kf_x) + 
-                                      owner->_leg_data[i].lqr_gain[7] * (0.0F - owner->_leg_data[i].kf_v) + 
+                                      owner->_leg_data[i].lqr_gain[7] * (owner->_leg_data[i].d_x_gain - owner->_leg_data[i].kf_v) + 
                                     //   owner->_leg_data[i].lqr_gain[6] * (owner->_leg_data[i].x_gain - owner->_leg_data[i].x) + 
                                     //   owner->_leg_data[i].lqr_gain[7] * (0.0f - owner->_leg_data[i].dx) + 
                                       owner->_leg_data[i].lqr_gain[8] * (0 - owner->_leg_data[i].gamma) + 
@@ -171,6 +322,8 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
                                   
         }
     }
+    owner->_leg_data[wl_chassis_t::R].F[0] = fp32_constrain(owner->_leg_data[wl_chassis_t::R].F[0], -200.0f, 200.0f);
+    owner->_leg_data[wl_chassis_t::L].F[0] = fp32_constrain(owner->_leg_data[wl_chassis_t::L].F[0], -200.0f, 200.0f);
     owner->_leg_data[wl_chassis_t::R].F[1] += owner->T_l_gain;
     owner->_leg_data[wl_chassis_t::L].F[1] -= owner->T_l_gain;
 
@@ -190,8 +343,10 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
     {
         for(uint8_t i = 0; i < 2; i++)
         {
-            owner->_wheel_drv[i]->send_torque(wheel_disable_pid[i].calculate(0.0f,
-              owner->_wheel_drv[i]->get_current_rotate()));
+            // owner->_wheel_drv[i]->send_torque(wheel_disable_pid[i].calculate(0.0f,
+            //   owner->_wheel_drv[i]->get_current_rotate()));
+            owner->_wheel_drv[i]->send_torque(0.0f);
+
         }
     }
     else

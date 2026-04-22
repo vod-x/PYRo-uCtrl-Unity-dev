@@ -97,31 +97,33 @@ void vofa_drv_t::send()
 void vofa_drv_t::thread()
 {
     /* kalman filter */
-    add_data(&infantry2_chassis_ptr->_leg_data[0].kf_x);
-    add_data(&infantry2_chassis_ptr->_leg_data[1].kf_x);
-    add_data(&infantry2_chassis_ptr->_leg_data[0].x);
-    add_data(&infantry2_chassis_ptr->_leg_data[1].x);
-    add_data(&infantry2_chassis_ptr->_leg_data[0].kf_v);
-    add_data(&infantry2_chassis_ptr->_leg_data[1].kf_v);
-    add_data(&infantry2_chassis_ptr->_leg_data[0].dx);
-    add_data(&infantry2_chassis_ptr->_leg_data[1].dx);
-    add_data(&infantry2_chassis_ptr->_leg_data[0].kf_w);
-    add_data(&infantry2_chassis_ptr->_leg_data[1].kf_w);
-    add_data(&infantry2_chassis_ptr->a_forward);
-    add_data(&infantry2_chassis_ptr->g_yaw);
+    // add_data(&infantry2_chassis_ptr->_leg_data[0].kf_x);
+    // add_data(&infantry2_chassis_ptr->_leg_data[1].kf_x);
+    // add_data(&infantry2_chassis_ptr->_leg_data[0].x);
+    // add_data(&infantry2_chassis_ptr->_leg_data[1].x);
+    // add_data(&infantry2_chassis_ptr->_leg_data[0].kf_v);
+    // add_data(&infantry2_chassis_ptr->_leg_data[1].kf_v);
+    // add_data(&infantry2_chassis_ptr->_leg_data[0].dx);
+    // add_data(&infantry2_chassis_ptr->_leg_data[1].dx);
+    // add_data(&infantry2_chassis_ptr->_leg_data[0].kf_w);
+    // add_data(&infantry2_chassis_ptr->_leg_data[1].kf_w);
+    // add_data(&infantry2_chassis_ptr->a_forward);
+    // add_data(&infantry2_chassis_ptr->g_yaw);
     /* force pid */
-    // add_data(&infantry2_chassis_ptr->_leg_data[0].F[0]);
-    // add_data(&infantry2_chassis_ptr->_leg_data[0].l);
-    // add_data(&infantry2_chassis_ptr->_leg_data[0].d_l);
-    // add_data(&infantry2_chassis_ptr->_leg_data[0].ref_l);
-    // add_data(&infantry2_chassis_ptr->_leg_data[0].ref_d_l);
-    // add_data(&infantry2_chassis_ptr->_leg_data[1].F[0]);
-    // add_data(&infantry2_chassis_ptr->_leg_data[1].l);
-    // add_data(&infantry2_chassis_ptr->_leg_data[1].d_l);
-    // add_data(&infantry2_chassis_ptr->_leg_data[1].ref_l);
-    // add_data(&infantry2_chassis_ptr->_leg_data[1].ref_d_l);
-    // add_data(&infantry2_chassis_ptr->_leg_data[0].P);
-    // add_data(&infantry2_chassis_ptr->_leg_data[1].P);
+    add_data(&infantry2_chassis_ptr->_leg_data[0].F[0]);
+    add_data(&infantry2_chassis_ptr->_leg_data[1].F[0]);
+    add_data(&infantry2_chassis_ptr->_leg_data[0].l);
+    add_data(&infantry2_chassis_ptr->_leg_data[1].l);
+    add_data(&infantry2_chassis_ptr->_leg_data[0].ref_l);
+    add_data(&infantry2_chassis_ptr->_leg_data[1].ref_l);
+    add_data(&infantry2_chassis_ptr->_leg_data[0].d_l);
+    add_data(&infantry2_chassis_ptr->_leg_data[1].d_l);
+    add_data(&infantry2_chassis_ptr->_leg_data[0].ref_d_l);
+    add_data(&infantry2_chassis_ptr->_leg_data[1].ref_d_l);
+    add_data(&infantry2_chassis_ptr->_leg_data[0].P);
+    add_data(&infantry2_chassis_ptr->_leg_data[1].P);
+    add_data(&infantry2_chassis_ptr->a_upward_lpf);
+    add_data(&infantry2_chassis_ptr->_flag.test);
     /* lqr data */
     // add_data(&infantry2_chassis_ptr->_leg_data[0].x);
     // add_data(&infantry2_chassis_ptr->_leg_data[1].x);
