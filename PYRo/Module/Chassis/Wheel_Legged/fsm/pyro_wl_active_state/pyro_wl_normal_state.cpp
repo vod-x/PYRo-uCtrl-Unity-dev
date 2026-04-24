@@ -28,6 +28,16 @@ void wl_chassis_t::fsm_active_t::state_normal_t::enter(wl_chassis_t *owner)
     {
         owner->_leg_data[i].ref_l = owner->_cmd->l_leg;
     }
+    
+    owner->_leg_data[wl_chassis_t::R].x = 0.0f;
+    owner->_leg_data[wl_chassis_t::L].x = 0.0f;
+    owner->_leg_data[wl_chassis_t::R].x_gain = 0.0f;
+    owner->_leg_data[wl_chassis_t::L].x_gain = 0.0f;
+    owner->_leg_data[wl_chassis_t::R].kf_x = 0.0f;
+    owner->_leg_data[wl_chassis_t::L].kf_x = 0.0f;
+    owner->_wheel_kf[wl_chassis_t::R].reset();
+    owner->_wheel_kf[wl_chassis_t::L].reset();
+
 }
 uint32_t clear_cnt;
 void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)

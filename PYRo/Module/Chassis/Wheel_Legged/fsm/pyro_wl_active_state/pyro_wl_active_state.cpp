@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-26 20:03:11
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-04-09 14:32:55
+ * @LastEditTime: 2026-04-24 18:31:53
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -43,6 +43,11 @@ void wl_chassis_t::fsm_active_t::on_execute(wl_chassis_t *owner)
     }
     if(owner->_cmd->active_mode == wl_cmd_t::READY)
     {
+        if(owner->_cmd->last_active_mode == wl_cmd_t::OVER_STEP_READY)
+        {
+            owner->_active_mode_flag.ready = 1;
+            return;
+        }
         this->change_state(&_state_ready);
     }
     if(owner->_cmd->active_mode == wl_cmd_t::NORMAL)
@@ -55,15 +60,16 @@ void wl_chassis_t::fsm_active_t::on_execute(wl_chassis_t *owner)
     }
     if(owner->_cmd->active_mode == wl_cmd_t::OVER_STEP)
     {
-
-
         this->change_state(&_state_over_step);
+    }
+    if(owner->_cmd->active_mode == wl_cmd_t::OVER_STEP_READY)
+    {
+        this->change_state(&_state_over_step_ready);
     }
     if(owner->_cmd->active_mode == wl_cmd_t::CONTROL)
     {
         this->change_state(&_state_control);
     }
-     
 }
 
 void wl_chassis_t::fsm_active_t::on_exit(wl_chassis_t *owner)

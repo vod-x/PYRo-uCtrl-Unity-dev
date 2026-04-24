@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-07 15:14:47
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-04-19 13:02:36
+ * @LastEditTime: 2026-04-24 17:54:09
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -101,6 +101,7 @@ right leg, left leg */
     /* LQR coefficients for the chassis control. 2 raw x 6 column, 12 values
        in total. Every value has 3 coefficients.*/
     float *lqr_coef;
+    float *lqr_coef_over_step;
     /* Wheel radius(m)*/
     float wheel_radius;
     /* Reduction ratio of the motor */
@@ -142,8 +143,9 @@ struct wl_cmd_t final : public cmd_base_t
         TEST = 2,
         REVERSE = 3,
         OVER_STEP = 4,
-        CONTROL = 5,
-    }active_mode;
+        OVER_STEP_READY = 5,
+        CONTROL = 6,
+    }active_mode, last_active_mode;
 
     /* Construct function, set zero values */
     wl_cmd_t() : vx(0), vy(0), vz(0), yaw(0), l_leg(0), r_leg(0),l_angle(0), r_angle(0), active_mode(TEST)
@@ -242,7 +244,11 @@ private:
    float _d_delta_ref;
     /* LQR coefficients for the chassis control. 2 raw x 6 column, 12 values
        in total. Every value has 3 coefficients.*/
-    float _lqr_cof[48];
+   /* coeffient in normal state */
+   float _lqr_cof[48];
+   /* coeffient in over step state */
+   float _lqr_cof_over_step[48];
+   
 
     /* DM joint motors driver, the order of array is: front-right, rear-right, 
        front-left, rear-left */
@@ -396,6 +402,13 @@ private:
             void exit(wl_chassis_t *owner) override;
             void calc_target_value(wl_chassis_t *owner);
         }_state_over_step;
+
+        class state_over_step_ready_t : public state_t<wl_chassis_t>
+        {
+            void enter(wl_chassis_t *owner) override;
+            void execute(wl_chassis_t *owner) override;
+            void exit(wl_chassis_t *owner) override;
+        }_state_over_step_ready;
         class state_control_t : public state_t<wl_chassis_t>
         {
             void enter(wl_chassis_t *owner) override;

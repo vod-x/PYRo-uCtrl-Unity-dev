@@ -2,19 +2,27 @@
  * @Author: vod-x vod_x@outlook.com
  * @Date: 2026-04-18 15:06:20
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-04-18 15:12:25
+ * @LastEditTime: 2026-04-22 17:21:45
  * @FilePath: \Wheel-Legged-Robot\embedded_system\PYRo\Module\Chassis\Wheel_Legged\fsm\pyro_wl_active_state\pyro_wl_control_state.cpp
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
 #include "pyro_wl_chassis.h"
 namespace pyro
 {
+extern pid_t wheel_disable_pid[2];
 void wl_chassis_t::fsm_active_t::state_control_t::enter(wl_chassis_t *owner)
 {
+    
 }
 
 void wl_chassis_t::fsm_active_t::state_control_t::execute(wl_chassis_t *owner)
 {
+    for(uint8_t i = 0; i < 2; i++)
+    {
+            float t = wheel_disable_pid[i].calculate(0.0f,
+                 owner->_wheel_drv[i]->get_current_rotate());
+            owner->_wheel_drv[i]->send_torque(t);
+    }
     
     owner->_leg_data[wl_chassis_t::R].ref_d_l=
             owner->_F_pid[wl_chassis_t::R]->

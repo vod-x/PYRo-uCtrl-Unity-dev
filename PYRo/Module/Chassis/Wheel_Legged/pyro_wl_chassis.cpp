@@ -121,6 +121,7 @@ status_t wl_chassis_t::_init()
     CHECK_PYRO_RET(ret);
     /* Save LQR coefficients */
     memcpy(_lqr_cof, _module_deps.lqr_coef, sizeof(float) * 48);
+    memcpy(_lqr_cof_over_step, _module_deps.lqr_coef_over_step, sizeof(float) * 48);
 
     /* Save wheel radius and reduction ratio */
     _wheel_radius = _module_deps.wheel_radius;

@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-28 15:55:50
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-04-18 17:08:46
+ * @LastEditTime: 2026-04-24 18:29:17
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -10,8 +10,8 @@
 #include "pyro_wl_chassis.h"
 #include "pyro_algo_common.h"
 
-#define LENGTH_SPEED (0.1f/800.0f)
-#define ANGLE_SPEED (PI/2000.0f)
+#define LENGTH_SPEED (0.1f/400.0f)
+#define ANGLE_SPEED (PI/500.0f)
 #define TARGET_LENGTH 0.20f
 // #define TARGET_ANGLE (2.0f * PI/3.0f)
 #define TARGET_ANGLE ((PI/2.0f) - 0.1f)
@@ -163,6 +163,7 @@ void wl_chassis_t::fsm_active_t::state_ready_t::execute(wl_chassis_t *owner)
     {
         owner->_active_mode_flag.ready = 1;
     }
+    
 }
 void wl_chassis_t::fsm_active_t::state_ready_t::exit(wl_chassis_t *owner)
 {
@@ -227,7 +228,7 @@ void wl_chassis_t::fsm_active_t::state_ready_t::calc_target_value(wl_chassis_t *
         }
         else 
         {
-            if(cur_angle[wl_chassis_t::R] > cur_angle[wl_chassis_t::L])
+            if(cur_angle[wl_chassis_t::R] < cur_angle[wl_chassis_t::L])
             {
                 tmp_angle = cur_angle[wl_chassis_t::R];
             }
