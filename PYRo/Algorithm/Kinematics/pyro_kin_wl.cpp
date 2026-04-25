@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-07 15:14:47
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-03-09 19:02:45
+ * @LastEditTime: 2026-04-24 22:24:05
  * @Description: 
  * The kinematic solve algorithm for wheel legged robot. If you want to use,
  * define a variable which type is wheel_legged_kin_t, than call its init 
@@ -14,6 +14,29 @@
  */
 
 #include "pyro_kin.wl.h"
+
+    // //dx
+    // dx = -(_vmc_k.k0 * d_theta1 * arm_sin_f32(theta1)) / (_vmc_k.k1) 
+    //     -(_vmc_k.k0 * arm_sin_f32(*phi1) 
+    //     * (d_theta1 * arm_sin_f32(*phi2 - theta1) 
+    //     - d_theta2 * arm_sin_f32(*phi2 - theta2))) 
+    //     / (_vmc_k.k1 * arm_sin_f32(phi1 - phi2));
+    // //dy
+    // dy = (_vmc_k.k0 * d_theta1 * arm_cos_f32(theta1)) / (_vmc_k.k1) 
+    //     +(_vmc_k.k0 * arm_cos_f32(*phi1) 
+    //     * (d_theta1 * arm_sin_f32(*phi2 - theta1) 
+    //     - d_theta2 * arm_sin_f32(*phi2 - theta2))) 
+    //     / (_vmc_k.k1 * arm_sin_f32(phi1 - phi2));
+    // dx = -(_vmc_k.k0*(d_theta1*arm_sin_f32(*phi1)*arm_sin_f32(*phi2 - theta1) 
+    // + d_theta1*arm_sin_f32(theta1)*arm_sin_f32(*phi1 - *phi2) 
+    // - d_theta2*arm_sin_f32(*phi1)*arm_sin_f32(*phi2 - theta2)))
+    // /(_vmc_k.k1*arm_sin_f32(*phi1 - *phi2));
+    // dy = (_vmc_k.k0*(d_theta1*arm_cos_f32(*phi1)*arm_sin_f32(*phi2 - theta1) 
+    // + d_theta1*arm_cos_f32(theta1)*arm_sin_f32(*phi1 - *phi2) 
+    // - d_theta2*arm_cos_f32(*phi1)*arm_sin_f32(*phi2 - theta2)))
+    // /(_vmc_k.k1*arm_sin_f32(*phi1 - *phi2));
+#define WL_KIN_D_LENGTH_LPF_RC 0.000f
+#define WL_KIN_D_ALPHA_LPF_RC 0.01f
 
 using namespace pyro;
 float ax, ay;
@@ -44,6 +67,9 @@ status_t wheel_legged_kin_t::init( const phi_k_t *phi_k,
     _polar_k.k3 = polar_k->k3;
     _vmc_k.k0 = vmc_k->k0;
     _vmc_k.k1 = vmc_k->k1;
+    _solve_filter_idx = 0;
+    _d_length_lpf[0] = _d_length_lpf[1] = 0.0f;
+    _d_alpha_lpf[0] = _d_alpha_lpf[1] = 0.0f;
 
     /* Mark the solver as initialized */
     _is_inited = 1;
@@ -116,30 +142,23 @@ status_t wheel_legged_kin_t::solve(float theta1, float theta2,
     /* 4. Calculate the differential of polar coordinates, the cofficients is 
        same as VMC calc*/
     /* 4.1 calulate dx and dy */
-    // //dx
-    // dx = -(_vmc_k.k0 * d_theta1 * arm_sin_f32(theta1)) / (_vmc_k.k1) 
-    //     -(_vmc_k.k0 * arm_sin_f32(*phi1) 
-    //     * (d_theta1 * arm_sin_f32(*phi2 - theta1) 
-    //     - d_theta2 * arm_sin_f32(*phi2 - theta2))) 
-    //     / (_vmc_k.k1 * arm_sin_f32(phi1 - phi2));
-    // //dy
-    // dy = (_vmc_k.k0 * d_theta1 * arm_cos_f32(theta1)) / (_vmc_k.k1) 
-    //     +(_vmc_k.k0 * arm_cos_f32(*phi1) 
-    //     * (d_theta1 * arm_sin_f32(*phi2 - theta1) 
-    //     - d_theta2 * arm_sin_f32(*phi2 - theta2))) 
-    //     / (_vmc_k.k1 * arm_sin_f32(phi1 - phi2));
-    // dx = -(_vmc_k.k0*(d_theta1*arm_sin_f32(*phi1)*arm_sin_f32(*phi2 - theta1) 
-    // + d_theta1*arm_sin_f32(theta1)*arm_sin_f32(*phi1 - *phi2) 
-    // - d_theta2*arm_sin_f32(*phi1)*arm_sin_f32(*phi2 - theta2)))
-    // /(_vmc_k.k1*arm_sin_f32(*phi1 - *phi2));
-    // dy = (_vmc_k.k0*(d_theta1*arm_cos_f32(*phi1)*arm_sin_f32(*phi2 - theta1) 
-    // + d_theta1*arm_cos_f32(theta1)*arm_sin_f32(*phi1 - *phi2) 
-    // - d_theta2*arm_cos_f32(*phi1)*arm_sin_f32(*phi2 - theta2)))
-    // /(_vmc_k.k1*arm_sin_f32(*phi1 - *phi2));
     *d_x = -d_theta1 * (21059*arm_sin_f32(*phi2)*arm_sin_f32(*phi1 - theta1))/(100000*arm_sin_f32(*phi1 - *phi2))+d_theta2*(21059*arm_sin_f32(*phi1)*arm_sin_f32(*phi2 - theta2))/(100000*arm_sin_f32(*phi1 - *phi2));
     *d_y = d_theta1 * (21059*arm_cos_f32(*phi2)*arm_sin_f32(*phi1 - theta1))/(100000*arm_sin_f32(*phi1 - *phi2)) - d_theta2 * (21059*arm_cos_f32(*phi1)*arm_sin_f32(*phi2 - theta2))/(100000*arm_sin_f32(*phi1 - *phi2));
-    *d_length = (*x * (*d_x) + *y * (*d_y)) / (*length);
-    *d_alpha = (*x * (*d_y) - *y * (*d_x)) / (*length * *length);
+        constexpr float solver_dt = 0.001f;
+        const uint8_t filter_idx = _solve_filter_idx;
+        const float raw_d_length = (*x * (*d_x) + *y * (*d_y)) / (*length);
+        const float raw_d_alpha = (*x * (*d_y) - *y * (*d_x)) / (*length * *length);
+        _d_length_lpf[filter_idx] = _d_length_lpf[filter_idx] * WL_KIN_D_LENGTH_LPF_RC /
+                                                                (solver_dt + WL_KIN_D_LENGTH_LPF_RC)
+                                                            + raw_d_length * solver_dt /
+                                                                (solver_dt + WL_KIN_D_LENGTH_LPF_RC);
+        _d_alpha_lpf[filter_idx] = _d_alpha_lpf[filter_idx] * WL_KIN_D_ALPHA_LPF_RC /
+                                                             (solver_dt + WL_KIN_D_ALPHA_LPF_RC)
+                                                         + raw_d_alpha * solver_dt /
+                                                             (solver_dt + WL_KIN_D_ALPHA_LPF_RC);
+        *d_length = _d_length_lpf[filter_idx];
+        *d_alpha = _d_alpha_lpf[filter_idx];
+        _solve_filter_idx = (filter_idx + 1U) & 0x01U;
     *d_x = *d_x;
     *d_y = *d_y;
     // static float l_temp1, l_temp2;

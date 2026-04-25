@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-28 13:11:52
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-04-22 14:16:05
+ * @LastEditTime: 2026-04-24 20:29:51
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -153,13 +153,13 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
     owner->_leg_data[wl_chassis_t::L].x_gain += (
         owner->_leg_data[wl_chassis_t::L].d_x_gain 
         + last_d_x_gain[wl_chassis_t::L]) / 2.0f /1000.0f;
-    for(uint8_t i = 0; i < 2; i++)
-    {
-        if(0.01f < abs(owner->_leg_data[i].d_x_gain) && 0.01f > abs(last_d_x_gain[i]))
-        {
-            owner->_leg_data[i].x_gain = owner->_leg_data[i].kf_x;
-        }
-    }
+    // for(uint8_t i = 0; i < 2; i++)
+    // {
+    //     if(0.01f > abs(owner->_leg_data[i].d_x_gain) && 0.01f < abs(last_d_x_gain[i]))
+    //     {
+    //         owner->_leg_data[i].x_gain = owner->_leg_data[i].kf_x;
+    //     }
+    // }
 
     last_d_x_gain[wl_chassis_t::R] = owner->_leg_data[wl_chassis_t::R].d_x_gain;
     last_d_x_gain[wl_chassis_t::L] = owner->_leg_data[wl_chassis_t::L].d_x_gain;
@@ -321,7 +321,7 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
                                       owner->_leg_data[i].lqr_gain[0] * (owner->_leg_data[i].x_gain - owner->_leg_data[i].kf_x) + 
                                       owner->_leg_data[i].lqr_gain[1] * (owner->_leg_data[i].d_x_gain - owner->_leg_data[i].kf_v) + 
                                     //   owner->_leg_data[i].lqr_gain[0] * (owner->_leg_data[i].x_gain - owner->_leg_data[i].x) + 
-                                    //   owner->_leg_data[i].lqr_gain[1] * (0.0f - owner->_leg_data[i].dx) + 
+                                    //   owner->_leg_data[i].lqr_gain[1] * (owner->_leg_data[i].d_x_gain - owner->_leg_data[i].dx) + 
                                       owner->_leg_data[i].lqr_gain[2] * (0 - owner->_leg_data[i].gamma) + 
                                       owner->_leg_data[i].lqr_gain[3] * (0 - owner->_leg_data[i].d_gamma) + 
                                       owner->_leg_data[i].lqr_gain[4] * (-0.1f - owner->_leg_data[i].beta) + 
@@ -331,7 +331,7 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
                                       owner->_leg_data[i].lqr_gain[6] * (owner->_leg_data[i].x_gain - owner->_leg_data[i].kf_x) + 
                                       owner->_leg_data[i].lqr_gain[7] * (owner->_leg_data[i].d_x_gain - owner->_leg_data[i].kf_v) + 
                                     //   owner->_leg_data[i].lqr_gain[6] * (owner->_leg_data[i].x_gain - owner->_leg_data[i].x) + 
-                                    //   owner->_leg_data[i].lqr_gain[7] * (0.0f - owner->_leg_data[i].dx) + 
+                                    //   owner->_leg_data[i].lqr_gain[7] * (owner->_leg_data[i].d_x_gain - owner->_leg_data[i].dx) + 
                                       owner->_leg_data[i].lqr_gain[8] * (0 - owner->_leg_data[i].gamma) + 
                                       owner->_leg_data[i].lqr_gain[9] * (0 - owner->_leg_data[i].d_gamma) + 
                                       owner->_leg_data[i].lqr_gain[10] * (-0.1f - owner->_leg_data[i].beta) + 

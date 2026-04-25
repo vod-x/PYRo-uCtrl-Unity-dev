@@ -171,6 +171,9 @@ private:
     /* Flag to check whether the solver is initialized, 0 for not initialized,
         1 for initialized.*/
     uint8_t _is_inited{0};
+  /* The solver is called once per leg in sequence, so keep two LPF states
+     and rotate through them on each solve call. */
+  uint8_t _solve_filter_idx{0};
    
     /* The cofficients for phi solve */
     phi_k_t _phi_k;
@@ -178,6 +181,8 @@ private:
     polar_k_t _polar_k;
     /* The cofficients for VMC transform matrix */
     vmc_k_t _vmc_k;
+  float _d_length_lpf[2] = {0.0f, 0.0f};
+  float _d_alpha_lpf[2] = {0.0f, 0.0f};
 
 
 };

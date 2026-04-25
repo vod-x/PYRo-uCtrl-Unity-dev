@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-26 20:18:33
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-04-24 18:27:41
+ * @LastEditTime: 2026-04-25 11:44:56
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -181,7 +181,6 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
                     if(0 == infantry2_chassis_ptr->get_status_flag(wl_cmd_t::OVER_STEP))
                     {
                         over_step_mode(rc_ctrl);
-                        infantry2_chassis_ptr->clear_status_flag(wl_cmd_t::OVER_STEP);
                     }
                     else 
                     {
