@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-28 13:11:52
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-04-24 20:29:51
+ * @LastEditTime: 2026-04-25 12:02:19
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -141,7 +141,7 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
                                 0.0f, owner->_delta_mea);
     owner->T_l_gain = owner->_d_delta_pid->calculate(owner->_d_delta_ref,
                                                  owner->_d_delta_mea);
-    
+    owner->roll_gain = owner->_roll_pid->calculate(0.0f, owner->roll);
 
     static float last_d_x_gain[2] = {0.0f, 0.0f};
 
@@ -228,6 +228,8 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
         {
             if(!owner->_flag.test)
             {
+                owner->_cmd->r_leg -= owner->roll_gain;
+                owner->_cmd->l_leg += owner->roll_gain;
 
                 if(0.005f < abs(owner->_cmd->r_leg - owner->_leg_data[wl_chassis_t::R].ref_l))
                 {

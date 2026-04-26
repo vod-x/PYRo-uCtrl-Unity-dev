@@ -95,6 +95,8 @@ right leg, left leg */
       leg angle */
    wl_pid_cfg_t delta_pid_cfg;
    wl_pid_cfg_t d_delta_pid_cfg;
+
+   wl_pid_cfg_t roll_pid_cfg;
    
    /* Kalman filter configuration for the wheel velocity */
    wl_kf_cfg_t wheel_kf_cfg[2]; 
@@ -242,6 +244,8 @@ private:
    float _delta_mea;
    float _d_delta_mea;
    float _d_delta_ref;
+
+   pid_t* _roll_pid;
     /* LQR coefficients for the chassis control. 2 raw x 6 column, 12 values
        in total. Every value has 3 coefficients.*/
    /* coeffient in normal state */
@@ -270,6 +274,7 @@ private:
     float _T_w_gain;
     float _x_gain;
    float T_l_gain; 
+   float roll_gain;
     struct leg_data_t
     {
         /* Angle between big rod and direction of movement(rad) */

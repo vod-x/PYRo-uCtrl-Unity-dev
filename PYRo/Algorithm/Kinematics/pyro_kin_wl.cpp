@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-07 15:14:47
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-04-24 22:24:05
+ * @LastEditTime: 2026-04-25 15:47:14
  * @Description: 
  * The kinematic solve algorithm for wheel legged robot. If you want to use,
  * define a variable which type is wheel_legged_kin_t, than call its init 
@@ -36,7 +36,7 @@
     // - d_theta2*arm_cos_f32(*phi1)*arm_sin_f32(*phi2 - theta2)))
     // /(_vmc_k.k1*arm_sin_f32(*phi1 - *phi2));
 #define WL_KIN_D_LENGTH_LPF_RC 0.000f
-#define WL_KIN_D_ALPHA_LPF_RC 0.01f
+#define WL_KIN_D_ALPHA_LPF_RC 0.0f
 
 using namespace pyro;
 float ax, ay;

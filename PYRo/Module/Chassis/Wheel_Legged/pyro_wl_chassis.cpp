@@ -242,6 +242,15 @@ status_t wl_chassis_t::_init()
     {
         return PYRO_NO_MEMORY;
     }
+
+    _roll_pid = new pid_t(_module_deps.roll_pid_cfg.kp, _module_deps.roll_pid_cfg.ki, 
+                            _module_deps.roll_pid_cfg.kd, 
+                            _module_deps.roll_pid_cfg.integral_limit,
+                            _module_deps.roll_pid_cfg.max_out);
+    if(!_roll_pid)
+    {
+        return PYRO_NO_MEMORY;
+    }
     /* Initialize Kalman filter for the wheel velocity */
     for(uint8_t i = 0; i < 2; i++)
     {
