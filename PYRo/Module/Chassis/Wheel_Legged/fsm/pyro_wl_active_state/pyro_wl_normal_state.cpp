@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-28 13:11:52
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-04-25 12:02:19
+ * @LastEditTime: 2026-04-27 22:11:50
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -123,15 +123,15 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
     {
         diff = yaw_ref - owner->yaw;
     }
-    g_yaw_ref = owner->_yaw_pid->calculate(owner->yaw + diff, owner->yaw);
-    owner->_yaw_ref = yaw_ref;
-    owner->_g_yaw_ref = g_yaw_ref;
-    owner->_T_w_gain = owner->_g_yaw_pid->calculate(g_yaw_ref, owner->g_yaw);
-
-    // g_yaw_ref = owner->_yaw_pid->calculate(0.0f, -owner->gimbal_yaw);
+    // g_yaw_ref = owner->_yaw_pid->calculate(owner->yaw + diff, owner->yaw);
     // owner->_yaw_ref = yaw_ref;
     // owner->_g_yaw_ref = g_yaw_ref;
-    // owner->_T_w_gain = owner->_g_yaw_pid->calculate(g_yaw_ref, -owner->gimbal_g_yaw); 
+    // owner->_T_w_gain = owner->_g_yaw_pid->calculate(g_yaw_ref, owner->g_yaw);
+
+    g_yaw_ref = owner->_yaw_pid->calculate(0.0f, -owner->gimbal_yaw);
+    owner->_yaw_ref = yaw_ref;
+    owner->_g_yaw_ref = g_yaw_ref;
+    owner->_T_w_gain = owner->_g_yaw_pid->calculate(g_yaw_ref, -owner->gimbal_g_yaw); 
 
     owner->_delta_mea = owner->_leg_data[wl_chassis_t::R].alpha 
                             - owner->_leg_data[wl_chassis_t::L].alpha;
