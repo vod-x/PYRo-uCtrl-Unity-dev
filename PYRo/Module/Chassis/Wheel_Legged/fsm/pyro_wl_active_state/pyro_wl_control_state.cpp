@@ -2,7 +2,7 @@
  * @Author: vod-x vod_x@outlook.com
  * @Date: 2026-04-18 15:06:20
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-04-22 17:21:45
+ * @LastEditTime: 2026-05-07 14:54:10
  * @FilePath: \Wheel-Legged-Robot\embedded_system\PYRo\Module\Chassis\Wheel_Legged\fsm\pyro_wl_active_state\pyro_wl_control_state.cpp
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -29,7 +29,7 @@ void wl_chassis_t::fsm_active_t::state_control_t::execute(wl_chassis_t *owner)
         calculate(owner->_cmd->r_leg, 
         owner->_leg_data[wl_chassis_t::R].l);
     owner->_leg_data[wl_chassis_t::R].F[0]=
-            owner->_F_pid[wl_chassis_t::R]->
+            owner->_d_F_pid[wl_chassis_t::R]->
              calculate(owner->_leg_data[wl_chassis_t::R].ref_d_l, 
         owner->_leg_data[wl_chassis_t::R].d_l);
     /* Left leg */
@@ -38,7 +38,7 @@ void wl_chassis_t::fsm_active_t::state_control_t::execute(wl_chassis_t *owner)
         calculate(owner->_cmd->l_leg,
         owner->_leg_data[wl_chassis_t::L].l);
     owner->_leg_data[wl_chassis_t::L].F[0]=
-        owner->_F_pid[wl_chassis_t::L]->
+        owner->_d_F_pid[wl_chassis_t::L]->
         calculate(owner->_leg_data[wl_chassis_t::L].ref_d_l,
         owner->_leg_data[wl_chassis_t::L].d_l);
 
@@ -87,6 +87,10 @@ void wl_chassis_t::fsm_active_t::state_control_t::execute(wl_chassis_t *owner)
         calculate(owner->_leg_data[wl_chassis_t::L].ref_d_alpha,
         owner->_leg_data[wl_chassis_t::L].d_alpha);
     
+    // owner->_leg_data[0].F[0] = 0.0f;
+    // owner->_leg_data[1].F[0] = 0.0f;
+    // owner->_leg_data[0].F[1] = 0.0f;
+    // owner->_leg_data[1].F[1] = 0.0f;
     /* Transfer the force and torque of virtual rod to the practical torque of
        motors by VMC matrix. */
     for(uint8_t i = 0; i < 2; i++)

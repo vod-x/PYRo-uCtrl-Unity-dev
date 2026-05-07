@@ -13,8 +13,8 @@
 #include "pyro_algo_common.h"
 #include "pyro_com_canrx.h"
 
-#define USE_GIMBAL_COM
-// #define USE_DR16
+// #define USE_GIMBAL_COM
+#define USE_DR16
 #if defined(USE_GIMBAL_COM) && defined(USE_DR16)
 #error "Gimbal COM and DR16 cannot be used at the same time"   
 #endif

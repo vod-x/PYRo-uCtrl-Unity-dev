@@ -123,15 +123,15 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
     {
         diff = yaw_ref - owner->yaw;
     }
-    // g_yaw_ref = owner->_yaw_pid->calculate(owner->yaw + diff, owner->yaw);
-    // owner->_yaw_ref = yaw_ref;
-    // owner->_g_yaw_ref = g_yaw_ref;
-    // owner->_T_w_gain = owner->_g_yaw_pid->calculate(g_yaw_ref, owner->g_yaw);
-
-    g_yaw_ref = owner->_yaw_pid->calculate(0.0f, -owner->gimbal_yaw);
+    g_yaw_ref = owner->_yaw_pid->calculate(owner->yaw + diff, owner->yaw);
     owner->_yaw_ref = yaw_ref;
     owner->_g_yaw_ref = g_yaw_ref;
-    owner->_T_w_gain = owner->_g_yaw_pid->calculate(g_yaw_ref, -owner->gimbal_g_yaw); 
+    owner->_T_w_gain = owner->_g_yaw_pid->calculate(g_yaw_ref, owner->g_yaw);
+
+    // g_yaw_ref = owner->_yaw_pid->calculate(0.0f, -owner->gimbal_yaw);
+    // owner->_yaw_ref = yaw_ref;
+    // owner->_g_yaw_ref = g_yaw_ref;
+    // owner->_T_w_gain = owner->_g_yaw_pid->calculate(g_yaw_ref, -owner->gimbal_g_yaw); 
 
     owner->_delta_mea = owner->_leg_data[wl_chassis_t::R].alpha 
                             - owner->_leg_data[wl_chassis_t::L].alpha;

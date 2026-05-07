@@ -23,6 +23,9 @@ extern "C"
     extern void sentry_chassis_init(void *argument);
 #endif
 #endif
+#if ROBOT_ID == INFANTRY1_ID
+    extern status_t infantry2_chassis_init(void *argument);
+#endif
 #if ROBOT_ID == INFANTRY2_ID
     extern status_t infantry2_chassis_init(void *argument);
 #endif
@@ -52,9 +55,13 @@ extern "C"
 #endif
 #endif
 
+#if ROBOT_ID == INFANTRY1_ID
+    pyro_init_ret = infantry2_chassis_init(nullptr);
+#endif
 #if ROBOT_ID == INFANTRY2_ID
     pyro_init_ret = infantry2_chassis_init(nullptr);
 #endif
+
 #if DEBUG_MODE
         xTaskCreate(start_debug_task, "start_debug_task", 128, nullptr,
                     configMAX_PRIORITIES - 2, nullptr);

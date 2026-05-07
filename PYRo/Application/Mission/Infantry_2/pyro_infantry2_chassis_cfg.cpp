@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-27 20:38:05
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-04-26 00:03:23
+ * @LastEditTime: 2026-05-05 17:01:30
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -23,10 +23,18 @@
 #define TRANS_K1 100000.0f
 //the offsets of motors, which is the angle between the zero point of motor and
 // the forward direction of robot, counter clockwise is positive(rad)
+#if ROBOT_ID == INFANTRY1_ID
+#define R_MOTOR1_OFFSET  3.19f
+#define R_MOTOR2_OFFSET  2.8f
+#define L_MOTOR1_OFFSET  0.11f
+#define L_MOTOR2_OFFSET  -0.4f
+#elif ROBOT_ID == INFANTRY2_ID
 #define R_MOTOR1_OFFSET  -5.04f
 #define R_MOTOR2_OFFSET  -4.326f
 #define L_MOTOR1_OFFSET -1.46f
 #define L_MOTOR2_OFFSET  -4.34f
+#endif
+
 
 #define WHEEL_DISTANCE 0.424f
 #define CONTROL_PERIOD 0.001f
@@ -152,14 +160,14 @@ wl_chassis_cfg_t infantry2_chassis_cfg = {
     },
     .d_F_pid_cfg = {
         {
-            .kp = 240.0f,
+            .kp = 80.0f,
             .ki = 0.0f,
             .kd = 0.0f,
             .integral_limit = 0.0f,
             .max_out = 200.0f,
         },
         {
-            .kp = 240.0f,
+            .kp = 80.0f,
             .ki = 0.0f,
             .kd = 0.0f,
             .integral_limit = 0.0f,
