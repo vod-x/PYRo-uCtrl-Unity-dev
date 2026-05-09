@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-07 15:14:47
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-04-24 17:54:09
+ * @LastEditTime: 2026-05-08 12:58:48
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -18,6 +18,7 @@
 #include "pyro_ins.h"
 #include "pyro_algo_pid.h"
 #include "kf.h"
+#include "pyro_wl_power_ctrl.h"
 
 namespace pyro
 {
@@ -117,6 +118,7 @@ right leg, left leg */
     /* Torque range of the motor(Nm)*/
     float torque_min;
     float torque_max;
+   wl_power_ctrl_cfg_t power_ctrl_cfg;
 };
 //command structure for wheel-legged chassis
 struct wl_cmd_t final : public cmd_base_t
@@ -223,6 +225,8 @@ private:
     /* Kinematic solver, provide kinematic calculations and VMC matrix update
        function. */
     wheel_legged_kin_t _kinematic_solver;
+   
+   wl_power_ctrl_t _power_ctrl;
 
     /* INS Drv */
     ins_drv_t *_ins_drv;
@@ -230,7 +234,7 @@ private:
     float yaw, pitch, roll;
     float g_yaw, g_pitch, g_roll;
    float a_x, a_y, a_z, a_forward, a_upward, a_upward_lpf;
-    float gimbal_yaw, gimbal_g_yaw;
+   float gimbal_yaw, gimbal_g_yaw;
 
     pid_t* _yaw_pid;
     pid_t* _g_yaw_pid;
@@ -315,6 +319,8 @@ private:
         float x;
         /* Velocity of the displacement of j9(m/s) */
         float dx;
+         /* Velocity of rotation of each wheel(rad/s) */
+        float w;
         /* VMC transfotm matrix */
         arm_matrix_instance_f32 T_mat;
         /* VMC transform matrix value, the order is [T11, T12, T21, T22] */
@@ -325,6 +331,9 @@ private:
         float F[2];
         /* Target wheel torque */
         float T_w;
+        float T_w_balance;
+        float T_w_move;
+        float T_w_real;
         /* LQR gain for the leg, which is calculated by leg length, 2 x 6 matrix */
         float lqr_gain[12];
         float x_gain;
@@ -340,6 +349,7 @@ private:
         float kf_w;
         /* position which is integrated from kf_v */
         float kf_x;
+        float predict_power;
     } _leg_data[2];
    /* Kalman filter for the wheel velocity */
    kf_t _wheel_kf[2];

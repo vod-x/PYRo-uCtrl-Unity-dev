@@ -2,7 +2,7 @@
  * @Author: vod-x vod_x@outlook.com
  * @Date: 2026-04-18 15:06:20
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-05-07 14:54:10
+ * @LastEditTime: 2026-05-08 16:17:59
  * @FilePath: \Wheel-Legged-Robot\embedded_system\PYRo\Module\Chassis\Wheel_Legged\fsm\pyro_wl_active_state\pyro_wl_control_state.cpp
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -19,14 +19,18 @@ void wl_chassis_t::fsm_active_t::state_control_t::execute(wl_chassis_t *owner)
 {
     for(uint8_t i = 0; i < 2; i++)
     {
-            float t = wheel_disable_pid[i].calculate(0.0f,
-                 owner->_wheel_drv[i]->get_current_rotate());
-            owner->_wheel_drv[i]->send_torque(t);
+            // owner->_leg_data[i].T_w = wheel_disable_pid[i].calculate(owner->_cmd->vx * 25.0f,
+            //      owner->_leg_data[i].w);
+            owner->_leg_data[i].T_w = wheel_disable_pid[i].calculate(0.0f,
+                 owner->_leg_data[i].w);
+            owner->_leg_data[i].predict_power = owner->_power_ctrl.predict_power(i, owner->_leg_data[i].T_w_real, owner->_leg_data[i].w);
+            owner->_wheel_drv[i]->send_torque((owner->_leg_data[i].T_w / owner->_reduction_ratio /0.3f * (3591.0f/187.0f)));
     }
     
     owner->_leg_data[wl_chassis_t::R].ref_d_l=
             owner->_F_pid[wl_chassis_t::R]->
         calculate(owner->_cmd->r_leg, 
+        // calculate(0.23f, 
         owner->_leg_data[wl_chassis_t::R].l);
     owner->_leg_data[wl_chassis_t::R].F[0]=
             owner->_d_F_pid[wl_chassis_t::R]->
@@ -36,6 +40,7 @@ void wl_chassis_t::fsm_active_t::state_control_t::execute(wl_chassis_t *owner)
     owner->_leg_data[wl_chassis_t::L].ref_d_l=
         owner->_F_pid[wl_chassis_t::L]->
         calculate(owner->_cmd->l_leg,
+        // calculate(0.23f, 
         owner->_leg_data[wl_chassis_t::L].l);
     owner->_leg_data[wl_chassis_t::L].F[0]=
         owner->_d_F_pid[wl_chassis_t::L]->

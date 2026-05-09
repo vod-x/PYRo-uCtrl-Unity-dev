@@ -1,0 +1,7 @@
+# 默认使用 Git 自动换行处理
+* text=auto
+
+# shell 脚本强制 LF（Windows 下 CRLF 会导致 sh 解析失败）
+*.sh text eol=lf
+.githooks/* text eol=lf
+.gitmessage text eol=lf

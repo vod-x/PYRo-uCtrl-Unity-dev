@@ -1,0 +1,25 @@
+# ============================================================
+# Commit Message Template — Wheel-Legged Embodied Robot
+# 格式: type(scope): subject
+# ─────────────────────────────────────────────────────────────
+# TYPE:   feat | fix | perf | refactor | ctrl | sim | model |
+#         data | embed | docs | chore | test
+# SCOPE:  chassis | gimbal | yaw | booster | lqr | vmc | mpc |
+#         kalman | observer | imu | encoder | fdcan | usart |
+#         motor | power | sim | kinematics | linkage | build |
+#         rtos | hal | debug
+# SUBJECT: 动词开头，≤72字符，不加句号
+# ============================================================
+
+type(scope): subject
+
+
+# ── 变更文件说明（自动生成）────────────────────────────────────
+__FILES__
+# ── 可选：关联信息 ────────────────────────────────────────────
+# Refs: #<issue>
+# Test: <测试方法/平台，如 HITL/实车/Simulink>
+# HW: <涉及硬件版本，如 PCB-v2.1 / STM32H723>
+# BREAKING CHANGE: <不兼容变更说明>
+#
+# ============================================================

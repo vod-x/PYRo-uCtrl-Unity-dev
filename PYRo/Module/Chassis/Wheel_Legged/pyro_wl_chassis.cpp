@@ -2,7 +2,7 @@
  * @Author: Vod vod0575@outlook
  * @Date: 2026-02-06 15:27:37
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-04-18 15:08:36
+ * @LastEditTime: 2026-05-09 15:14:25
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -13,6 +13,7 @@
 #include "pyro_algo_common.h"
 #include "pyro_dwt_drv.h"
 #include "pyro_vofa.h"
+
 #define WHEEL_DISTANCE 0.424f
 #define SUPPORT_FORCE_ACC_LPF_RC 0.01f
 /* IMU offset from yaw rotation center (midpoint of two wheels) along body x-axis.
@@ -21,8 +22,8 @@
 
  namespace pyro
 {
-    float time;
-    float last_time;
+float time;
+float last_time;
 wl_chassis_t::wl_chassis_t() : module_base_t("wl_chassis", 0, 2048),
     _wheel_kf{kf_t(3, 1, 3, 2), kf_t(3, 1, 3, 2)}
 {
@@ -126,6 +127,8 @@ status_t wl_chassis_t::_init()
     /* Save wheel radius and reduction ratio */
     _wheel_radius = _module_deps.wheel_radius;
     _reduction_ratio = _module_deps.reduction_ratio;
+
+    _power_ctrl.init(&_module_deps.power_ctrl_cfg);
 
     /* Initialize joint motor driver */
     for(uint8_t i = 0; i < 4; i++)
@@ -314,13 +317,15 @@ void wl_chassis_t::_update_feedback()
        the direction of installation, the direction of left wheel if opposite to
     the direction of forward, so its dx has minus */
     _wheel_drv[R]->update_feedback();
-    _leg_data[R].dx = _wheel_drv[R]->get_current_rotate() * _wheel_radius   
-                                        / _reduction_ratio;
+    _leg_data[R].w = _wheel_drv[R]->get_current_rotate() / _reduction_ratio;
+    _leg_data[R].T_w_real = _wheel_drv[R]->get_current_torque()*0.3f/(3591.0f/187.0f) * _reduction_ratio;
+    _leg_data[R].dx = _leg_data[R].w * _wheel_radius;
     _leg_data[R].x += (_leg_data[R].dx + last_dx[R])/2 * 0.001f;
     last_dx[R] = _leg_data[R].dx;
     _wheel_drv[L]->update_feedback();
-    _leg_data[L].dx = - _wheel_drv[L]->get_current_rotate() * _wheel_radius 
-                                        / _reduction_ratio;
+    _leg_data[L].w = _wheel_drv[L]->get_current_rotate() / _reduction_ratio;
+    _leg_data[L].T_w_real = _wheel_drv[L]->get_current_torque()*0.3f/(3591.0f/187.0f) * _reduction_ratio;
+    _leg_data[L].dx = - _leg_data[L].w * _wheel_radius;
     _leg_data[L].x += (_leg_data[L].dx + last_dx[L])/2 * 0.001f;
     last_dx[L] = _leg_data[L].dx;
 

@@ -1,0 +1,38 @@
+#!/bin/sh
+# prepare-commit-msg: 自动将已变更文件列表注入提交信息
+# 在每个文件名后留有空白，供填写该文件的具体变更说明
+
+COMMIT_MSG_FILE="$1"
+COMMIT_SOURCE="$2"
+
+# 仅在交互式提交时注入（跳过 -m / merge / squash / amend）
+case "$COMMIT_SOURCE" in
+    message|merge|squash) exit 0 ;;
+esac
+
+# 优先获取暂存区文件；若为空则取工作区已修改的追踪文件
+STAGED=$(git diff --cached --name-only 2>/dev/null)
+[ -z "$STAGED" ] && STAGED=$(git diff --name-only 2>/dev/null)
+[ -z "$STAGED" ] && exit 0
+
+TMPFILE="${COMMIT_MSG_FILE}.tmp"
+
+# 构建文件列表块（替换 __FILES__ 占位符）
+# padding 修正：CJK 字符占 3 字节但显示 2 列，需补偿差值
+FILE_BLOCK=""
+while IFS= read -r f; do
+    FILE_BLOCK="${FILE_BLOCK}   $f\n   \n"
+done <<EOF
+$STAGED
+EOF
+
+# 逐行扫描模板，将 __FILES__ 行替换为实际文件列表
+while IFS= read -r line || [ -n "$line" ]; do
+    if printf '%s' "$line" | grep -q "^__FILES__$"; then
+        printf '%b' "$FILE_BLOCK" >> "$TMPFILE"
+    else
+        printf '%s\n' "$line" >> "$TMPFILE"
+    fi
+done < "$COMMIT_MSG_FILE"
+
+mv "$TMPFILE" "$COMMIT_MSG_FILE"
