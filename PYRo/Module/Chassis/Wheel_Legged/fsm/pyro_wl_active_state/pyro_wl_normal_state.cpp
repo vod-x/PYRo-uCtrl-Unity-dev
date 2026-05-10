@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-28 13:11:52
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-05-08 19:35:01
+ * @LastEditTime: 2026-05-10 15:09:48
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -378,10 +378,24 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
         owner->_leg_data[wl_chassis_t::L].T_w = owner->_leg_data[wl_chassis_t::L].T_w_balance + owner->_leg_data[wl_chassis_t::L].T_w_move + owner->_T_w_gain;
         // owner->_leg_data[wl_chassis_t::R].T_w = owner->_leg_data[wl_chassis_t::R].T_w_balance + owner->_leg_data[wl_chassis_t::R].T_w_move ;
         // owner->_leg_data[wl_chassis_t::L].T_w = owner->_leg_data[wl_chassis_t::L].T_w_balance + owner->_leg_data[wl_chassis_t::L].T_w_move ;
+        owner->_power_ctrl.set_max_power(60.0f);
+        float T[2];
+        wl_wheel_cmd_t cmd[2];
+        cmd[wl_chassis_t::R].tau_balance = -owner->_leg_data[wl_chassis_t::R].T_w_balance;
+        cmd[wl_chassis_t::L].tau_balance = owner->_leg_data[wl_chassis_t::L].T_w_balance;
+        cmd[wl_chassis_t::R].tau_motion = -owner->_leg_data[wl_chassis_t::R].T_w_move + owner->_T_w_gain;
+        cmd[wl_chassis_t::L].tau_motion = owner->_leg_data[wl_chassis_t::L].T_w_move + owner->_T_w_gain;
+        cmd[wl_chassis_t::R].omega = owner->_leg_data[wl_chassis_t::R].w;
+        cmd[wl_chassis_t::L].omega = owner->_leg_data[wl_chassis_t::L].w;
+        owner->_power_ctrl.update(cmd, T); 
+        for(uint8_t i = 0; i < 2; i++)
+        {
+            owner->_leg_data[i].T_w_out = T[i];
+        }
         owner->_leg_data[wl_chassis_t::R].predict_power = owner->_power_ctrl.predict_power(wl_chassis_t::R, -owner->_leg_data[wl_chassis_t::R].T_w, owner->_leg_data[wl_chassis_t::R].w);
         owner->_leg_data[wl_chassis_t::L].predict_power = owner->_power_ctrl.predict_power(wl_chassis_t::L, owner->_leg_data[wl_chassis_t::L].T_w, owner->_leg_data[wl_chassis_t::L].w);
-        owner->_wheel_drv[wl_chassis_t::R]->send_torque(fp32_constrain(-owner->_leg_data[wl_chassis_t::R].T_w / owner->_reduction_ratio /0.3f * (3591.0f/187.0f), -20.0f, 20.0f));
-        owner->_wheel_drv[wl_chassis_t::L]->send_torque(fp32_constrain(owner->_leg_data[wl_chassis_t::L].T_w / owner->_reduction_ratio /0.3f * (3591.0f/187.0f), -20.0f, 20.0f));
+        owner->_wheel_drv[wl_chassis_t::R]->send_torque(fp32_constrain(owner->_leg_data[wl_chassis_t::R].T_w_out / owner->_reduction_ratio /0.3f * (3591.0f/187.0f), -20.0f, 20.0f));
+        owner->_wheel_drv[wl_chassis_t::L]->send_torque(fp32_constrain(owner->_leg_data[wl_chassis_t::L].T_w_out / owner->_reduction_ratio /0.3f * (3591.0f/187.0f), -20.0f, 20.0f));
     }
     owner->_motor_drv[wl_chassis_t::RF]->send_torque(
                         -owner->_leg_data[wl_chassis_t::R].T[0]);

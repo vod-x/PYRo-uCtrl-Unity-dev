@@ -334,6 +334,7 @@ private:
         float T_w_balance;
         float T_w_move;
         float T_w_real;
+        float T_w_out;
         /* LQR gain for the leg, which is calculated by leg length, 2 x 6 matrix */
         float lqr_gain[12];
         float x_gain;
