@@ -7,15 +7,14 @@
 
 namespace pyro
 {
-extern "C"
-{
     can_drv_t *can1_drv;
     can_drv_t *can2_drv;
     can_drv_t *can3_drv;
     ins_drv_t *ins_drv;
     referee_drv_t *referee_drv;
 
-
+extern "C"
+{
     void pyro_init_thread(void *argument)
     {
         dwt_drv_t::init(480); // Initialize DWT at 480 MHz

@@ -2,7 +2,7 @@
  * @Author: Vod vod0575@outlook
  * @Date: 2026-02-06 15:27:37
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-05-09 15:14:25
+ * @LastEditTime: 2026-05-10 15:32:39
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -13,6 +13,7 @@
 #include "pyro_algo_common.h"
 #include "pyro_dwt_drv.h"
 #include "pyro_vofa.h"
+#include "pyro_referee.h"
 
 #define WHEEL_DISTANCE 0.424f
 #define SUPPORT_FORCE_ACC_LPF_RC 0.01f
@@ -277,8 +278,14 @@ status_t wl_chassis_t::_init()
     return ret;
 }
 
+float power;
+float energy;
+float limit;
+
+extern referee_drv_t *referee_drv;
 void wl_chassis_t::_update_feedback()
 {
+    power = referee_drv->get_data().robot_status.chassis_power_limit;
     last_time = dwt_drv_t::get_timeline_ms();
     static uint32_t dwt_cnt;
     static float last_dx[2];

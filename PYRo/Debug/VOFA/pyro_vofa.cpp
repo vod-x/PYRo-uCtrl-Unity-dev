@@ -8,9 +8,9 @@
 #include "pyro_wl_chassis.h"
 #include "pyro_powermeter.h"
 
-extern pyro::wl_chassis_t *infantry2_chassis_ptr;
 namespace pyro
 {
+extern wl_chassis_t *infantry2_chassis_ptr;
 powermeter_drv_t powermeter(0x212, can_hub_t::can2);
 powermeter_data powermeter_data;
 float power_bias[2];
