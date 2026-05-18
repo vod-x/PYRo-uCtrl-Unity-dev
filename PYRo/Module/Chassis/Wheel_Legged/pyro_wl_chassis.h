@@ -333,6 +333,7 @@ private:
         float T_w;
         float T_w_balance;
         float T_w_move;
+        float T_w_turn;
         float T_w_real;
         float T_w_out;
         /* LQR gain for the leg, which is calculated by leg length, 2 x 6 matrix */
@@ -431,6 +432,13 @@ private:
             void execute(wl_chassis_t *owner) override;
             void exit(wl_chassis_t *owner) override;
         }_state_control;
+
+        class state_spin_t : public state_t<wl_chassis_t>
+        {
+            void enter(wl_chassis_t *owner) override;
+            void execute(wl_chassis_t *owner) override;
+            void exit(wl_chassis_t *owner) override;
+        }_state_spin;
 
         void on_enter(wl_chassis_t *owner) override;
         void on_execute(wl_chassis_t *owner) override;

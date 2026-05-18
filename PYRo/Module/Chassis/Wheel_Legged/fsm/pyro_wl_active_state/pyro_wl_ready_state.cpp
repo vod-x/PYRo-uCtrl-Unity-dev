@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-28 15:55:50
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-05-05 16:19:45
+ * @LastEditTime: 2026-05-15 16:58:07
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -12,9 +12,9 @@
 
 #define LENGTH_SPEED (0.1f/1000.0f)
 #define ANGLE_SPEED (PI/2000.0f)
-#define TARGET_LENGTH 0.23f
+#define TARGET_LENGTH 0.2f
 // #define TARGET_ANGLE (2.0f * PI/3.0f)
-#define TARGET_ANGLE ((PI/2.0f) - 0.1f)
+#define TARGET_ANGLE ((PI/2.0f) + 0.1f)
 namespace pyro
 {
 extern pid_t wheel_disable_pid[2];

@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-27 20:38:05
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-05-09 18:45:49
+ * @LastEditTime: 2026-05-18 14:10:16
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -25,19 +25,15 @@
 // the forward direction of robot, counter clockwise is positive(rad)
 // -0.5536 0.770
 #if ROBOT_ID == INFANTRY1_ID
-#define R_MOTOR1_OFFSET  -3.6176f
-#define R_MOTOR2_OFFSET  1.6507f
-#define L_MOTOR1_OFFSET  0.1726f
-#define L_MOTOR2_OFFSET  -0.8228f
-// #define R_MOTOR1_OFFSET  2.731f
-// #define R_MOTOR2_OFFSET  1.60f
-// #define L_MOTOR1_OFFSET  0.353f
-// #define L_MOTOR2_OFFSET  5.40f
+#define R_MOTOR1_OFFSET  -2.9376f
+#define R_MOTOR2_OFFSET  2.064f
+#define L_MOTOR1_OFFSET  1.2824f
+#define L_MOTOR2_OFFSET  -0.6760f
 #elif ROBOT_ID == INFANTRY2_ID
-#define R_MOTOR1_OFFSET  -5.04f
-#define R_MOTOR2_OFFSET  -4.326f
-#define L_MOTOR1_OFFSET -1.46f
-#define L_MOTOR2_OFFSET  -4.34f
+#define R_MOTOR1_OFFSET 1.3954f
+#define R_MOTOR2_OFFSET 0.325f
+#define L_MOTOR1_OFFSET -1.3868f
+#define L_MOTOR2_OFFSET 2.9350f
 #endif
 
 
@@ -114,7 +110,11 @@ wl_chassis_cfg_t infantry2_chassis_cfg = {
         .tx_id = dji_motor_tx_frame_t::id_5,
         .can = can_hub_t::can3,
     },
-    .yaw_offset = 1.92f,
+#if ROBOT_ID == INFANTRY1_ID
+    .yaw_offset = -2.49f,
+#elif ROBOT_ID == INFANTRY1_ID 
+    .yaw_offset = 0.384f,
+#endif
     .T_pid_cfg = {
         {
             .kp = 15.0f,

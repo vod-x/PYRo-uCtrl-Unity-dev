@@ -2,12 +2,13 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-26 20:03:11
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-04-24 18:31:53
+ * @LastEditTime: 2026-05-14 22:49:40
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
  */
 #include "pyro_wl_chassis.h"
+#include "pyro_algo_common.h"
 namespace pyro
 {
 void wl_chassis_t::fsm_active_t::on_enter(wl_chassis_t *owner)
