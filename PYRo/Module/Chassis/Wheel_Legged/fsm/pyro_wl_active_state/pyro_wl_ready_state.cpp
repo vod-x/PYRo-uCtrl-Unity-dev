@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-28 15:55:50
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-05-19 16:29:20
+ * @LastEditTime: 2026-05-19 17:12:43
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -170,37 +170,8 @@ void wl_chassis_t::fsm_active_t::state_ready_t::execute(wl_chassis_t *owner)
                                                               owner->_lqr_cof[(j * 6 + k) * 4 + 3] * l * l * l ;
                 }
             }
-            if(0.005f < abs(owner->_cmd->r_leg - owner->_leg_data[wl_chassis_t::R].ref_l))
-            {
-                if(owner->_cmd->r_leg < owner->_leg_data[wl_chassis_t::R].ref_l)
-                {
-                    owner->_leg_data[wl_chassis_t::R].ref_l -= 0.0001f;
-                }
-                else
-                {
-                    owner->_leg_data[wl_chassis_t::R].ref_l += 0.0001f;
-                }
-            }
-            else
-            {
-                owner->_leg_data[wl_chassis_t::R].ref_l = owner->_cmd->r_leg;
-            }
-            if(0.005f < abs(owner->_cmd->l_leg - owner->_leg_data[wl_chassis_t::L].ref_l))
-            {
-                if(owner->_cmd->l_leg < owner->_leg_data[wl_chassis_t::L].ref_l)
-                {
-                    owner->_leg_data[wl_chassis_t::L].ref_l -= 0.0001f;
-                }
-                else
-                {
-                    owner->_leg_data[wl_chassis_t::L].ref_l += 0.0001f;
-                }
-            }
-            else
-            {
-                owner->_leg_data[wl_chassis_t::L].ref_l = owner->_cmd->l_leg;
-            }
 
+            owner->_leg_data[i].ref_l = TARGET_LENGTH;
             /* Right leg */
             owner->_leg_data[wl_chassis_t::R].ref_d_l=
                 owner->_F_pid[wl_chassis_t::R]->
@@ -331,7 +302,7 @@ void wl_chassis_t::fsm_active_t::state_ready_t::calc_target_value(wl_chassis_t *
               desired range, but the other leg is not, execute step 2 to make 
               alpha of both legs equal.) */
     if(((2 == state_flag[wl_chassis_t::R]) || (2 == state_flag[wl_chassis_t::L]))
-        &&((0 != state_flag[wl_chassis_t::R]) && (0 != state_flag[wl_chassis_t::L])))
+        || ((0 != state_flag[wl_chassis_t::R]) && (0 != state_flag[wl_chassis_t::L])))
     {
         /* choose the angle which is closer to target angle as tmp_angle */
         if((cur_angle[wl_chassis_t::R] < 0.0f) && (cur_angle[wl_chassis_t::L] < 0.0f))

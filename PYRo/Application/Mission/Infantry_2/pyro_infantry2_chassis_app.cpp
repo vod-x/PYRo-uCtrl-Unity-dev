@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-26 20:18:33
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-05-19 14:06:30
+ * @LastEditTime: 2026-05-19 19:49:49
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -17,6 +17,11 @@
 
 namespace pyro
 {
+
+const float control_acc = 0.006f;
+const float control_max_velocity = 1.0f;
+const float control_leg_length[3] = {0.18f, 0.27f, 0.33f};
+
 extern referee_drv_t *referee_drv;
 extern can_drv_t *can3_drv;
 wl_chassis_t *infantry2_chassis_ptr = nullptr;
@@ -84,6 +89,7 @@ struct cmd
         ACTIVE = 0x01,
         STEP_CLIMB = 0x02
     }mode;
+    uint8_t leg_length_mode;
 }cmd, last_cmd;
 
 extern "C"
@@ -102,36 +108,36 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
 
 #if defined(USE_GIMBAL_COM)
     can_rx_drv_t::get_data(pyro::can_hub_t::which_can::can3, 0x100,gimbal_rx.buffer);
-    static float acc = 0.006f;
+    memcpy(&last_cmd, &cmd, sizeof(cmd));
     if(0 != gimbal_rx.msg.vx)
     {
         if(gimbal_rx.msg.vx > 0)
         {
-            cmd.vx += acc;
+            cmd.vx += control_acc;
         }
         else
         {
-            cmd.vx -= acc;
+            cmd.vx -= control_acc;
         }
     }
     else 
     {
-        if(cmd.vx > acc)
+        if(cmd.vx > control_acc)
         {
-            cmd.vx -= acc;
+            cmd.vx -= control_acc;
         }
-        else if(cmd.vx < -acc)
+        else if(cmd.vx < -control_acc)
         {
-            cmd.vx += acc;
+            cmd.vx += control_acc;
         }
 
-        if(fabsf(cmd.vx) <= acc)
+        if(fabsf(cmd.vx) <= control_acc)
         {
             cmd.vx = 0.0f;
         }
     }
-    cmd.vx = fp32_constrain(cmd.vx, -1.0f, 1.0f);
-    cmd.vy = fp32_constrain(cmd.vy, -1.0f, 1.0f);
+    cmd.vx = fp32_constrain(cmd.vx, -control_max_velocity, control_max_velocity);
+    cmd.vy = fp32_constrain(cmd.vy, -control_max_velocity, control_max_velocity);
     cmd.v = sqrtf(cmd.vx * cmd.vx + cmd.vy * cmd.vy);
     cmd.turn_angle = atan2f(cmd.vy, cmd.vx);
     if(gimbal_rx.msg.mode == cmd::PASSIVE)
@@ -146,6 +152,7 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
             cmd.mode = cmd::STEP_CLIMB;
         }
     }
+    cmd.leg_length_mode = gimbal_rx.msg.legLength;
 #endif
 #if defined(USE_DR16)
     pyro::read_scope_lock lock(
@@ -169,6 +176,9 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
     }
     else if(cmd.mode == cmd::ACTIVE)
     {
+    
+        infantry2_chassis_cmd_ptr->l_leg = control_leg_length[cmd.leg_length_mode];
+        infantry2_chassis_cmd_ptr->r_leg = control_leg_length[cmd.leg_length_mode];
         infantry2_chassis_cmd_ptr->mode = pyro::cmd_base_t::mode_t::ACTIVE;
         if(0 == infantry2_chassis_ptr->get_status_flag(wl_cmd_t::READY))
         {
@@ -176,12 +186,13 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
         }
         else
         {
-            // ready_mode(rc_ctrl);
             normal_mode(rc_ctrl);
         }
     }
     else if(cmd.mode == cmd::STEP_CLIMB)
     {
+        infantry2_chassis_cmd_ptr->l_leg = 0.33f;
+        infantry2_chassis_cmd_ptr->r_leg = 0.33f;
         constexpr float TEST_FORCE = -20.0f;
         static uint8_t over_step_flag = 0;
         static float temp_torque[2] = {0.0f, 0.0f};
@@ -214,7 +225,6 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
             }
         }
     }
-    memcpy(&last_cmd, &cmd, sizeof(cmd));
 #endif
 
 #if defined(USE_DR16) 
@@ -353,7 +363,6 @@ void passive_mode(void const *rc_ctrl)
     float yaw, pitch, roll;
     ins_drv_t::get_instance()->get_rads_b(&yaw, &pitch, &roll);
     infantry2_chassis_cmd_ptr->yaw = yaw;
-            
 
 }
 
@@ -369,8 +378,6 @@ void ready_mode(void const *rc_ctrl)
             static_cast<dr16_drv_t::dr16_ctrl_t const *>(rc_ctrl);  
     infantry2_chassis_cmd_ptr->l_angle = PI/2.0f;
     infantry2_chassis_cmd_ptr->r_angle = PI/2.0f;
-    infantry2_chassis_cmd_ptr->l_leg = 0.18f;
-    infantry2_chassis_cmd_ptr->r_leg = 0.18f;
     infantry2_chassis_cmd_ptr->active_mode = wl_cmd_t::READY;
 }
 void normal_mode(void const *rc_ctrl)
@@ -381,9 +388,6 @@ void normal_mode(void const *rc_ctrl)
 
 #if defined (USE_GIMBAL_COM)
     infantry2_chassis_cmd_ptr->vx = cmd.vx;
-    // infantry2_chassis_cmd_ptr->yaw += (cmd.vy * PI / 1500.0f);
-    infantry2_chassis_cmd_ptr->r_leg += (cmd.vy / 4000.0f);
-    infantry2_chassis_cmd_ptr->l_leg += (cmd.vy / 4000.0f);
 #endif
 #if defined (USE_DR16)
     infantry2_chassis_cmd_ptr->r_leg += (p_ctrl->rc.ch_ry / 2000.0f);
@@ -394,10 +398,6 @@ void normal_mode(void const *rc_ctrl)
     infantry2_chassis_cmd_ptr->yaw = loop_fp32_constrain(
         infantry2_chassis_cmd_ptr->yaw, -PI, PI);
 #endif
-    infantry2_chassis_cmd_ptr->r_leg = fp32_constrain(
-       infantry2_chassis_cmd_ptr->r_leg, 0.18f, 0.37f);
-    infantry2_chassis_cmd_ptr->l_leg = fp32_constrain(
-       infantry2_chassis_cmd_ptr->l_leg, 0.18f, 0.37f);
 }
 void reverse_mode(void const *rc_ctrl)
 {
@@ -441,9 +441,6 @@ void over_step_ready_mode(void const *rc_ctrl)
 
 #if defined (USE_GIMBAL_COM)
     infantry2_chassis_cmd_ptr->vx = cmd.vx;
-    // infantry2_chassis_cmd_ptr->yaw += (cmd.vy * PI / 1500.0f);
-    infantry2_chassis_cmd_ptr->r_leg = 0.33f;
-    infantry2_chassis_cmd_ptr->l_leg = 0.33f;
 #endif
 #if defined (USE_DR16)
     infantry2_chassis_cmd_ptr->r_leg += (p_ctrl->rc.ch_ry / 2000.0f);
@@ -454,10 +451,6 @@ void over_step_ready_mode(void const *rc_ctrl)
     infantry2_chassis_cmd_ptr->yaw = loop_fp32_constrain(
         infantry2_chassis_cmd_ptr->yaw, -PI, PI);
 #endif
-    infantry2_chassis_cmd_ptr->r_leg = fp32_constrain(
-       infantry2_chassis_cmd_ptr->r_leg, 0.20f, 0.37f);
-    infantry2_chassis_cmd_ptr->l_leg = fp32_constrain(
-       infantry2_chassis_cmd_ptr->l_leg, 0.20f, 0.37f);
 }
 
 }

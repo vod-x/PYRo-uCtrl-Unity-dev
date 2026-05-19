@@ -24,10 +24,6 @@ void wl_chassis_t::fsm_active_t::state_normal_t::enter(wl_chassis_t *owner)
     owner->_flag.aerial_cnt = 0;
     owner->_flag.is_aerial = 0;
     owner->_flag.test = 0;
-    for(uint8_t i = 0; i < 2; i++)
-    {
-        owner->_leg_data[i].ref_l = owner->_cmd->l_leg;
-    }
     
     owner->_leg_data[wl_chassis_t::R].x = 0.0f;
     owner->_leg_data[wl_chassis_t::L].x = 0.0f;

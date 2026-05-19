@@ -14,6 +14,7 @@ void wl_chassis_t::fsm_active_t::state_over_step_ready_t::enter(wl_chassis_t *ow
     owner->_leg_data[wl_chassis_t::L].kf_x = 0.0f;
     owner->_wheel_kf[wl_chassis_t::R].reset();
     owner->_wheel_kf[wl_chassis_t::L].reset();
+    owner->_active_mode_flag.ready = 1;
 
 }
 
