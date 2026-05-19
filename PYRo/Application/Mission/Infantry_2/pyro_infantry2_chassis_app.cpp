@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-26 20:18:33
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-05-19 01:42:52
+ * @LastEditTime: 2026-05-19 14:06:30
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -176,6 +176,7 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
         }
         else
         {
+            // ready_mode(rc_ctrl);
             normal_mode(rc_ctrl);
         }
     }
@@ -368,8 +369,8 @@ void ready_mode(void const *rc_ctrl)
             static_cast<dr16_drv_t::dr16_ctrl_t const *>(rc_ctrl);  
     infantry2_chassis_cmd_ptr->l_angle = PI/2.0f;
     infantry2_chassis_cmd_ptr->r_angle = PI/2.0f;
-    infantry2_chassis_cmd_ptr->l_leg = 0.20f;
-    infantry2_chassis_cmd_ptr->r_leg = 0.20f;
+    infantry2_chassis_cmd_ptr->l_leg = 0.18f;
+    infantry2_chassis_cmd_ptr->r_leg = 0.18f;
     infantry2_chassis_cmd_ptr->active_mode = wl_cmd_t::READY;
 }
 void normal_mode(void const *rc_ctrl)
@@ -394,9 +395,9 @@ void normal_mode(void const *rc_ctrl)
         infantry2_chassis_cmd_ptr->yaw, -PI, PI);
 #endif
     infantry2_chassis_cmd_ptr->r_leg = fp32_constrain(
-       infantry2_chassis_cmd_ptr->r_leg, 0.20f, 0.37f);
+       infantry2_chassis_cmd_ptr->r_leg, 0.18f, 0.37f);
     infantry2_chassis_cmd_ptr->l_leg = fp32_constrain(
-       infantry2_chassis_cmd_ptr->l_leg, 0.20f, 0.37f);
+       infantry2_chassis_cmd_ptr->l_leg, 0.18f, 0.37f);
 }
 void reverse_mode(void const *rc_ctrl)
 {
