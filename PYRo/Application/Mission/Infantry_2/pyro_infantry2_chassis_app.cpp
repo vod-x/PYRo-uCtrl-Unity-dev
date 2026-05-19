@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-26 20:18:33
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-05-10 18:18:14
+ * @LastEditTime: 2026-05-19 01:42:52
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -80,8 +80,9 @@ struct cmd
     float v;
     enum
     {
-        PASSIVE = 0b00,
-        ACTIVE = 0b01,
+        PASSIVE = 0x00,
+        ACTIVE = 0x01,
+        STEP_CLIMB = 0x02
     }mode;
 }cmd, last_cmd;
 
@@ -101,8 +102,36 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
 
 #if defined(USE_GIMBAL_COM)
     can_rx_drv_t::get_data(pyro::can_hub_t::which_can::can3, 0x100,gimbal_rx.buffer);
-    cmd.vx = (float)gimbal_rx.msg.vx / 10.0f;
-    cmd.vy = (float)gimbal_rx.msg.vy / 10.0f;
+    static float acc = 0.006f;
+    if(0 != gimbal_rx.msg.vx)
+    {
+        if(gimbal_rx.msg.vx > 0)
+        {
+            cmd.vx += acc;
+        }
+        else
+        {
+            cmd.vx -= acc;
+        }
+    }
+    else 
+    {
+        if(cmd.vx > acc)
+        {
+            cmd.vx -= acc;
+        }
+        else if(cmd.vx < -acc)
+        {
+            cmd.vx += acc;
+        }
+
+        if(fabsf(cmd.vx) <= acc)
+        {
+            cmd.vx = 0.0f;
+        }
+    }
+    cmd.vx = fp32_constrain(cmd.vx, -1.0f, 1.0f);
+    cmd.vy = fp32_constrain(cmd.vy, -1.0f, 1.0f);
     cmd.v = sqrtf(cmd.vx * cmd.vx + cmd.vy * cmd.vy);
     cmd.turn_angle = atan2f(cmd.vy, cmd.vx);
     if(gimbal_rx.msg.mode == cmd::PASSIVE)
@@ -112,6 +141,10 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
     else if(gimbal_rx.msg.mode == cmd::ACTIVE)
     {
         cmd.mode = cmd::ACTIVE;
+        if(1 == gimbal_rx.msg.stepClimb)
+        {
+            cmd.mode = cmd::STEP_CLIMB;
+        }
     }
 #endif
 #if defined(USE_DR16)
@@ -144,6 +177,40 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
         else
         {
             normal_mode(rc_ctrl);
+        }
+    }
+    else if(cmd.mode == cmd::STEP_CLIMB)
+    {
+        constexpr float TEST_FORCE = -20.0f;
+        static uint8_t over_step_flag = 0;
+        static float temp_torque[2] = {0.0f, 0.0f};
+        infantry2_chassis_ptr->get_cur_p_torque(&temp_torque[0],
+                                    &temp_torque[1]);
+        if((0 == infantry2_chassis_ptr->get_status_flag(wl_cmd_t::OVER_STEP)) &&
+            ((temp_torque[0] < TEST_FORCE) || (temp_torque[1] < TEST_FORCE)))
+        {
+            over_step_flag = 1;
+        }
+        if(0 == over_step_flag)
+        {
+            over_step_ready_mode(rc_ctrl);
+        }
+        else 
+        {
+            if(0 == infantry2_chassis_ptr->get_status_flag(wl_cmd_t::OVER_STEP))
+            {
+                over_step_mode(rc_ctrl);
+            }
+            else 
+            {
+                ready_mode(rc_ctrl);
+            }
+            
+            if(1 == infantry2_chassis_ptr->get_status_flag(wl_cmd_t::READY))
+            {
+                over_step_flag = 0;
+                infantry2_chassis_ptr->clear_status_flag(wl_cmd_t::OVER_STEP);
+            }
         }
     }
     memcpy(&last_cmd, &cmd, sizeof(cmd));
@@ -301,8 +368,8 @@ void ready_mode(void const *rc_ctrl)
             static_cast<dr16_drv_t::dr16_ctrl_t const *>(rc_ctrl);  
     infantry2_chassis_cmd_ptr->l_angle = PI/2.0f;
     infantry2_chassis_cmd_ptr->r_angle = PI/2.0f;
-    infantry2_chassis_cmd_ptr->l_leg = 0.23f;
-    infantry2_chassis_cmd_ptr->r_leg = 0.23f;
+    infantry2_chassis_cmd_ptr->l_leg = 0.20f;
+    infantry2_chassis_cmd_ptr->r_leg = 0.20f;
     infantry2_chassis_cmd_ptr->active_mode = wl_cmd_t::READY;
 }
 void normal_mode(void const *rc_ctrl)
@@ -374,8 +441,8 @@ void over_step_ready_mode(void const *rc_ctrl)
 #if defined (USE_GIMBAL_COM)
     infantry2_chassis_cmd_ptr->vx = cmd.vx;
     // infantry2_chassis_cmd_ptr->yaw += (cmd.vy * PI / 1500.0f);
-    infantry2_chassis_cmd_ptr->r_leg += (cmd.vy / 4000.0f);
-    infantry2_chassis_cmd_ptr->l_leg += (cmd.vy / 4000.0f);
+    infantry2_chassis_cmd_ptr->r_leg = 0.33f;
+    infantry2_chassis_cmd_ptr->l_leg = 0.33f;
 #endif
 #if defined (USE_DR16)
     infantry2_chassis_cmd_ptr->r_leg += (p_ctrl->rc.ch_ry / 2000.0f);

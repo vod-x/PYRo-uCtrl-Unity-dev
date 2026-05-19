@@ -143,7 +143,7 @@ void vofa_drv_t::thread()
     // add_data(&infantry2_chassis_ptr->_leg_data[1].gamma);
     // add_data(&infantry2_chassis_ptr->_leg_data[0].d_gamma);
     // add_data(&infantry2_chassis_ptr->_leg_data[1].d_gamma);
-    //  add_data(&infantry2_chassis_ptr->_leg_data[0].beta);
+    // add_data(&infantry2_chassis_ptr->_leg_data[0].beta);
     // add_data(&infantry2_chassis_ptr->_leg_data[1].beta);
     // add_data(&infantry2_chassis_ptr->_leg_data[0].d_beta);
     // add_data(&infantry2_chassis_ptr->_leg_data[1].d_beta);

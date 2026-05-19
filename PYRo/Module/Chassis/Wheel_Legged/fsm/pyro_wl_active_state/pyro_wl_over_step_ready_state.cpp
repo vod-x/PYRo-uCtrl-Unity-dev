@@ -4,10 +4,7 @@ namespace pyro
 {
 void wl_chassis_t::fsm_active_t::state_over_step_ready_t::enter(wl_chassis_t *owner)
 {
-    for(uint8_t i = 0; i < 2; i++)
-    {
-        owner->_leg_data[i].ref_l = owner->_cmd->l_leg;
-    }
+
     
     owner->_leg_data[wl_chassis_t::R].x = 0.0f;
     owner->_leg_data[wl_chassis_t::L].x = 0.0f;
@@ -37,15 +34,15 @@ void wl_chassis_t::fsm_active_t::state_over_step_ready_t::execute(wl_chassis_t *
     {
         diff = yaw_ref - owner->yaw;
     }
-    g_yaw_ref = owner->_yaw_pid->calculate(owner->yaw + diff, owner->yaw);
-    owner->_yaw_ref = yaw_ref;
-    owner->_g_yaw_ref = g_yaw_ref;
-    owner->_T_w_gain = owner->_g_yaw_pid->calculate(g_yaw_ref, owner->g_yaw);
-
-    // g_yaw_ref = owner->_yaw_pid->calculate(0.0f, -owner->gimbal_yaw);
+    // g_yaw_ref = owner->_yaw_pid->calculate(owner->yaw + diff, owner->yaw);
     // owner->_yaw_ref = yaw_ref;
     // owner->_g_yaw_ref = g_yaw_ref;
-    // owner->_T_w_gain = owner->_g_yaw_pid->calculate(g_yaw_ref, -owner->gimbal_g_yaw); 
+    // owner->_T_w_gain = owner->_g_yaw_pid->calculate(g_yaw_ref, owner->g_yaw);
+
+    g_yaw_ref = owner->_yaw_pid->calculate(0.0f, -owner->gimbal_yaw);
+    owner->_yaw_ref = yaw_ref;
+    owner->_g_yaw_ref = g_yaw_ref;
+    owner->_T_w_gain = owner->_g_yaw_pid->calculate(g_yaw_ref, -owner->gimbal_g_yaw); 
 
     owner->_delta_mea = owner->_leg_data[wl_chassis_t::R].alpha 
                             - owner->_leg_data[wl_chassis_t::L].alpha;
@@ -104,7 +101,7 @@ void wl_chassis_t::fsm_active_t::state_over_step_ready_t::execute(wl_chassis_t *
                                 //   owner->_leg_data[i].lqr_gain[1] * (0.0f - owner->_leg_data[i].dx) + 
                                   owner->_leg_data[i].lqr_gain[2] * (0 - owner->_leg_data[i].gamma) + 
                                   owner->_leg_data[i].lqr_gain[3] * (0 - owner->_leg_data[i].d_gamma) + 
-                                  owner->_leg_data[i].lqr_gain[4] * (-0.1f - owner->_leg_data[i].beta) + 
+                                  owner->_leg_data[i].lqr_gain[4] * (0.1f - owner->_leg_data[i].beta) + 
                                   owner->_leg_data[i].lqr_gain[5] * (0 - owner->_leg_data[i].d_beta))
                                   / owner->_reduction_ratio /0.3f * (3591.0f/187.0f);
         owner->_leg_data[i].F[1] = -(
@@ -114,7 +111,7 @@ void wl_chassis_t::fsm_active_t::state_over_step_ready_t::execute(wl_chassis_t *
                                 //   owner->_leg_data[i].lqr_gain[7] * (0.0f - owner->_leg_data[i].dx) + 
                                   owner->_leg_data[i].lqr_gain[8] * (0 - owner->_leg_data[i].gamma) + 
                                   owner->_leg_data[i].lqr_gain[9] * (0 - owner->_leg_data[i].d_gamma) + 
-                                  owner->_leg_data[i].lqr_gain[10] * (-0.1f - owner->_leg_data[i].beta) + 
+                                  owner->_leg_data[i].lqr_gain[10] * (0.1f - owner->_leg_data[i].beta) + 
                                   owner->_leg_data[i].lqr_gain[11] * (0 - owner->_leg_data[i].d_beta));
                                   
     }
