@@ -71,6 +71,10 @@ void wl_chassis_t::fsm_active_t::on_execute(wl_chassis_t *owner)
     {
         this->change_state(&_state_control);
     }
+     if(owner->_cmd->active_mode == wl_cmd_t::SPIN)
+    {
+        this->change_state(&_state_spin);
+    }
 }
 
 void wl_chassis_t::fsm_active_t::on_exit(wl_chassis_t *owner)

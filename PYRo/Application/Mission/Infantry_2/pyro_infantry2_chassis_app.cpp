@@ -67,8 +67,8 @@ union ChassisToGimbalComm {
 
     __attribute__((packed)) struct {
         // 将 float (4字节) 压缩为 uint16_t (2字节) 传初速度，乘以 100 发送，云台除以 100
-        uint32_t initialSpeedX100      : 7; // 弹丸初速度 * 100 (2 Bytes)
-        uint32_t shooter17mmBarrelHeat : 9; // 17mm 枪口当前热量 (2 Bytes)
+        uint32_t initialSpeedX100      : 16; // 弹丸初速度 * 100 (2 Bytes)
+        uint32_t shooter17mmBarrelHeat : 16; // 17mm 枪口当前热量 (2 Bytes)
         uint32_t heatLimit             : 9; // 热量上限 (如 150, 240, 360)
         uint32_t coolingRate           : 7; // 冷却速率 (如 40, 60, 80)
         uint8_t robotId;                    // 机器人 ID (1 Byte)
@@ -87,7 +87,8 @@ struct cmd
     {
         PASSIVE = 0x00,
         ACTIVE = 0x01,
-        STEP_CLIMB = 0x02
+        SPIN = 0x02,
+         STEP_CLIMB= 0x03
     }mode;
     uint8_t leg_length_mode;
 }cmd, last_cmd;
@@ -103,6 +104,7 @@ void reverse_mode(void const *rc_ctrl);
 void over_step_mode(void const *rc_ctrl);
 void over_step_ready_mode(void const *rc_ctrl);
 void control_mode(void const *rc_ctrl);
+void spin_mode(void const *rc_ctrl);
 void infantry2_chassis_rc2cmd(void const *rc_ctrl)
 {
 
@@ -152,6 +154,10 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
             cmd.mode = cmd::STEP_CLIMB;
         }
     }
+    else if(gimbal_rx.msg.mode == cmd::SPIN) 
+    {
+        cmd.mode = cmd::SPIN;
+    }
     cmd.leg_length_mode = gimbal_rx.msg.legLength;
 #endif
 #if defined(USE_DR16)
@@ -184,9 +190,26 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
         {
             ready_mode(rc_ctrl);
         }
+      
         else
         {
             normal_mode(rc_ctrl);
+        }
+    }
+    else if(cmd.mode == cmd::SPIN) 
+       { 
+        infantry2_chassis_cmd_ptr->l_leg = control_leg_length[cmd.leg_length_mode];
+        infantry2_chassis_cmd_ptr->r_leg = control_leg_length[cmd.leg_length_mode];
+        infantry2_chassis_cmd_ptr->mode = pyro::cmd_base_t::mode_t::ACTIVE;
+        
+        
+        if(0 == infantry2_chassis_ptr->get_status_flag(wl_cmd_t::READY))
+        {
+            ready_mode(rc_ctrl);
+        }
+        else
+        {
+            spin_mode(rc_ctrl);
         }
     }
     else if(cmd.mode == cmd::STEP_CLIMB)
@@ -371,6 +394,21 @@ void test_mode(void const *rc_ctrl)
    static auto *p_ctrl =
             static_cast<dr16_drv_t::dr16_ctrl_t const *>(rc_ctrl);  
     infantry2_chassis_cmd_ptr->active_mode = wl_cmd_t::TEST;
+}
+void spin_mode(void const *rc_ctrl)
+{
+    static auto *p_ctrl =
+            static_cast<dr16_drv_t::dr16_ctrl_t const *>(rc_ctrl);  
+    
+    
+    infantry2_chassis_cmd_ptr->l_leg = control_leg_length[cmd.leg_length_mode];
+    infantry2_chassis_cmd_ptr->r_leg = control_leg_length[cmd.leg_length_mode];
+
+   
+    infantry2_chassis_cmd_ptr->mode = pyro::cmd_base_t::mode_t::ACTIVE;
+    
+  
+    infantry2_chassis_cmd_ptr->active_mode = wl_cmd_t::SPIN;
 }
 void ready_mode(void const *rc_ctrl)
 {

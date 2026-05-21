@@ -25,10 +25,10 @@
 // the forward direction of robot, counter clockwise is positive(rad)
 // -0.5536 0.770
 #if ROBOT_ID == INFANTRY1_ID
-#define R_MOTOR1_OFFSET  -2.9376f
-#define R_MOTOR2_OFFSET  2.064f
-#define L_MOTOR1_OFFSET  1.2824f
-#define L_MOTOR2_OFFSET  -0.6760f
+#define R_MOTOR1_OFFSET -2.5066f
+#define R_MOTOR2_OFFSET   0.8500f
+#define L_MOTOR1_OFFSET   -0.4336f
+#define L_MOTOR2_OFFSET  -1.0900f
 #elif ROBOT_ID == INFANTRY2_ID
 #define R_MOTOR1_OFFSET 1.3954f
 #define R_MOTOR2_OFFSET 0.325f
