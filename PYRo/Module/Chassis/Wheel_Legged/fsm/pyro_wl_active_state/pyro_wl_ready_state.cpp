@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-28 15:55:50
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-05-19 17:12:43
+ * @LastEditTime: 2026-05-20 11:32:09
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -14,7 +14,7 @@
 #define ANGLE_SPEED (PI/2000.0f)
 #define TARGET_LENGTH 0.18f
 // #define TARGET_ANGLE (2.0f * PI/3.0f)
-#define TARGET_ANGLE ((PI/2.0f) - 0.1f)
+#define TARGET_ANGLE ((PI/2.0f) + 0.6f)
 namespace pyro
 {
 extern pid_t wheel_disable_pid[2];
@@ -30,7 +30,7 @@ static float cur_angle[2] = {0.0f, 0.0f};
 static uint8_t ready_flag = 0;
 const float beta_bias = 0.3f;
 const float gamma_bias = 0.3f;
-const uint32_t ready_time = 500;
+const uint32_t ready_time = 1;
 
 void wl_chassis_t::fsm_active_t::state_ready_t::enter(wl_chassis_t *owner)
 {
@@ -62,6 +62,16 @@ void wl_chassis_t::fsm_active_t::state_ready_t::execute(wl_chassis_t *owner)
        (0.05f > abs(owner->_leg_data[wl_chassis_t::L].alpha - TARGET_ANGLE)))
     {
         ready_flag = 1;
+        owner->_leg_data[wl_chassis_t::R].x = 0.0f;
+        owner->_leg_data[wl_chassis_t::L].x = 0.0f;
+        owner->_leg_data[wl_chassis_t::R].x_gain = 0.0f;
+        owner->_leg_data[wl_chassis_t::L].x_gain = 0.0f;
+        owner->_leg_data[wl_chassis_t::R].kf_x = 0.0f;
+        owner->_leg_data[wl_chassis_t::R].kf_v = 0.0f;
+        owner->_leg_data[wl_chassis_t::L].kf_v = 0.0f;
+        owner->_leg_data[wl_chassis_t::L].kf_x = 0.0f;
+        owner->_wheel_kf[wl_chassis_t::R].reset();
+        owner->_wheel_kf[wl_chassis_t::L].reset();
     }
     if(0 == ready_flag)
     {
@@ -204,14 +214,6 @@ void wl_chassis_t::fsm_active_t::state_ready_t::execute(wl_chassis_t *owner)
                                       owner->_leg_data[i].lqr_gain[11] * (0 - owner->_leg_data[i].d_beta));
 
         }
-        owner->_leg_data[wl_chassis_t::R].F[0] = fp32_constrain(owner->_leg_data[wl_chassis_t::R].F[0], -200.0f, 200.0f);
-        owner->_leg_data[wl_chassis_t::L].F[0] = fp32_constrain(owner->_leg_data[wl_chassis_t::L].F[0], -200.0f, 200.0f);
-
-        owner->_leg_data[wl_chassis_t::R].T_w = owner->_leg_data[wl_chassis_t::R].T_w_balance;
-        owner->_leg_data[wl_chassis_t::L].T_w = owner->_leg_data[wl_chassis_t::L].T_w_balance;
-
-        owner->_wheel_drv[wl_chassis_t::R]->send_torque(fp32_constrain(-owner->_leg_data[wl_chassis_t::R].T_w / owner->_reduction_ratio /0.3f * (3591.0f/187.0f), -20.0f, 20.0f));
-        owner->_wheel_drv[wl_chassis_t::L]->send_torque(fp32_constrain(owner->_leg_data[wl_chassis_t::L].T_w / owner->_reduction_ratio /0.3f * (3591.0f/187.0f), -20.0f, 20.0f));
 
         static uint32_t time_count = 0;
         if((beta_bias > abs(owner->_leg_data[wl_chassis_t::R].beta)) &&
@@ -220,16 +222,35 @@ void wl_chassis_t::fsm_active_t::state_ready_t::execute(wl_chassis_t *owner)
            (gamma_bias > abs(owner->_leg_data[wl_chassis_t::L].gamma)))
         {
             time_count += 1;
+            for(uint8_t i = 0; i < 2; i++)
+            {
+
+                // owner->_leg_data[i].T_w_balance = wheel_disable_pid[i].calculate(0.0f,
+                //      owner->_wheel_drv[i]->get_current_rotate());
+                // owner->_wheel_drv[i]->send_torque(owner->_leg_data[i].T_w_balance);
+
+            }
+
         }
         else 
         {
             time_count = 0;
+            // owner->_wheel_drv[wl_chassis_t::R]->send_torque(fp32_constrain(-owner->_leg_data[wl_chassis_t::R].T_w / owner->_reduction_ratio /0.3f * (3591.0f/187.0f), -20.0f, 20.0f));
+            // owner->_wheel_drv[wl_chassis_t::L]->send_torque(fp32_constrain(owner->_leg_data[wl_chassis_t::L].T_w / owner->_reduction_ratio /0.3f * (3591.0f/187.0f), -20.0f, 20.0f));
 
         }
         if(time_count > ready_time)
         {
             owner->_active_mode_flag.ready = 1;
         }
+        owner->_leg_data[wl_chassis_t::R].F[0] = fp32_constrain(owner->_leg_data[wl_chassis_t::R].F[0], -200.0f, 200.0f);
+        owner->_leg_data[wl_chassis_t::L].F[0] = fp32_constrain(owner->_leg_data[wl_chassis_t::L].F[0], -200.0f, 200.0f);
+
+        owner->_leg_data[wl_chassis_t::R].T_w = owner->_leg_data[wl_chassis_t::R].T_w_balance;
+        owner->_leg_data[wl_chassis_t::L].T_w = owner->_leg_data[wl_chassis_t::L].T_w_balance;
+
+            owner->_wheel_drv[wl_chassis_t::R]->send_torque(fp32_constrain(-owner->_leg_data[wl_chassis_t::R].T_w / owner->_reduction_ratio /0.3f * (3591.0f/187.0f), -20.0f, 20.0f));
+            owner->_wheel_drv[wl_chassis_t::L]->send_torque(fp32_constrain(owner->_leg_data[wl_chassis_t::L].T_w / owner->_reduction_ratio /0.3f * (3591.0f/187.0f), -20.0f, 20.0f));
     
     }
 
@@ -305,18 +326,7 @@ void wl_chassis_t::fsm_active_t::state_ready_t::calc_target_value(wl_chassis_t *
         || ((0 != state_flag[wl_chassis_t::R]) && (0 != state_flag[wl_chassis_t::L])))
     {
         /* choose the angle which is closer to target angle as tmp_angle */
-        if((cur_angle[wl_chassis_t::R] < 0.0f) && (cur_angle[wl_chassis_t::L] < 0.0f))
-        {
-            if(cur_angle[wl_chassis_t::R] < cur_angle[wl_chassis_t::L])
-            {
-                tmp_angle = cur_angle[wl_chassis_t::R];
-            }
-            else 
-            {
-                tmp_angle = cur_angle[wl_chassis_t::L];
-            }
-        }
-        else 
+        if((cur_angle[wl_chassis_t::R] > 0.0f) && (cur_angle[wl_chassis_t::L] > 0.0f))
         {
             if(cur_angle[wl_chassis_t::R] < cur_angle[wl_chassis_t::L])
             {
@@ -327,6 +337,17 @@ void wl_chassis_t::fsm_active_t::state_ready_t::calc_target_value(wl_chassis_t *
                 tmp_angle = cur_angle[wl_chassis_t::L];
             }
         
+        }
+        else 
+        {
+            if(cur_angle[wl_chassis_t::R] < cur_angle[wl_chassis_t::L])
+            {
+                tmp_angle = cur_angle[wl_chassis_t::L];
+            }
+            else 
+            {
+                tmp_angle = cur_angle[wl_chassis_t::R];
+            }
         }
         for(uint8_t i = 0; i < 2; i++)
         {

@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-26 20:18:33
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-05-19 19:49:49
+ * @LastEditTime: 2026-05-20 21:01:02
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -67,8 +67,8 @@ union ChassisToGimbalComm {
 
     __attribute__((packed)) struct {
         // 将 float (4字节) 压缩为 uint16_t (2字节) 传初速度，乘以 100 发送，云台除以 100
-        uint32_t initialSpeedX100      : 7; // 弹丸初速度 * 100 (2 Bytes)
-        uint32_t shooter17mmBarrelHeat : 9; // 17mm 枪口当前热量 (2 Bytes)
+        uint32_t initialSpeedX100      : 16; // 弹丸初速度 * 100 (2 Bytes)
+        uint32_t shooter17mmBarrelHeat : 16; // 17mm 枪口当前热量 (2 Bytes)
         uint32_t heatLimit             : 9; // 热量上限 (如 150, 240, 360)
         uint32_t coolingRate           : 7; // 冷却速率 (如 40, 60, 80)
         uint8_t robotId;                    // 机器人 ID (1 Byte)
@@ -188,16 +188,27 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
         {
             normal_mode(rc_ctrl);
         }
+                // over_step_mode(rc_ctrl);
     }
     else if(cmd.mode == cmd::STEP_CLIMB)
     {
         infantry2_chassis_cmd_ptr->l_leg = 0.33f;
         infantry2_chassis_cmd_ptr->r_leg = 0.33f;
-        constexpr float TEST_FORCE = -20.0f;
+        constexpr float TEST_FORCE = -22.0f;
+        constexpr float TEST_ANGLE = 2.0f;
+        constexpr float TEST_d_ANGLE = 0.1f;
         static uint8_t over_step_flag = 0;
         static float temp_torque[2] = {0.0f, 0.0f};
+        static float temp_angle[2] = {0.0f, 0.0f};
+        static float temp_d_angle[2] = {0.0f, 0.0f};
+        infantry2_chassis_ptr->get_cur_angle(&temp_angle[0], &temp_angle[1]);
+        infantry2_chassis_ptr->get_cur_d_angle(&temp_d_angle[0], &temp_d_angle[1]);
         infantry2_chassis_ptr->get_cur_p_torque(&temp_torque[0],
                                     &temp_torque[1]);
+        // if((0 == infantry2_chassis_ptr->get_status_flag(wl_cmd_t::OVER_STEP)) &&
+        //     ((temp_torque[0] < TEST_FORCE) && (abs(temp_d_angle[0]) < TEST_d_ANGLE) && (temp_torque[1] < TEST_FORCE) && (abs(temp_d_angle[1]) < TEST_d_ANGLE)))
+        // if((0 == infantry2_chassis_ptr->get_status_flag(wl_cmd_t::OVER_STEP)) &&
+        //     ((temp_angle[0] > TEST_ANGLE) || (temp_angle[1] > TEST_ANGLE)))
         if((0 == infantry2_chassis_ptr->get_status_flag(wl_cmd_t::OVER_STEP)) &&
             ((temp_torque[0] < TEST_FORCE) || (temp_torque[1] < TEST_FORCE)))
         {
@@ -321,7 +332,7 @@ void infantry2_chassis_main_tread(void *argument)
     status_t ret = infantry2_chassis_ptr->start();
     while(1)
     {
-        gimbal_tx.msg.initialSpeedX100 = (uint32_t)(referee_drv->get_data().shoot.initial_speed* 100.0f);
+        gimbal_tx.msg.initialSpeedX100 = (uint16_t)(referee_drv->get_data().shoot.initial_speed* 100.0f);
         gimbal_tx.msg.shooter17mmBarrelHeat = referee_drv->get_data().power_heat.shooter_17mm_barrel_heat;
         gimbal_tx.msg.heatLimit = referee_drv->get_data().robot_status.shooter_barrel_heat_limit;
         gimbal_tx.msg.coolingRate = referee_drv->get_data().robot_status.shooter_barrel_cooling_value;

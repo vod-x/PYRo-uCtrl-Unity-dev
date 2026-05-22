@@ -168,6 +168,7 @@ public:
    wl_chassis_t &operator=(const wl_chassis_t &) = delete;
 
    status_t get_cur_angle(float *r_angle, float *l_angle);
+   status_t get_cur_d_angle(float *r_angle, float *l_angle);
    status_t get_cur_length(float *r_leg, float *l_leg);
    status_t get_cur_p_torque(float *r_torque, float *l_torque);
    uint8_t get_status_flag(wl_cmd_t::active_mode_t mode);

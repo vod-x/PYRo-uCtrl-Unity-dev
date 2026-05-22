@@ -41,6 +41,17 @@ status_t wl_chassis_t::get_cur_angle(float *r_angle, float *l_angle)
     return PYRO_OK;
 }
 
+status_t wl_chassis_t::get_cur_d_angle(float *r_d_angle, float *l_d_angle)
+{
+    if(!l_d_angle || !r_d_angle)
+    {
+        return PYRO_PARAM_ERROR;
+    }
+    *r_d_angle = _leg_data[R].d_alpha;
+    *l_d_angle = _leg_data[L].d_alpha;
+    return PYRO_OK;
+}
+
 status_t wl_chassis_t::get_cur_length(float *r_leg, float *l_leg)
 {
     if(!l_leg || !r_leg)

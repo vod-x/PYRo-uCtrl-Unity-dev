@@ -6,14 +6,14 @@ void wl_chassis_t::fsm_active_t::state_over_step_ready_t::enter(wl_chassis_t *ow
 {
 
     
-    owner->_leg_data[wl_chassis_t::R].x = 0.0f;
-    owner->_leg_data[wl_chassis_t::L].x = 0.0f;
-    owner->_leg_data[wl_chassis_t::R].x_gain = 0.0f;
-    owner->_leg_data[wl_chassis_t::L].x_gain = 0.0f;
-    owner->_leg_data[wl_chassis_t::R].kf_x = 0.0f;
-    owner->_leg_data[wl_chassis_t::L].kf_x = 0.0f;
-    owner->_wheel_kf[wl_chassis_t::R].reset();
-    owner->_wheel_kf[wl_chassis_t::L].reset();
+    // owner->_leg_data[wl_chassis_t::R].x = 0.0f;
+    // owner->_leg_data[wl_chassis_t::L].x = 0.0f;
+    // owner->_leg_data[wl_chassis_t::R].x_gain = 0.0f;
+    // owner->_leg_data[wl_chassis_t::L].x_gain = 0.0f;
+    // owner->_leg_data[wl_chassis_t::R].kf_x = 0.0f;
+    // owner->_leg_data[wl_chassis_t::L].kf_x = 0.0f;
+    // owner->_wheel_kf[wl_chassis_t::R].reset();
+    // owner->_wheel_kf[wl_chassis_t::L].reset();
     owner->_active_mode_flag.ready = 1;
 
 }
@@ -49,7 +49,7 @@ void wl_chassis_t::fsm_active_t::state_over_step_ready_t::execute(wl_chassis_t *
                             - owner->_leg_data[wl_chassis_t::L].alpha;
     owner->_d_delta_mea = owner->_leg_data[wl_chassis_t::R].d_alpha 
                             - owner->_leg_data[wl_chassis_t::L].d_alpha;
-    owner->_d_delta_ref = owner->_d_delta_pid->calculate(
+    owner->_d_delta_ref = owner->_delta_pid->calculate(
                                 0.0f, owner->_delta_mea);
     owner->T_l_gain = owner->_d_delta_pid->calculate(owner->_d_delta_ref,
                                                  owner->_d_delta_mea);
@@ -97,22 +97,22 @@ void wl_chassis_t::fsm_active_t::state_over_step_ready_t::execute(wl_chassis_t *
 
         owner->_leg_data[i].T_w = (
                                   owner->_leg_data[i].lqr_gain[0] * (owner->_leg_data[i].x_gain - owner->_leg_data[i].kf_x) + 
-                                  owner->_leg_data[i].lqr_gain[1] * (owner->_leg_data[i].d_x_gain - owner->_leg_data[i].kf_v) + 
+                                  owner->_leg_data[i].lqr_gain[1] * (owner->_leg_data[i].d_x_gain + 1.0f - owner->_leg_data[i].kf_v) + 
                                 //   owner->_leg_data[i].lqr_gain[0] * (owner->_leg_data[i].x_gain - owner->_leg_data[i].x) + 
                                 //   owner->_leg_data[i].lqr_gain[1] * (0.0f - owner->_leg_data[i].dx) + 
                                   owner->_leg_data[i].lqr_gain[2] * (0 - owner->_leg_data[i].gamma) + 
                                   owner->_leg_data[i].lqr_gain[3] * (0 - owner->_leg_data[i].d_gamma) + 
-                                  owner->_leg_data[i].lqr_gain[4] * (0.1f - owner->_leg_data[i].beta) + 
+                                  owner->_leg_data[i].lqr_gain[4] * (0.0f - owner->_leg_data[i].beta) + 
                                   owner->_leg_data[i].lqr_gain[5] * (0 - owner->_leg_data[i].d_beta))
                                   / owner->_reduction_ratio /0.3f * (3591.0f/187.0f);
         owner->_leg_data[i].F[1] = -(
                                   owner->_leg_data[i].lqr_gain[6] * (owner->_leg_data[i].x_gain - owner->_leg_data[i].kf_x) + 
-                                  owner->_leg_data[i].lqr_gain[7] * (owner->_leg_data[i].d_x_gain - owner->_leg_data[i].kf_v) + 
+                                  owner->_leg_data[i].lqr_gain[7] * (owner->_leg_data[i].d_x_gain + 1.0f - owner->_leg_data[i].kf_v) + 
                                 //   owner->_leg_data[i].lqr_gain[6] * (owner->_leg_data[i].x_gain - owner->_leg_data[i].x) + 
                                 //   owner->_leg_data[i].lqr_gain[7] * (0.0f - owner->_leg_data[i].dx) + 
                                   owner->_leg_data[i].lqr_gain[8] * (0 - owner->_leg_data[i].gamma) + 
                                   owner->_leg_data[i].lqr_gain[9] * (0 - owner->_leg_data[i].d_gamma) + 
-                                  owner->_leg_data[i].lqr_gain[10] * (0.1f - owner->_leg_data[i].beta) + 
+                                  owner->_leg_data[i].lqr_gain[10] * (0.0f - owner->_leg_data[i].beta) + 
                                   owner->_leg_data[i].lqr_gain[11] * (0 - owner->_leg_data[i].d_beta));
                                   
     }

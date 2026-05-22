@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-28 15:55:50
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-04-23 14:32:46
+ * @LastEditTime: 2026-05-20 15:21:21
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -11,7 +11,7 @@
 #include "pyro_algo_common.h"
 
 #define LENGTH_SPEED (0.1f/200.0f)
-#define ANGLE_SPEED (PI/200.0f)
+#define ANGLE_SPEED (PI/400.0f)
 #define TARGET_ANGLE (2.15f)
 #define TEMP_ANGLE (-2.85f)
 #define TEST_ANGLE (PI/2.0f + 0.5f)
@@ -45,6 +45,7 @@ void wl_chassis_t::fsm_active_t::state_over_step_t::enter(wl_chassis_t *owner)
     {
         state_flag[i] = 0;
     }
+    owner->_active_mode_flag.ready = 0;
 }
 
 void wl_chassis_t::fsm_active_t::state_over_step_t::execute(wl_chassis_t *owner)
@@ -149,12 +150,17 @@ void wl_chassis_t::fsm_active_t::state_over_step_t::execute(wl_chassis_t *owner)
        (0.01f > abs(owner->_leg_data[wl_chassis_t::R].l - TARGET_LENGTH)) &&
        (0.01f > abs(owner->_leg_data[wl_chassis_t::L].l - TARGET_LENGTH)))
     {
-        owner->_active_mode_flag.over_step = 1;
+        static uint32_t cnt = 0;
+        cnt++;
+        if(cnt > 50)
+        {
+            cnt = 0;
+             owner->_active_mode_flag.over_step = 1;
+        }
     }
 }
 void wl_chassis_t::fsm_active_t::state_over_step_t::exit(wl_chassis_t *owner)
 {
-    // owner->_active_mode_flag.over_step = 0;
 }
 
 void wl_chassis_t::fsm_active_t::state_over_step_t::calc_target_value(wl_chassis_t *owner)
@@ -165,24 +171,24 @@ void wl_chassis_t::fsm_active_t::state_over_step_t::calc_target_value(wl_chassis
     /* target angle */
     for(uint8_t i = 0; i < 2; i++)
     {
-        if(0 == state_flag[i])
-        {
-            if(0.05f > abs(target_angle[i] - TEST_ANGLE))
-            {
-                target_angle[i] = TEST_ANGLE;
-            }
-            else 
-            {
-                target_angle[i] += ANGLE_SPEED * 4.0f;
-                target_angle[i] = wrap2pi_f32(target_angle[i]);
-            }
-            if(0.05f > abs(owner->_leg_data[i].alpha - TEST_ANGLE))
-            {
-                state_flag[i] = 4;
+        // if(0 == state_flag[i])
+        // {
+        //     if(0.05f > abs(target_angle[i] - TEST_ANGLE))
+        //     {
+        //         target_angle[i] = TEST_ANGLE;
+        //     }
+        //     else 
+        //     {
+        //         target_angle[i] += ANGLE_SPEED * 4.0f;
+        //         target_angle[i] = wrap2pi_f32(target_angle[i]);
+        //     }
+        //     if(0.05f > abs(owner->_leg_data[i].alpha - TEST_ANGLE))
+        //     {
+        //         state_flag[i] = 4;
 
-            }
-        }
-        if(4 == state_flag[i])
+        //     }
+        // }
+        if(0 == state_flag[i])
         {
             if(0.05f > abs(target_angle[i] - TEMP_ANGLE))
             {
