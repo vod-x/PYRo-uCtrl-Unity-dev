@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-28 13:11:52
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-05-23 07:46:11
+ * @LastEditTime: 2026-05-23 08:20:19
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -12,6 +12,12 @@
 namespace pyro
 {
 extern pid_t wheel_disable_pid[2];
+pid_t turn_pid[2] = {
+    pid_t(2.0f, 0.0f, 0.0f, 2.0f, 20.0f), 
+    pid_t(2.0f, 0.0f, 0.0f, 2.0f, 20.0f)};
+pid_t wheel_turn_pid_soft[2] = {
+    pid_t(0.01f, 0.0f, 0.0f, 0.5f, 10.0f), 
+    pid_t(0.01f, 0.0f, 0.0f, 0.5f, 10.0f)};
 pid_t aerial_pid[2] = {
     pid_t(1.0f, 0.0f, 0.0f, 0.0f, 100.0f), 
     pid_t(1.0f, 0.0f, 0.0f, 0.0f, 100.0f)};
@@ -139,9 +145,19 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
     // owner->_T_w_gain = 0.0f;
 
 
-    owner->_leg_data[wl_chassis_t::R].T_w_turn = owner->_T_w_gain;
-    owner->_leg_data[wl_chassis_t::L].T_w_turn = owner->_T_w_gain;
+    // owner->_leg_data[wl_chassis_t::R].T_w_turn = owner->_T_w_gain;
+    // owner->_leg_data[wl_chassis_t::L].T_w_turn = owner->_T_w_gain;
 
+    if (fabsf(owner->gimbal_yaw) < 0.05f) {
+       owner->_leg_data[wl_chassis_t::R].T_w_turn  = wheel_turn_pid_soft[wl_chassis_t::R].calculate(g_yaw_ref, -owner->gimbal_g_yaw); 
+       owner->_leg_data[wl_chassis_t::L].T_w_turn  = wheel_turn_pid_soft[wl_chassis_t::L].calculate(g_yaw_ref, -owner->gimbal_g_yaw);
+    } else {
+        
+        
+            owner->_leg_data[wl_chassis_t::R].T_w_turn = turn_pid[wl_chassis_t::R].calculate(g_yaw_ref, owner->g_yaw); 
+            owner->_leg_data[wl_chassis_t::L].T_w_turn = turn_pid[wl_chassis_t::L].calculate(g_yaw_ref, owner->g_yaw); 
+        
+    }
     /* Calculate roll gain to make sure roll angle equal 0 */
     owner->_delta_mea = owner->_leg_data[wl_chassis_t::R].alpha 
                             - owner->_leg_data[wl_chassis_t::L].alpha;
@@ -381,8 +397,11 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
     }
     else
     {
-        owner->_leg_data[wl_chassis_t::R].T_w = owner->_leg_data[wl_chassis_t::R].T_w_balance + owner->_leg_data[wl_chassis_t::R].T_w_move - owner->_T_w_gain;
-        owner->_leg_data[wl_chassis_t::L].T_w = owner->_leg_data[wl_chassis_t::L].T_w_balance + owner->_leg_data[wl_chassis_t::L].T_w_move + owner->_T_w_gain;
+        // owner->_leg_data[wl_chassis_t::R].T_w = owner->_leg_data[wl_chassis_t::R].T_w_balance + owner->_leg_data[wl_chassis_t::R].T_w_move - owner->_T_w_gain;
+        // owner->_leg_data[wl_chassis_t::L].T_w = owner->_leg_data[wl_chassis_t::L].T_w_balance + owner->_leg_data[wl_chassis_t::L].T_w_move + owner->_T_w_gain;
+        owner->_leg_data[wl_chassis_t::R].T_w = owner->_leg_data[wl_chassis_t::R].T_w_balance + owner->_leg_data[wl_chassis_t::R].T_w_move - owner->_leg_data[wl_chassis_t::R].T_w_turn;
+        owner->_leg_data[wl_chassis_t::L].T_w = owner->_leg_data[wl_chassis_t::L].T_w_balance + owner->_leg_data[wl_chassis_t::L].T_w_move + owner->_leg_data[wl_chassis_t::L].T_w_turn;
+        // owner->_leg_data[wl_chassis_t::R].T_w = owner->_leg_data[wl_chassis_t::R].T_w_balance + owner->_leg_data[wl_chassis_t::R].T_w_move ;
         // owner->_leg_data[wl_chassis_t::R].T_w = owner->_leg_data[wl_chassis_t::R].T_w_balance + owner->_leg_data[wl_chassis_t::R].T_w_move ;
         // owner->_leg_data[wl_chassis_t::L].T_w = owner->_leg_data[wl_chassis_t::L].T_w_balance + owner->_leg_data[wl_chassis_t::L].T_w_move ;
         owner->_power_ctrl.set_max_power(1000.0f);

@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-27 20:38:05
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-05-23 07:43:46
+ * @LastEditTime: 2026-05-19 14:51:32
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -25,10 +25,10 @@
 // the forward direction of robot, counter clockwise is positive(rad)
 // -0.5536 0.770
 #if ROBOT_ID == INFANTRY1_ID
-#define R_MOTOR1_OFFSET  -2.5056f
-#define R_MOTOR2_OFFSET  0.8559f
-#define L_MOTOR1_OFFSET  -0.4350f
-#define L_MOTOR2_OFFSET  -1.097f
+#define R_MOTOR1_OFFSET -2.5066f
+#define R_MOTOR2_OFFSET   0.8500f
+#define L_MOTOR1_OFFSET   -0.4336f
+#define L_MOTOR2_OFFSET  -1.0900f
 #elif ROBOT_ID == INFANTRY2_ID
 #define R_MOTOR1_OFFSET 1.2974f
 #define R_MOTOR2_OFFSET 0.223f
