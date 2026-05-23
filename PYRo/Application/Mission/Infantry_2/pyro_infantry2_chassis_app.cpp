@@ -209,15 +209,7 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
         infantry2_chassis_cmd_ptr->r_leg = control_leg_length[cmd.leg_length_mode];
         infantry2_chassis_cmd_ptr->mode = pyro::cmd_base_t::mode_t::ACTIVE;
         
-        
-        if(0 == infantry2_chassis_ptr->get_status_flag(wl_cmd_t::READY))
-        {
-            ready_mode(rc_ctrl);
-        }
-        else
-        {
             spin_mode(rc_ctrl);
-        }
     }
     else if(cmd.mode == cmd::STEP_CLIMB)
     {

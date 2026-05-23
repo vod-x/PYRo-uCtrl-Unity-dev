@@ -4,9 +4,9 @@ namespace pyro
 {
 extern pid_t wheel_disable_pid[2];
 pid_t wheel_turn_pid[2] = {
-    pid_t(0.5f, 0.0f, 0.0f, 2.0f, 20.0f), 
-    pid_t(0.5f, 0.0f, 0.0f, 2.0f, 20.0f)};
- const float SPIN_SPEED = 6.0f;  
+    pid_t(5.0, 0.0f, 0.0f, 2.0f, 20.0f), 
+    pid_t(5.0, 0.0f, 0.0f, 2.0f, 20.0f)};
+ const float SPIN_SPEED =8.0f   ;
 void wl_chassis_t::fsm_active_t::state_spin_t::enter(wl_chassis_t *owner)
 {
         for(uint8_t i = 0; i < 2; i++)
@@ -19,7 +19,7 @@ void wl_chassis_t::fsm_active_t::state_spin_t::enter(wl_chassis_t *owner)
 
     owner->_leg_data[wl_chassis_t::R].d_x_gain = 0.0f;
     owner->_leg_data[wl_chassis_t::L].d_x_gain = 0.0f;
-    
+     owner->_active_mode_flag.ready = 1;
     // owner->_leg_data[wl_chassis_t::R].x = 0.0f;
     // owner->_leg_data[wl_chassis_t::L].x = 0.0f;
     // owner->_leg_data[wl_chassis_t::R].x_gain = 0.0f;
@@ -30,10 +30,13 @@ void wl_chassis_t::fsm_active_t::state_spin_t::enter(wl_chassis_t *owner)
     // owner->_wheel_kf[wl_chassis_t::L].reset();
 
 }
+
 void wl_chassis_t::fsm_active_t::state_spin_t::execute(wl_chassis_t *owner)
 {
 
-    /* Calculate turn torque */
+    // owner->_leg_data[wl_chassis_t::L].ref_l = owner->_cmd->l_leg / cosf(owner->_leg_data[wl_chassis_t::L].gamma);
+    // owner->_leg_data[wl_chassis_t::R].ref_l = owner->_cmd->r_leg / cosf(owner->_leg_data[wl_chassis_t::R].gamma);
+     /* Calculate turn torque */
     owner->_leg_data[wl_chassis_t::R].T_w_turn =  wheel_turn_pid[wl_chassis_t::R].calculate(SPIN_SPEED , owner->g_yaw); 
     owner->_leg_data[wl_chassis_t::L].T_w_turn =  wheel_turn_pid[wl_chassis_t::L].calculate(SPIN_SPEED , owner->g_yaw); 
 
@@ -44,13 +47,18 @@ void wl_chassis_t::fsm_active_t::state_spin_t::execute(wl_chassis_t *owner)
                             - owner->_leg_data[wl_chassis_t::L].d_alpha;
     owner->_d_delta_ref = owner->_d_delta_pid->calculate(
                                 0.0f, owner->_delta_mea);
+
     owner->T_l_gain = owner->_d_delta_pid->calculate(owner->_d_delta_ref,
                                                  owner->_d_delta_mea);
-    owner->roll_gain = owner->_roll_pid->calculate(0.0f, owner->roll);
-
+    // owner->roll_gain = owner->_roll_pid->calculate(0.0f, owner->roll);
+owner->roll_gain = 0.0f;
 
     owner->_leg_data[wl_chassis_t::R].d_x_gain = 0.0f;
     owner->_leg_data[wl_chassis_t::L].d_x_gain = 0.0f;
+
+    owner->_leg_data[wl_chassis_t::R].x_gain = owner->_leg_data[wl_chassis_t::R].kf_x;
+    owner->_leg_data[wl_chassis_t::L].x_gain = owner->_leg_data[wl_chassis_t::L].kf_x;
+    float chassis_v = (owner->_leg_data[wl_chassis_t::L].dx + owner->_leg_data[wl_chassis_t::R].dx) / 2.0f;
 
     /* Calculate the target torque of VMC for each leg */
     for(uint8_t i = 0; i < 2; i++)
@@ -127,21 +135,29 @@ void wl_chassis_t::fsm_active_t::state_spin_t::execute(wl_chassis_t *owner)
                                       owner->_leg_data[i].lqr_gain[3] * (0 - owner->_leg_data[i].d_gamma) + 
                                       owner->_leg_data[i].lqr_gain[4] * (0 - owner->_leg_data[i].beta) + 
                                       owner->_leg_data[i].lqr_gain[5] * (0 - owner->_leg_data[i].d_beta));
-            owner->_leg_data[i].T_w_move = (
-                                      owner->_leg_data[i].lqr_gain[0] * (owner->_leg_data[i].x_gain - owner->_leg_data[i].kf_x) + 
-                                      owner->_leg_data[i].lqr_gain[1] * (owner->_leg_data[i].d_x_gain - owner->_leg_data[i].kf_v));
-                                    //   owner->_leg_data[i].lqr_gain[0] * (owner->_leg_data[i].x_gain - owner->_leg_data[i].x) + 
-                                    //   owner->_leg_data[i].lqr_gain[1] * (owner->_leg_data[i].d_x_gain - owner->_leg_data[i].dx) + 
+            // owner->_leg_data[i].T_w_move = (
+            //                           owner->_leg_data[i].lqr_gain[0] * (owner->_leg_data[i].x_gain - owner->_leg_data[i].kf_x) + 
+            //                           owner->_leg_data[i].lqr_gain[1] * (owner->_leg_data[i].d_x_gain - owner->_leg_data[i].kf_v));
+            //                         //   owner->_leg_data[i].lqr_gain[0] * (owner->_leg_data[i].x_gain - owner->_leg_data[i].x) + 
+            //                         //   owner->_leg_data[i].lqr_gain[1] * (owner->_leg_data[i].d_x_gain - owner->_leg_data[i].dx) + 
 
-            owner->_leg_data[i].F[1] = -(
-                                      owner->_leg_data[i].lqr_gain[6] * (owner->_leg_data[i].x_gain - owner->_leg_data[i].kf_x) + 
-                                      owner->_leg_data[i].lqr_gain[7] * (owner->_leg_data[i].d_x_gain - owner->_leg_data[i].kf_v) + 
-                                    //   owner->_leg_data[i].lqr_gain[6] * (owner->_leg_data[i].x_gain - owner->_leg_data[i].x) + 
-                                    //   owner->_leg_data[i].lqr_gain[7] * (owner->_leg_data[i].d_x_gain - owner->_leg_data[i].dx) + 
-                                      owner->_leg_data[i].lqr_gain[8] * (0 - owner->_leg_data[i].gamma) + 
-                                      owner->_leg_data[i].lqr_gain[9] * (0 - owner->_leg_data[i].d_gamma) + 
-                                      owner->_leg_data[i].lqr_gain[10] * (0 - owner->_leg_data[i].beta) + 
-                                      owner->_leg_data[i].lqr_gain[11] * (0 - owner->_leg_data[i].d_beta));
+            // owner->_leg_data[i].F[1] = -(
+            //                         //   owner->_leg_data[i].lqr_gain[6] * (owner->_leg_data[i].x_gain - owner->_leg_data[i].kf_x) + 
+            //                         //   owner->_leg_data[i].lqr_gain[7] * (owner->_leg_data[i].d_x_gain - owner->_leg_data[i].kf_v) + 
+            //                         //   owner->_leg_data[i].lqr_gain[6] * (owner->_leg_data[i].x_gain - owner->_leg_data[i].x) + 
+            //                         //   owner->_leg_data[i].lqr_gain[7] * (owner->_leg_data[i].d_x_gain - owner->_leg_data[i].dx) + 
+            //                           owner->_leg_data[i].lqr_gain[8] * (0 - owner->_leg_data[i].gamma) + 
+            //                           owner->_leg_data[i].lqr_gain[9] * (0 - owner->_leg_data[i].d_gamma) + 
+            //                           owner->_leg_data[i].lqr_gain[10] * (0 - owner->_leg_data[i].beta) + 
+            //                           owner->_leg_data[i].lqr_gain[11] * (0 - owner->_leg_data[i].d_beta));
+            owner->_leg_data[i].T_w_move = owner->_leg_data[i].lqr_gain[1] * (0.0f - chassis_v);
+
+        owner->_leg_data[i].F[1] = -(
+                                  owner->_leg_data[i].lqr_gain[7] * (0.0f - chassis_v) + 
+                                  owner->_leg_data[i].lqr_gain[8] * (0 - owner->_leg_data[i].gamma) + 
+                                  owner->_leg_data[i].lqr_gain[9] * (0 - owner->_leg_data[i].d_gamma) + 
+                                  owner->_leg_data[i].lqr_gain[10] * (0 - owner->_leg_data[i].beta) + 
+                                  owner->_leg_data[i].lqr_gain[11] * (0 - owner->_leg_data[i].d_beta));
                                   
     }
     owner->_leg_data[wl_chassis_t::R].F[0] = fp32_constrain(owner->_leg_data[wl_chassis_t::R].F[0], -200.0f, 200.0f);
@@ -211,7 +227,7 @@ void wl_chassis_t::fsm_active_t::state_spin_t::exit(wl_chassis_t *owner)
 {
     owner->_leg_data[wl_chassis_t::R].x_gain = owner->_leg_data[wl_chassis_t::R].kf_x;
     owner->_leg_data[wl_chassis_t::L].x_gain = owner->_leg_data[wl_chassis_t::L].kf_x;
-    owner->_active_mode_flag.ready = 0;
+    owner->_active_mode_flag.ready = 1;
 }
 
 }
