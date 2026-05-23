@@ -118,7 +118,7 @@ status_t dji_motor_drv_t::disable()
 
 status_t dji_motor_drv_t::update_feedback()
 {
-    static std::array<uint8_t, 8> data;
+    std::array<uint8_t, 8> data;
     _feedback_msg->get_data(data);
 
     _current_position = ((float)((uint16_t)((data[0] << 8) | (data[1])))) /

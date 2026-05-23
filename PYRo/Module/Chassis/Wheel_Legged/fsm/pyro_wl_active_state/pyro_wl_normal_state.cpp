@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-28 13:11:52
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-05-20 14:51:57
+ * @LastEditTime: 2026-05-23 07:46:11
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -108,6 +108,7 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
             owner->_flag.aerial_cnt = 0;
         }
     }
+    owner->_flag.aerial_cnt = 1;
     
 
     /* Calculate Tw turn */
@@ -133,7 +134,10 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
     g_yaw_ref = owner->_yaw_pid->calculate(0.0f, -owner->gimbal_yaw);
     owner->_yaw_ref = yaw_ref;
     owner->_g_yaw_ref = g_yaw_ref;
-    owner->_T_w_gain = owner->_g_yaw_pid->calculate(g_yaw_ref, -owner->gimbal_g_yaw); 
+    // owner->_T_w_gain = owner->_g_yaw_pid->calculate(g_yaw_ref, -owner->gimbal_g_yaw); 
+    owner->_T_w_gain = owner->_g_yaw_pid->calculate(g_yaw_ref, owner->g_yaw); 
+    // owner->_T_w_gain = 0.0f;
+
 
     owner->_leg_data[wl_chassis_t::R].T_w_turn = owner->_T_w_gain;
     owner->_leg_data[wl_chassis_t::L].T_w_turn = owner->_T_w_gain;

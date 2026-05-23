@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-27 20:38:05
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-05-22 19:36:40
+ * @LastEditTime: 2026-05-23 07:43:46
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -30,10 +30,10 @@
 #define L_MOTOR1_OFFSET  -0.4350f
 #define L_MOTOR2_OFFSET  -1.097f
 #elif ROBOT_ID == INFANTRY2_ID
-#define R_MOTOR1_OFFSET 1.3954f
-#define R_MOTOR2_OFFSET 0.325f
-#define L_MOTOR1_OFFSET -1.3868f
-#define L_MOTOR2_OFFSET 2.9350f
+#define R_MOTOR1_OFFSET 1.2974f
+#define R_MOTOR2_OFFSET 0.223f
+#define L_MOTOR1_OFFSET -1.5696f
+#define L_MOTOR2_OFFSET 3.063f
 #endif
 
 
@@ -111,9 +111,9 @@ wl_chassis_cfg_t infantry2_chassis_cfg = {
         .can = can_hub_t::can3,
     },
 #if ROBOT_ID == INFANTRY1_ID
-    .yaw_offset = -2.49f,
+    .yaw_offset = -1.9f,
 #elif ROBOT_ID == INFANTRY2_ID 
-    .yaw_offset = 0.384f,
+    .yaw_offset = -1.765f,
 #endif
     .T_pid_cfg = {
         {
@@ -180,14 +180,14 @@ wl_chassis_cfg_t infantry2_chassis_cfg = {
         }
     },
     .yaw_pid_cfg = {
-        .kp = 2.0f,
+        .kp = 4.0f,
         .ki = 0.0f,
         .kd = 0.0f,
         .integral_limit = 0.0f,
         .max_out = 30.0f,
     },
     .g_yaw_pid_cfg = {
-        .kp = 3.0f,
+        .kp = 2.0f,
         .ki = 0.0f,
         .kd = 0.0f,
         .integral_limit = 0.0f,

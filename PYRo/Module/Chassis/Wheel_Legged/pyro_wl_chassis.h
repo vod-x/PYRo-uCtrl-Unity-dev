@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-07 15:14:47
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-05-08 12:58:48
+ * @LastEditTime: 2026-05-23 08:02:38
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -171,6 +171,7 @@ public:
    status_t get_cur_d_angle(float *r_angle, float *l_angle);
    status_t get_cur_length(float *r_leg, float *l_leg);
    status_t get_cur_p_torque(float *r_torque, float *l_torque);
+   status_t get_cur_ins_yaw(float* temp_yaw);
    uint8_t get_status_flag(wl_cmd_t::active_mode_t mode);
    status_t clear_status_flag(wl_cmd_t::active_mode_t mode);
 private:

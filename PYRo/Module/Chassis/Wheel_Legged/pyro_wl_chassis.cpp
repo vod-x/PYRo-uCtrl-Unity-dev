@@ -2,7 +2,7 @@
  * @Author: Vod vod0575@outlook
  * @Date: 2026-02-06 15:27:37
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-05-10 15:32:39
+ * @LastEditTime: 2026-05-23 03:42:32
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -71,6 +71,16 @@ status_t wl_chassis_t::get_cur_p_torque(float *r_torque, float *l_torque)
     }
     *r_torque = _leg_data[R].F[1];
     *l_torque = _leg_data[L].F[1];
+    return PYRO_OK;
+}
+
+status_t wl_chassis_t::get_cur_ins_yaw(float* temp_yaw)
+{
+    if(!temp_yaw)
+    {
+        return PYRO_PARAM_ERROR;
+    }
+    *temp_yaw = yaw;
     return PYRO_OK;
 }
 

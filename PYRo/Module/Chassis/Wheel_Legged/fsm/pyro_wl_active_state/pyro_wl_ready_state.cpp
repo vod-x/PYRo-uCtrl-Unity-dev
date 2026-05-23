@@ -222,21 +222,10 @@ void wl_chassis_t::fsm_active_t::state_ready_t::execute(wl_chassis_t *owner)
            (gamma_bias > abs(owner->_leg_data[wl_chassis_t::L].gamma)))
         {
             time_count += 1;
-            for(uint8_t i = 0; i < 2; i++)
-            {
-
-                // owner->_leg_data[i].T_w_balance = wheel_disable_pid[i].calculate(0.0f,
-                //      owner->_wheel_drv[i]->get_current_rotate());
-                // owner->_wheel_drv[i]->send_torque(owner->_leg_data[i].T_w_balance);
-
-            }
-
         }
         else 
         {
             time_count = 0;
-            // owner->_wheel_drv[wl_chassis_t::R]->send_torque(fp32_constrain(-owner->_leg_data[wl_chassis_t::R].T_w / owner->_reduction_ratio /0.3f * (3591.0f/187.0f), -20.0f, 20.0f));
-            // owner->_wheel_drv[wl_chassis_t::L]->send_torque(fp32_constrain(owner->_leg_data[wl_chassis_t::L].T_w / owner->_reduction_ratio /0.3f * (3591.0f/187.0f), -20.0f, 20.0f));
 
         }
         if(time_count > ready_time)

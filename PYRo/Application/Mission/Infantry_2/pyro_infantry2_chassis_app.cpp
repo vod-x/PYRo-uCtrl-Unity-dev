@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-26 20:18:33
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-05-20 21:01:02
+ * @LastEditTime: 2026-05-23 07:53:58
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -58,6 +58,7 @@ union GimbalToChassisComm {
         uint32_t capSwitch    : 1; // [C] 超级电容开关
         uint32_t fireState    : 4; // 发射机构 FSM 状态 (FireState)
         uint32_t aimMode      : 2; // [B] 自瞄模式 (0~3)
+        int16_t yawvel     ;
     } msg;
 
     std::array<uint8_t, 8> buffer;
@@ -83,6 +84,7 @@ struct cmd
     float vy;
     float turn_angle;
     float v;
+    float yaw_vel;
     enum
     {
         PASSIVE = 0x00,
@@ -140,6 +142,8 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
     cmd.vy = fp32_constrain(cmd.vy, -control_max_velocity, control_max_velocity);
     cmd.v = sqrtf(cmd.vx * cmd.vx + cmd.vy * cmd.vy);
     cmd.turn_angle = atan2f(cmd.vy, cmd.vx);
+    
+    cmd.yaw_vel = (float)gimbal_rx.msg.yawvel / 100000.0f;
     if(gimbal_rx.msg.mode == cmd::PASSIVE)
     {
         cmd.mode = cmd::PASSIVE;
@@ -179,6 +183,8 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
     
         infantry2_chassis_cmd_ptr->l_leg = control_leg_length[cmd.leg_length_mode];
         infantry2_chassis_cmd_ptr->r_leg = control_leg_length[cmd.leg_length_mode];
+        // infantry2_chassis_cmd_ptr->l_leg = 0.25f;
+        // infantry2_chassis_cmd_ptr->r_leg = 0.25f;
         infantry2_chassis_cmd_ptr->mode = pyro::cmd_base_t::mode_t::ACTIVE;
         if(0 == infantry2_chassis_ptr->get_status_flag(wl_cmd_t::READY))
         {
@@ -192,6 +198,13 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
     }
     else if(cmd.mode == cmd::STEP_CLIMB)
     {
+        if(last_cmd.mode == cmd::ACTIVE)
+        {
+            static float temp_yaw;
+            infantry2_chassis_ptr->get_cur_ins_yaw(&temp_yaw); 
+            infantry2_chassis_cmd_ptr->yaw = temp_yaw;
+        }
+        infantry2_chassis_cmd_ptr->yaw += cmd.yaw_vel;
         infantry2_chassis_cmd_ptr->l_leg = 0.33f;
         infantry2_chassis_cmd_ptr->r_leg = 0.33f;
         constexpr float TEST_FORCE = -22.0f;
