@@ -83,6 +83,35 @@ status_t wl_chassis_t::get_cur_ins_yaw(float* temp_yaw)
     *temp_yaw = yaw;
     return PYRO_OK;
 }
+status_t wl_chassis_t::get_cur_x_bias(float* r_x_bias, float* l_x_bias)
+{
+    if(!r_x_bias || !l_x_bias)
+    {
+        return PYRO_PARAM_ERROR;
+    }
+    *r_x_bias = _leg_data[R].x_bias;
+    *l_x_bias = _leg_data[L].x_bias;
+    return PYRO_OK;
+}
+status_t wl_chassis_t::get_cur_beta_bias(float* r_beta_bias, float* l_beta_bias)
+{
+    if(!r_beta_bias || !l_beta_bias)
+    {
+        return PYRO_PARAM_ERROR;
+    }
+    *r_beta_bias = _leg_data[R].beta_bias;
+    *l_beta_bias = _leg_data[L].beta_bias;
+    return PYRO_OK;
+}
+status_t wl_chassis_t::get_cur_gamma_bias(float* gamma_bias)
+{
+    if(!gamma_bias)
+    {
+        return PYRO_PARAM_ERROR;
+    }
+    *gamma_bias = _leg_data[R].gamma_bias;
+    return PYRO_OK;
+}
 
 uint8_t wl_chassis_t::get_status_flag(wl_cmd_t::active_mode_t mode)
 {

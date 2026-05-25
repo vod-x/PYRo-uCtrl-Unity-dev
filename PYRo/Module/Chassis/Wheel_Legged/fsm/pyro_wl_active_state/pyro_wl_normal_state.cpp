@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-28 13:11:52
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-05-23 08:20:19
+ * @LastEditTime: 2026-05-25 12:39:46
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -207,9 +207,15 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
 
         if(owner->_flag.is_aerial)
         {
+            owner->_leg_data[i].x_bias = 0.0f;
+            owner->_leg_data[i].d_x_bias = 0.0f;
+            owner->_leg_data[i].beta_bias = 0.0f- owner->_leg_data[i].beta;
+            owner->_leg_data[i].d_beta_bias = 0.0f - owner->_leg_data[i].d_beta;
+            owner->_leg_data[i].gamma_bias = 0.0f;
+            owner->_leg_data[i].d_gamma_bias = 0.0f;
             owner->_leg_data[i].F[1] = -( 
-                                      owner->_leg_data[i].lqr_gain[10] * (0 - owner->_leg_data[i].beta) + 
-                                      owner->_leg_data[i].lqr_gain[11] * (0 - owner->_leg_data[i].d_beta));
+                                      owner->_leg_data[i].lqr_gain[10] * owner->_leg_data[i].beta_bias + 
+                                      owner->_leg_data[i].lqr_gain[11] * owner->_leg_data[i].d_beta_bias);
             owner->_leg_data[i].T_w_balance = 0.0f;
             owner->_leg_data[i].T_w_move = 0.0f;
             owner->_leg_data[i].T_w_turn = 0.0f;
@@ -345,26 +351,30 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
                 owner->_d_F_pid[wl_chassis_t::L]->
                 calculate(owner->_leg_data[wl_chassis_t::L].ref_d_l,
                 owner->_leg_data[wl_chassis_t::L].d_l);
+            owner->_leg_data[i].x_bias = owner->_leg_data[i].x_gain - owner->_leg_data[i].kf_x;
+            owner->_leg_data[i].d_x_bias = owner->_leg_data[i].d_x_gain - owner->_leg_data[i].kf_v;
+            owner->_leg_data[i].beta_bias = 0.0f- owner->_leg_data[i].beta;
+            owner->_leg_data[i].d_beta_bias = 0.0f - owner->_leg_data[i].d_beta;
+            owner->_leg_data[i].gamma_bias = 0.0f - owner->_leg_data[i].gamma;
+            owner->_leg_data[i].d_gamma_bias = 0.0f - owner->_leg_data[i].d_gamma;
             owner->_leg_data[i].T_w_balance = (
-                                      owner->_leg_data[i].lqr_gain[2] * (0 - owner->_leg_data[i].gamma) + 
-                                      owner->_leg_data[i].lqr_gain[3] * (0 - owner->_leg_data[i].d_gamma) + 
-                                      owner->_leg_data[i].lqr_gain[4] * (0.0f - owner->_leg_data[i].beta) + 
-                                      owner->_leg_data[i].lqr_gain[5] * (0 - owner->_leg_data[i].d_beta));
+                                      owner->_leg_data[i].lqr_gain[2] * owner->_leg_data[i].gamma_bias +
+                                      owner->_leg_data[i].lqr_gain[3] * owner->_leg_data[i].d_gamma_bias +
+                                      owner->_leg_data[i].lqr_gain[4] * owner->_leg_data[i].beta_bias +
+                                      owner->_leg_data[i].lqr_gain[5] * owner->_leg_data[i].d_beta_bias
+                                      );
+
             owner->_leg_data[i].T_w_move = (
-                                      owner->_leg_data[i].lqr_gain[0] * (owner->_leg_data[i].x_gain - owner->_leg_data[i].kf_x) + 
-                                      owner->_leg_data[i].lqr_gain[1] * (owner->_leg_data[i].d_x_gain  - owner->_leg_data[i].kf_v));
-                                    //   owner->_leg_data[i].lqr_gain[0] * (owner->_leg_data[i].x_gain - owner->_leg_data[i].x) + 
-                                    //   owner->_leg_data[i].lqr_gain[1] * (owner->_leg_data[i].d_x_gain - owner->_leg_data[i].dx));  
+                                      owner->_leg_data[i].lqr_gain[0] * owner->_leg_data[i].x_bias +
+                                      owner->_leg_data[i].lqr_gain[1] * owner->_leg_data[i].d_x_bias);
 
             owner->_leg_data[i].F[1] = -(
-                                      owner->_leg_data[i].lqr_gain[6] * (owner->_leg_data[i].x_gain - owner->_leg_data[i].kf_x) + 
-                                      owner->_leg_data[i].lqr_gain[7] * (owner->_leg_data[i].d_x_gain  - owner->_leg_data[i].kf_v) + 
-                                    //   owner->_leg_data[i].lqr_gain[6] * (owner->_leg_data[i].x_gain - owner->_leg_data[i].x) + 
-                                    //   owner->_leg_data[i].lqr_gain[7] * (owner->_leg_data[i].d_x_gain - owner->_leg_data[i].dx) + 
-                                      owner->_leg_data[i].lqr_gain[8] * (0 - owner->_leg_data[i].gamma) + 
-                                      owner->_leg_data[i].lqr_gain[9] * (0 - owner->_leg_data[i].d_gamma) + 
-                                      owner->_leg_data[i].lqr_gain[10] * (0.0f - owner->_leg_data[i].beta) + 
-                                      owner->_leg_data[i].lqr_gain[11] * (0 - owner->_leg_data[i].d_beta));
+                                      owner->_leg_data[i].lqr_gain[6] * owner->_leg_data[i].x_bias + 
+                                      owner->_leg_data[i].lqr_gain[7] * owner->_leg_data[i].d_x_bias + 
+                                      owner->_leg_data[i].lqr_gain[8] * owner->_leg_data[i].gamma_bias + 
+                                      owner->_leg_data[i].lqr_gain[9] * owner->_leg_data[i].d_gamma_bias + 
+                                      owner->_leg_data[i].lqr_gain[10] * owner->_leg_data[i].beta_bias + 
+                                      owner->_leg_data[i].lqr_gain[11] * owner->_leg_data[i].d_beta_bias);
                                   
         }
     }

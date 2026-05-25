@@ -173,6 +173,9 @@ public:
    status_t get_cur_length(float *r_leg, float *l_leg);
    status_t get_cur_p_torque(float *r_torque, float *l_torque);
    status_t get_cur_ins_yaw(float* temp_yaw);
+   status_t get_cur_x_bias(float* r_x_bias, float* l_x_bias);
+   status_t get_cur_beta_bias(float* r_beta_bias, float* l_beta_bias);
+   status_t get_cur_gamma_bias(float* gamma_bias);
    uint8_t get_status_flag(wl_cmd_t::active_mode_t mode);
    status_t clear_status_flag(wl_cmd_t::active_mode_t mode);
 private:
@@ -355,6 +358,13 @@ private:
         /* position which is integrated from kf_v */
         float kf_x;
         float predict_power;
+
+        float beta_bias;
+        float d_beta_bias;
+        float gamma_bias;
+        float d_gamma_bias;
+        float x_bias;
+        float d_x_bias;
     } _leg_data[2];
    /* Kalman filter for the wheel velocity */
    kf_t _wheel_kf[2];

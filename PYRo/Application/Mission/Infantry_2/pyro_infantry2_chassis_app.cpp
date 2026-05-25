@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-26 20:18:33
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-05-25 11:15:09
+ * @LastEditTime: 2026-05-25 13:14:48
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -39,6 +39,13 @@ using namespace pyro;
 #endif
 
 #define USE_LEG_CTRL
+#define USE_DIVERGENCY_DETECT
+#if defined (USE_DIVERGENCY_DETECT)
+#define DIVERGENCY_RESET_CNT 4000
+#define MAX_GAMMA_BIAS PI/3
+#define MAX_BETA_BIAS PI/3
+#define MAX_X_BIAS 3.0f
+#endif
 
 extern wl_chassis_cfg_t infantry2_chassis_cfg;
 
@@ -110,9 +117,12 @@ void over_step_mode(void const *rc_ctrl);
 void over_step_ready_mode(void const *rc_ctrl);
 void control_mode(void const *rc_ctrl);
 void spin_mode(void const *rc_ctrl);
+#if defined(USE_DIVERGENCY_DETECT)
+bool divergency_detect(float gamma_bias, float r_beta_bias, float l_beta_bias, 
+                        float r_x_bias, float l_x_bias);
+#endif
 void infantry2_chassis_rc2cmd(void const *rc_ctrl)
 {
-
 #if defined(USE_GIMBAL_COM)
     can_rx_drv_t::get_data(pyro::can_hub_t::which_can::can3, 0x100,gimbal_rx.buffer);
     memcpy(&last_cmd, &cmd, sizeof(cmd));
@@ -361,6 +371,17 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
        infantry2_chassis_cmd_ptr->r_leg, 0.18f, 0.37f);
     infantry2_chassis_cmd_ptr->l_leg = fp32_constrain(
        infantry2_chassis_cmd_ptr->l_leg, 0.18f, 0.37f);
+#if defined(USE_DIVERGENCY_DETECT)
+    float r_beta_bias, l_beta_bias, gamma_bias, r_x_bias, l_x_bias;
+    infantry2_chassis_ptr->get_cur_x_bias(&r_x_bias, &l_x_bias);
+    infantry2_chassis_ptr->get_cur_beta_bias(&r_beta_bias, &l_beta_bias);
+    infantry2_chassis_ptr->get_cur_gamma_bias(&gamma_bias);
+    if(divergency_detect(gamma_bias, r_beta_bias, l_beta_bias, r_x_bias, l_x_bias))
+    {
+        passive_mode(rc_ctrl);
+    }
+    
+#endif
     infantry2_chassis_cmd_ptr->last_active_mode = infantry2_chassis_cmd_ptr->active_mode;
 }
 void infantry2_chassis_main_tread(void *argument)
@@ -524,5 +545,31 @@ void over_step_ready_mode(void const *rc_ctrl)
         infantry2_chassis_cmd_ptr->yaw, -PI, PI);
 #endif
 }
+
+bool divergency_detect(float gamma_bias, float r_beta_bias, float l_beta_bias, 
+                        float r_x_bias, float l_x_bias)
+{
+    static bool divergency_flag = 0;
+    static uint16_t cnt = 0;
+    if( 0 == divergency_flag)
+    {
+        if((fabsf(gamma_bias) > MAX_GAMMA_BIAS) || (fabsf(r_beta_bias) > MAX_BETA_BIAS) || (fabsf(l_beta_bias) > MAX_BETA_BIAS) ||
+            (fabsf(r_x_bias) > MAX_X_BIAS) || (fabsf(l_x_bias) > MAX_X_BIAS))
+        {
+            divergency_flag = 1;
+        }
+    }
+    else 
+    {
+        cnt++;
+        if(cnt >= DIVERGENCY_RESET_CNT)
+        {
+            divergency_flag = 0;
+            cnt = 0;
+        }
+    }
+    return divergency_flag;
+}
+
 
 }

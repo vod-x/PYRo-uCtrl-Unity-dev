@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-28 15:55:50
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-05-20 11:32:09
+ * @LastEditTime: 2026-05-25 13:09:20
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -75,6 +75,15 @@ void wl_chassis_t::fsm_active_t::state_ready_t::execute(wl_chassis_t *owner)
     }
     if(0 == ready_flag)
     {
+        for(uint8_t i = 0; i < 2; i++)
+        {
+            owner->_leg_data[i].x_bias = 0.0f;
+            owner->_leg_data[i].d_x_bias = 0.0f;
+            owner->_leg_data[i].beta_bias = 0.0f;
+            owner->_leg_data[i].d_beta_bias = 0.0f;
+            owner->_leg_data[i].gamma_bias = 0.0f - owner->_leg_data[i].gamma;
+            owner->_leg_data[i].d_gamma_bias = 0.0f - owner->_leg_data[i].d_gamma;
+        }
         /* calculate the target angle and length of the legs, add a small bias in 
             each period */
         calc_target_value(owner);
@@ -201,17 +210,23 @@ void wl_chassis_t::fsm_active_t::state_ready_t::execute(wl_chassis_t *owner)
                 calculate(owner->_leg_data[wl_chassis_t::L].ref_d_l,
                 owner->_leg_data[wl_chassis_t::L].d_l);
 
+            owner->_leg_data[i].x_bias = 0.0f;
+            owner->_leg_data[i].d_x_bias = 0.0f;
+            owner->_leg_data[i].beta_bias = 0.0f- owner->_leg_data[i].beta;
+            owner->_leg_data[i].d_beta_bias = 0.0f - owner->_leg_data[i].d_beta;
+            owner->_leg_data[i].gamma_bias = 0.0f - owner->_leg_data[i].gamma;
+            owner->_leg_data[i].d_gamma_bias = 0.0f - owner->_leg_data[i].d_gamma;
             owner->_leg_data[i].T_w_balance = (
-                                      owner->_leg_data[i].lqr_gain[2] * (0 - owner->_leg_data[i].gamma) + 
-                                      owner->_leg_data[i].lqr_gain[3] * (0 - owner->_leg_data[i].d_gamma) + 
-                                      owner->_leg_data[i].lqr_gain[4] * (0.0f - owner->_leg_data[i].beta) + 
-                                      owner->_leg_data[i].lqr_gain[5] * (0 - owner->_leg_data[i].d_beta));
+                                      owner->_leg_data[i].lqr_gain[2] * owner->_leg_data[i].gamma_bias + 
+                                      owner->_leg_data[i].lqr_gain[3] * owner->_leg_data[i].d_gamma_bias + 
+                                      owner->_leg_data[i].lqr_gain[4] * owner->_leg_data[i].beta_bias + 
+                                      owner->_leg_data[i].lqr_gain[5] * owner->_leg_data[i].d_beta_bias);
 
             owner->_leg_data[i].F[1] = -(
-                                      owner->_leg_data[i].lqr_gain[8] * (0 - owner->_leg_data[i].gamma) + 
-                                      owner->_leg_data[i].lqr_gain[9] * (0 - owner->_leg_data[i].d_gamma) + 
-                                      owner->_leg_data[i].lqr_gain[10] * (0.0f - owner->_leg_data[i].beta) + 
-                                      owner->_leg_data[i].lqr_gain[11] * (0 - owner->_leg_data[i].d_beta));
+                                      owner->_leg_data[i].lqr_gain[8] * owner->_leg_data[i].gamma_bias + 
+                                      owner->_leg_data[i].lqr_gain[9] * owner->_leg_data[i].d_gamma_bias + 
+                                      owner->_leg_data[i].lqr_gain[10] * owner->_leg_data[i].beta_bias + 
+                                      owner->_leg_data[i].lqr_gain[11] * owner->_leg_data[i].d_beta_bias);
 
         }
 
