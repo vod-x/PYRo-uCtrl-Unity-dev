@@ -25,6 +25,11 @@
 {
 float time;
 float last_time;
+float test_wl_chassis_power_cap{};
+float test_wl_cap_power_cap{};
+float test_wl_cap_vot{};
+supercap_drv_t::cap_feedback_t test_wl_cap_feedback{};
+
 wl_chassis_t::wl_chassis_t() : module_base_t("wl_chassis", 0, 2048),
     _wheel_kf{kf_t(3, 1, 3, 2), kf_t(3, 1, 3, 2)}
 {
@@ -308,6 +313,22 @@ void wl_chassis_t::_update_feedback()
 {
     power = referee_drv->get_data().robot_status.chassis_power_limit;
     last_time = dwt_drv_t::get_timeline_ms();
+
+    _supercap_cmd.power_referee = 0;
+    _supercap_cmd.power_limit_referee = referee_drv->get_data().robot_status.chassis_power_limit;
+    _supercap_cmd.power_buffer_limit_referee = 60.0f;
+    _supercap_cmd.power_buffer_referee = referee_drv->get_data().power_heat.buffer_energy;
+    _supercap_cmd.kill_chassis_user = 0;
+    _supercap_cmd.speed_up_user_now = 0;
+   
+    _cap_feedback = supercap_drv_t::get_instance()->get_feedback();
+
+    test_wl_cap_feedback = _cap_feedback;
+    test_wl_chassis_power_cap = test_wl_cap_feedback.chassis_power_cap / 100.0f; 
+    test_wl_cap_power_cap = test_wl_cap_feedback.cap_power_cap / 100.0f - 250; 
+    test_wl_cap_vot = test_wl_cap_feedback.vot_cap / 100.0f; 
+
+
     static uint32_t dwt_cnt;
     static float last_dx[2];
     /* Update INS data */
@@ -461,7 +482,72 @@ void wl_chassis_t::_fsm_execute()
         _fsm.change_state(&_state_passive)  ;
     else if (cmd_base_t::mode_t::ACTIVE == _cmd->mode)
         _fsm.change_state(&_state_active);
+
+        _decide_cap();
     _fsm.execute(this);
     time = dwt_drv_t::get_timeline_ms() - last_time;
+}
+void wl_chassis_t::_send_supercap_command() const
+{
+    supercap_drv_t::get_instance()->send_cmd(_supercap_cmd);
+}
+
+void wl_chassis_t::_decide_cap()
+{
+    static bool _last_status = false;
+    static uint32_t _timer   = 0;
+    static bool _delay_done  = false;
+
+    // 从裁判系统获取底盘电源输出状态
+    bool current_status = referee_drv->get_data().robot_status.power_management_chassis_output;
+
+    if (current_status)
+    {
+        // --- 情况 A：底盘电源有输出 ---
+        if (!_last_status)
+        {
+            // 刚切到有输出状态：重置计时器和延迟标志
+            _timer      = 0;
+            _delay_done = false;
+        }
+
+        if (!_delay_done)
+        {
+            // 1. 处理 1000 tick 的初始延迟
+            if (++_timer >= 1000)
+            {
+                _delay_done           = true;
+                _timer                = 0; 
+                _supercap_cmd.use_cap = 1;
+                _send_supercap_command();
+            }
+        }
+        else
+        {
+            // 2. 延迟结束后，以 10 tick 为周期发送
+            if (++_timer >= 10)
+            {
+                _timer                = 0;
+                _supercap_cmd.use_cap = 1;
+                _send_supercap_command();
+            }
+        }
+    }
+    else
+    {
+        // --- 情况 B：底盘电源无输出 ---
+        if (_last_status)
+        {
+            // 刚切换到无输出状态：立刻发送 use_cap = 0
+            _supercap_cmd.use_cap = 0;
+            _send_supercap_command();
+
+            // 重置状态位，防止重复发送
+            _delay_done = false;
+            _timer      = 0;
+        }
+    }
+
+    _last_status = current_status;
 }
  }

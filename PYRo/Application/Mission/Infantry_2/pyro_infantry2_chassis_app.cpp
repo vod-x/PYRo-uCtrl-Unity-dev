@@ -14,10 +14,11 @@
 #include "pyro_com_canrx.h"
 #include "pyro_com_cantx.h"
 #include "pyro_referee.h"
-
+#include "pyro_referee.h"
 namespace pyro
 {
-
+float test_buffer;
+float test_limit;
 const float control_acc = 0.006f;
 const float control_max_velocity = 1.0f;
 const float control_leg_length[3] = {0.18f, 0.27f, 0.33f};
@@ -68,12 +69,14 @@ union ChassisToGimbalComm {
 
     __attribute__((packed)) struct {
         // 将 float (4字节) 压缩为 uint16_t (2字节) 传初速度，乘以 100 发送，云台除以 100
-        uint32_t initialSpeedX100      : 16; // 弹丸初速度 * 100 (2 Bytes)
+        uint32_t initialSpeedX100      : 15; // 弹丸初速度 * 100 (2 Bytes)
         uint32_t shooter17mmBarrelHeat : 16; // 17mm 枪口当前热量 (2 Bytes)
         uint32_t heatLimit             : 9; // 热量上限 (如 150, 240, 360)
         uint32_t coolingRate           : 7; // 冷却速率 (如 40, 60, 80)
-        uint8_t robotId;                    // 机器人 ID (1 Byte)
-        int8_t chassisYawSpeed;
+         uint8_t chassisReady           : 1;
+        uint8_t robotId              : 8;     // 机器人 ID (1 Byte)
+        int8_t chassisYawSpeed        : 8;
+      
     } msg;
 
     std::array<uint8_t, 8> buffer;
@@ -358,14 +361,19 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
 void infantry2_chassis_main_tread(void *argument)
 {
     status_t ret = infantry2_chassis_ptr->start();
+    
     while(1)
-    {
+    { test_buffer =referee_drv->get_data().power_heat.buffer_energy;
+       test_limit = referee_drv->get_data().robot_status.chassis_power_limit;
+
         gimbal_tx.msg.initialSpeedX100 = (uint16_t)(referee_drv->get_data().shoot.initial_speed* 100.0f);
         gimbal_tx.msg.shooter17mmBarrelHeat = referee_drv->get_data().power_heat.shooter_17mm_barrel_heat;
         gimbal_tx.msg.heatLimit = referee_drv->get_data().robot_status.shooter_barrel_heat_limit;
         gimbal_tx.msg.coolingRate = referee_drv->get_data().robot_status.shooter_barrel_cooling_value;
         gimbal_tx.msg.robotId = referee_drv->get_robot_id();
+        gimbal_tx.msg.chassisReady = infantry2_chassis_ptr->get_status_flag(wl_cmd_t::READY);
         gimbal_tx.msg.chassisYawSpeed = (int8_t)(infantry2_chassis_cmd_ptr->yaw * 100.0f);
+       
         can_tx_drv_t::instance()->clear(0x101);
         can_tx_drv_t::instance()->add_data_raw(0x101, 64, &gimbal_tx);
         can_tx_drv_t::instance()->send(0x101, can3_drv);

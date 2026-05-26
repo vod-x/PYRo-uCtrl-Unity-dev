@@ -11,6 +11,11 @@
 namespace pyro
 {
 extern wl_chassis_t *infantry2_chassis_ptr;
+extern float test_wl_cap_vot;
+extern float test_wl_chassis_power_cap;
+extern float test_buffer;
+extern float test_limit;
+
 powermeter_drv_t powermeter(0x212, can_hub_t::can2);
 powermeter_data powermeter_data;
 float power_bias[2];
@@ -130,29 +135,29 @@ void vofa_drv_t::thread()
     // add_data(&infantry2_chassis_ptr->_leg_data[1].ref_d_l);
     // add_data(&infantry2_chassis_ptr->_leg_data[0].P);
     // add_data(&infantry2_chassis_ptr->_leg_data[1].P);
-    /* lqr data */
-    add_data(&infantry2_chassis_ptr->_leg_data[0].kf_x);
-    add_data(&infantry2_chassis_ptr->_leg_data[1].kf_x);
-    add_data(&infantry2_chassis_ptr->_leg_data[0].x);
-    add_data(&infantry2_chassis_ptr->_leg_data[1].x);
-    add_data(&infantry2_chassis_ptr->_leg_data[0].kf_v);
-    add_data(&infantry2_chassis_ptr->_leg_data[1].kf_v);
-    add_data(&infantry2_chassis_ptr->_leg_data[0].dx);
-    add_data(&infantry2_chassis_ptr->_leg_data[1].dx);
-    add_data(&infantry2_chassis_ptr->_leg_data[0].gamma);
-    add_data(&infantry2_chassis_ptr->_leg_data[1].gamma);
-    add_data(&infantry2_chassis_ptr->_leg_data[0].d_gamma);
-    add_data(&infantry2_chassis_ptr->_leg_data[1].d_gamma);
-    add_data(&infantry2_chassis_ptr->_leg_data[0].beta);
-    add_data(&infantry2_chassis_ptr->_leg_data[1].beta);
-    add_data(&infantry2_chassis_ptr->_leg_data[0].d_beta);
-    add_data(&infantry2_chassis_ptr->_leg_data[1].d_beta);
-    add_data(&infantry2_chassis_ptr->_leg_data[0].T_w);
-    add_data(&infantry2_chassis_ptr->_leg_data[1].T_w);
-    add_data(&infantry2_chassis_ptr->_leg_data[0].F[1]);
-    add_data(&infantry2_chassis_ptr->_leg_data[1].F[1]);
-    add_data(&infantry2_chassis_ptr->_leg_data[0].l);
-    add_data(&infantry2_chassis_ptr->_leg_data[1].l);
+    // /* lqr data */
+    // add_data(&infantry2_chassis_ptr->_leg_data[0].kf_x);
+    // add_data(&infantry2_chassis_ptr->_leg_data[1].kf_x);
+    // add_data(&infantry2_chassis_ptr->_leg_data[0].x);
+    // add_data(&infantry2_chassis_ptr->_leg_data[1].x);
+    // add_data(&infantry2_chassis_ptr->_leg_data[0].kf_v);
+    // add_data(&infantry2_chassis_ptr->_leg_data[1].kf_v);
+    // add_data(&infantry2_chassis_ptr->_leg_data[0].dx);
+    // add_data(&infantry2_chassis_ptr->_leg_data[1].dx);
+    // add_data(&infantry2_chassis_ptr->_leg_data[0].gamma);
+    // add_data(&infantry2_chassis_ptr->_leg_data[1].gamma);
+    // add_data(&infantry2_chassis_ptr->_leg_data[0].d_gamma);
+    // add_data(&infantry2_chassis_ptr->_leg_data[1].d_gamma);
+    // add_data(&infantry2_chassis_ptr->_leg_data[0].beta);
+    // add_data(&infantry2_chassis_ptr->_leg_data[1].beta);
+    // add_data(&infantry2_chassis_ptr->_leg_data[0].d_beta);
+    // add_data(&infantry2_chassis_ptr->_leg_data[1].d_beta);
+    // add_data(&infantry2_chassis_ptr->_leg_data[0].T_w);
+    // add_data(&infantry2_chassis_ptr->_leg_data[1].T_w);
+    // add_data(&infantry2_chassis_ptr->_leg_data[0].F[1]);
+    // add_data(&infantry2_chassis_ptr->_leg_data[1].F[1]);
+    // add_data(&infantry2_chassis_ptr->_leg_data[0].l);
+    // add_data(&infantry2_chassis_ptr->_leg_data[1].l);
 
     // vmc data
     // add_data(&infantry2_chassis_ptr->_leg_data[0].l);
@@ -193,6 +198,10 @@ void vofa_drv_t::thread()
     // add_data(&power_total);
     // add_data(&power_bias_total);
     // add_data(&infantry2_chassis_ptr->_power_ctrl.)
+    //    add_data(&test_wl_cap_vot);
+       add_data(&test_wl_chassis_power_cap);
+       add_data(&test_buffer);
+       add_data(&test_limit);
     while (true)
     {
         powermeter.get_data(powermeter_data);
