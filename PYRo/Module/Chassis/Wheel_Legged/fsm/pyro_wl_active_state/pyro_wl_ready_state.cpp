@@ -73,6 +73,7 @@ void wl_chassis_t::fsm_active_t::state_ready_t::execute(wl_chassis_t *owner)
         owner->_wheel_kf[wl_chassis_t::R].reset();
         owner->_wheel_kf[wl_chassis_t::L].reset();
     }
+   
     if(0 == ready_flag)
     {
         for(uint8_t i = 0; i < 2; i++)
@@ -283,123 +284,116 @@ void wl_chassis_t::fsm_active_t::state_ready_t::execute(wl_chassis_t *owner)
 void wl_chassis_t::fsm_active_t::state_ready_t::exit(wl_chassis_t *owner)
 {
 }
-
 void wl_chassis_t::fsm_active_t::state_ready_t::calc_target_value(wl_chassis_t *owner)
 {
-    /* calculate the target angle and length of the legs, add a small bias in 
-        each period */
-    /* 1. make alpha in the range [-PI/2, -PI] or [PI/2, PI] */
+    float diff;
+
+    /* 1. Phase 1: If the legs are in the front area, move them back to -PI/2 . */
     if((0 == state_flag[wl_chassis_t::R]) || (0 == state_flag[wl_chassis_t::L]))
     {
         for(uint8_t i = 0; i < 2; i++)
         {
-            /* if alpha is not in the desired range, set the target angle to 
-                -PI/2 */
-            if(((0.0f < cur_angle[i]) && (cur_angle[i] < PI/2)) ||
-               ((-PI/2 < cur_angle[i]) && (cur_angle[i] < 0.0f)))
+            if(0 == state_flag[i])
             {
-                /* add target angle smoothly to avoid sudden changes */
-                if(0.05f < abs(target_angle[i] - (-PI/2.0f)))
+                if(((0.0f < cur_angle[i]) && (cur_angle[i] < PI/2.0f)) ||
+                   ((-PI/2.0f < cur_angle[i]) && (cur_angle[i] < 0.0f)))
                 {
-                    target_angle[i] -= ANGLE_SPEED;
+                  
+                    float next_angle = wrap2pi_f32(target_angle[i] - ANGLE_SPEED);
+                    float other_angle = target_angle[1 - i];
+                    diff = wrap2pi_f32(next_angle - other_angle);
+                    float current_diff = wrap2pi_f32(target_angle[i] - other_angle);
+                    
+                    /*A move is permitted only if moving this step will not result in an angle > 1.5 rad (approximately 86 degrees),or if the current leg is in a "leading" position in the -= direction */
+                    if (fabsf(diff) < 1.5f || fabsf(diff) < fabsf(current_diff))
+                    {
+                        if(0.05f < fabsf(target_angle[i] - (-PI/2.0f)))
+                        {
+                            target_angle[i] -= ANGLE_SPEED; 
+                            target_angle[i] = wrap2pi_f32(target_angle[i]);
+                        }
+                        else 
+                        {
+                            target_angle[i] = -PI/2.0f;
+                            state_flag[i] = 1;
+                        }
+                    }
                 }
-                /* when the target angle is close enough to the desired angle, 
-                    set the state flag as 1 */
                 else 
                 {
-                    target_angle[i] = -PI/2.0f;
-                    state_flag[i] = 1;
+                    state_flag[i] = 2; 
                 }
-            }
-            /* if alpha is in the desired range, set the state flag as 2 */
-            else 
-            {
-                state_flag[i] = 2;
             }
         }
     }
-    /* 2. Make alpha of both legs equa. 
-       (2.1. If any flag equal to 0, it means that step 1 has not been completed,
-              do not execute step 2;
-        2.2. If every flags equal to 1, it means alpha of both legs equal -PI/2,
-              do not need to execute step 2;
-        2.3. If any flag equal to 2, it means that alpha of one leg is in the \
-              desired range, but the other leg is not, execute step 2 to make 
-              alpha of both legs equal.) */
+
+    /* 2. Phase 2: Make alpha of both legs equal */
     if(((2 == state_flag[wl_chassis_t::R]) || (2 == state_flag[wl_chassis_t::L]))
         || ((0 != state_flag[wl_chassis_t::R]) && (0 != state_flag[wl_chassis_t::L])))
     {
-        /* choose the angle which is closer to target angle as tmp_angle */
-        if((cur_angle[wl_chassis_t::R] > 0.0f) && (cur_angle[wl_chassis_t::L] > 0.0f))
+       
+        if (state_flag[wl_chassis_t::R] != 3 || state_flag[wl_chassis_t::L] != 3)
         {
-            if(cur_angle[wl_chassis_t::R] < cur_angle[wl_chassis_t::L])
+            diff = wrap2pi_f32(target_angle[wl_chassis_t::L] - target_angle[wl_chassis_t::R]);
+            
+            if (fabsf(diff) > 0.05f)
             {
-                tmp_angle = cur_angle[wl_chassis_t::R];
+               
+                /*In the reverse rotation direction, whichever leg is in the "leading" position rotates to catch up with the other leg. If diff > 0, it means L is in the lead; decreasing L will allow it to catch up with R via the shortest path. */
+                if (diff > 0.0f)
+                {
+                    target_angle[wl_chassis_t::L] -= ANGLE_SPEED;
+                    target_angle[wl_chassis_t::L] = wrap2pi_f32(target_angle[wl_chassis_t::L]);
+                }
+                else
+                {
+                    target_angle[wl_chassis_t::R] -= ANGLE_SPEED;
+                    target_angle[wl_chassis_t::R] = wrap2pi_f32(target_angle[wl_chassis_t::R]);
+                }
             }
-            else 
+            else
             {
-                tmp_angle = cur_angle[wl_chassis_t::L];
+                
+                target_angle[wl_chassis_t::R] = target_angle[wl_chassis_t::L];
+                state_flag[wl_chassis_t::R] = 3;
+                state_flag[wl_chassis_t::L] = 3;
             }
-        
-        }
-        else 
-        {
-            if(cur_angle[wl_chassis_t::R] < cur_angle[wl_chassis_t::L])
-            {
-                tmp_angle = cur_angle[wl_chassis_t::L];
-            }
-            else 
-            {
-                tmp_angle = cur_angle[wl_chassis_t::R];
-            }
-        }
-        for(uint8_t i = 0; i < 2; i++)
-        {
-            if(0.05f < abs(target_angle[i] - tmp_angle))
-            {
-                target_angle[i] -= ANGLE_SPEED;
-                target_angle[i] = wrap2pi_f32(target_angle[i]);
-            }
-        }
-        if((0.05f > abs(target_angle[wl_chassis_t::R] - tmp_angle)) &&
-           (0.05f > abs(target_angle[wl_chassis_t::L] - tmp_angle)))
-        {
-            state_flag[wl_chassis_t::R] = 3;
-            state_flag[wl_chassis_t::L] = 3;
-            tmp_angle = 0.0f;
         }
     }
-    /* 3. move to target length and angle */
+    
+/* 3. move to target angle first, then change target length */
     if(((3 == state_flag[wl_chassis_t::R]) && (3 == state_flag[wl_chassis_t::L]))
         ||((1 == state_flag[wl_chassis_t::R]) && (1 == state_flag[wl_chassis_t::L])))
     {
         for(uint8_t i = 0; i < 2; i++)
         {
-            if(target_length[i] < TARGET_LENGTH)
-            {
-                target_length[i] += LENGTH_SPEED;
-            }
-            else if(target_length[i] > TARGET_LENGTH)
-            {
-                target_length[i] -= LENGTH_SPEED;
-            }
-            if(0.01f > abs(target_length[i] - TARGET_LENGTH))
-            {
-                target_length[i] = TARGET_LENGTH;
-            }
-
+           
             if(0.05f < fabsf(target_angle[i] - TARGET_ANGLE))
             {
                 target_angle[i] -= ANGLE_SPEED;
                 target_angle[i] = wrap2pi_f32(target_angle[i]);
             }
-            else {
-
+            else 
+            { 
                 target_angle[i] = TARGET_ANGLE;
-            
+        
+                if(target_length[i] < TARGET_LENGTH)
+                {
+                    target_length[i] += LENGTH_SPEED;
+                }
+                else if(target_length[i] > TARGET_LENGTH)
+                {
+                    target_length[i] -= LENGTH_SPEED;
+                }
+                
+                if(0.01f > abs(target_length[i] - TARGET_LENGTH))
+                {
+                    target_length[i] = TARGET_LENGTH;
+                }
             }
         }
     }
+
 }
 
 }

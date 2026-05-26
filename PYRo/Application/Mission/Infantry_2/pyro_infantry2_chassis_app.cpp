@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-26 20:18:33
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-05-26 11:50:17
+ * @LastEditTime: 2026-05-26 21:11:33
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -14,15 +14,15 @@
 #include "pyro_com_canrx.h"
 #include "pyro_com_cantx.h"
 #include "pyro_referee.h"
-
-
+#include "pyro_referee.h"
 namespace pyro
 {
 
 const float control_acc = 0.003f;
 const float control_max_velocity = 2.0f;
 const float control_leg_length[3] = {0.18f,0.22f,   0.36f};
-
+float test_buffer;
+float test_limit;
 extern referee_drv_t *referee_drv;
 extern can_drv_t *can3_drv;
 wl_chassis_t *infantry2_chassis_ptr = nullptr;
@@ -390,8 +390,11 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
 void infantry2_chassis_main_tread(void *argument)
 {
     status_t ret = infantry2_chassis_ptr->start();
+    
     while(1)
-    {
+    { test_buffer =referee_drv->get_data().power_heat.buffer_energy;
+       test_limit = referee_drv->get_data().robot_status.chassis_power_limit;
+
         gimbal_tx.msg.initialSpeedX100 = (uint16_t)(referee_drv->get_data().shoot.initial_speed* 100.0f);
         gimbal_tx.msg.shooter17mmBarrelHeat = referee_drv->get_data().power_heat.shooter_17mm_barrel_heat;
         gimbal_tx.msg.heatLimit = referee_drv->get_data().robot_status.shooter_barrel_heat_limit;
@@ -399,6 +402,7 @@ void infantry2_chassis_main_tread(void *argument)
         gimbal_tx.msg.robotId = referee_drv->get_robot_id();
         gimbal_tx.msg.chassisReady = infantry2_chassis_ptr->get_status_flag(wl_cmd_t::READY);
         gimbal_tx.msg.chassisYawSpeed = (int8_t)(infantry2_chassis_cmd_ptr->yaw * 100.0f);
+       
         can_tx_drv_t::instance()->clear(0x101);
         can_tx_drv_t::instance()->add_data_raw(0x101, 64, &gimbal_tx);
         can_tx_drv_t::instance()->send(0x101, can3_drv);

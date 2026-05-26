@@ -12,7 +12,7 @@
 
 #include "pyro_module_base.h"
 #include "pyro_kin.wl.h"
-
+#include "pyro_supercap_drv.h"
 #include "pyro_dm_motor_drv.h"
 #include "pyro_dji_motor_drv.h"
 #include "pyro_ins.h"
@@ -470,6 +470,12 @@ private:
     friend class state_passive_t;
     fsm_t<wl_chassis_t> _fsm;
     wl_cmd_t *_cmd;
+
+    supercap_drv_t::chassis_cmd_t _supercap_cmd;
+    supercap_drv_t::cap_feedback_t _cap_feedback;
+
+    void _send_supercap_command() const;
+    void _decide_cap();
 };
 
 }
