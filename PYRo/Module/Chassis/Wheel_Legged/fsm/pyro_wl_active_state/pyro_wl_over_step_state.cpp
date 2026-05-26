@@ -29,6 +29,15 @@ static uint8_t state_flag[2] = {0, 0};
 
 void wl_chassis_t::fsm_active_t::state_over_step_t::enter(wl_chassis_t *owner)
 {
+    for(uint8_t i = 0; i < 2; i++)
+    {
+        owner->_leg_data[i].x_bias = 0.0f;
+        owner->_leg_data[i].d_x_bias = 0.0f;
+        owner->_leg_data[i].beta_bias = 0.0f;
+        owner->_leg_data[i].d_beta_bias = 0.0f;
+        owner->_leg_data[i].gamma_bias = 0.0f;
+        owner->_leg_data[i].d_gamma_bias = 0.0f;
+    }
     /* record the current angle and length of the legs */
     owner->get_cur_angle(&cur_angle[wl_chassis_t::R], 
                         &cur_angle[wl_chassis_t::L]);

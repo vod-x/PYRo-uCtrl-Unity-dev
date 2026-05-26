@@ -95,7 +95,7 @@ void wl_chassis_t::fsm_active_t::state_over_step_ready_t::execute(wl_chassis_t *
 
 
         owner->_leg_data[i].x_bias = owner->_leg_data[i].x_gain - owner->_leg_data[i].kf_x;
-        owner->_leg_data[i].d_x_bias = owner->_leg_data[i].d_x_gain - owner->_leg_data[i].kf_v;
+        owner->_leg_data[i].d_x_bias = 1.0f + owner->_leg_data[i].d_x_gain - owner->_leg_data[i].kf_v;
         owner->_leg_data[i].beta_bias = 0.0f- owner->_leg_data[i].beta;
         owner->_leg_data[i].d_beta_bias = 0.0f - owner->_leg_data[i].d_beta;
         owner->_leg_data[i].gamma_bias = 0.0f - owner->_leg_data[i].gamma;

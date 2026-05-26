@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-26 20:18:33
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-05-25 13:14:48
+ * @LastEditTime: 2026-05-26 11:50:17
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -19,9 +19,9 @@
 namespace pyro
 {
 
-const float control_acc = 0.006f;
-const float control_max_velocity = 1.0f;
-const float control_leg_length[3] = {0.18f, 0.27f, 0.33f};
+const float control_acc = 0.003f;
+const float control_max_velocity = 2.0f;
+const float control_leg_length[3] = {0.18f,0.22f,   0.36f};
 
 extern referee_drv_t *referee_drv;
 extern can_drv_t *can3_drv;
@@ -38,13 +38,13 @@ using namespace pyro;
 #error "Gimbal COM and DR16 cannot be used at the same time"   
 #endif
 
-#define USE_LEG_CTRL
-#define USE_DIVERGENCY_DETECT
+// #define USE_LEG_CTRL
+// #define USE_DIVERGENCY_DETECT
 #if defined (USE_DIVERGENCY_DETECT)
 #define DIVERGENCY_RESET_CNT 4000
-#define MAX_GAMMA_BIAS PI/3
-#define MAX_BETA_BIAS PI/3
-#define MAX_X_BIAS 3.0f
+#define MAX_GAMMA_BIAS PI/2
+#define MAX_BETA_BIAS PI/2
+#define MAX_X_BIAS 103.0f
 #endif
 
 extern wl_chassis_cfg_t infantry2_chassis_cfg;
@@ -78,12 +78,14 @@ union ChassisToGimbalComm {
 
     __attribute__((packed)) struct {
         // 将 float (4字节) 压缩为 uint16_t (2字节) 传初速度，乘以 100 发送，云台除以 100
-        uint32_t initialSpeedX100      : 16; // 弹丸初速度 * 100 (2 Bytes)
+        uint32_t initialSpeedX100      : 15; // 弹丸初速度 * 100 (2 Bytes)
         uint32_t shooter17mmBarrelHeat : 16; // 17mm 枪口当前热量 (2 Bytes)
         uint32_t heatLimit             : 9; // 热量上限 (如 150, 240, 360)
         uint32_t coolingRate           : 7; // 冷却速率 (如 40, 60, 80)
-        uint8_t robotId;                    // 机器人 ID (1 Byte)
-        int8_t chassisYawSpeed;
+         uint8_t chassisReady           : 1;
+        uint8_t robotId              : 8;     // 机器人 ID (1 Byte)
+        int8_t chassisYawSpeed        : 8;
+      
     } msg;
 
     std::array<uint8_t, 8> buffer;
@@ -239,7 +241,7 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
         infantry2_chassis_cmd_ptr->r_leg = 0.33f;
         constexpr float TEST_FORCE = -22.0f;
         constexpr float TEST_ANGLE = 2.0f;
-        constexpr float TEST_d_ANGLE = 0.1f;
+        constexpr float TEST_d_ANGLE = 0.5f;
         static uint8_t over_step_flag = 0;
         static float temp_torque[2] = {0.0f, 0.0f};
         static float temp_angle[2] = {0.0f, 0.0f};
@@ -253,7 +255,8 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
         // if((0 == infantry2_chassis_ptr->get_status_flag(wl_cmd_t::OVER_STEP)) &&
         //     ((temp_angle[0] > TEST_ANGLE) || (temp_angle[1] > TEST_ANGLE)))
         if((0 == infantry2_chassis_ptr->get_status_flag(wl_cmd_t::OVER_STEP)) &&
-            ((temp_torque[0] < TEST_FORCE) || (temp_torque[1] < TEST_FORCE)))
+            ((temp_torque[0] < TEST_FORCE) || (temp_torque[1] < TEST_FORCE)) &&
+            ((abs(temp_d_angle[0]) < TEST_d_ANGLE) || (abs(temp_d_angle[1]) < TEST_d_ANGLE)))
         {
             over_step_flag = 1;
         }
@@ -394,6 +397,7 @@ void infantry2_chassis_main_tread(void *argument)
         gimbal_tx.msg.heatLimit = referee_drv->get_data().robot_status.shooter_barrel_heat_limit;
         gimbal_tx.msg.coolingRate = referee_drv->get_data().robot_status.shooter_barrel_cooling_value;
         gimbal_tx.msg.robotId = referee_drv->get_robot_id();
+        gimbal_tx.msg.chassisReady = infantry2_chassis_ptr->get_status_flag(wl_cmd_t::READY);
         gimbal_tx.msg.chassisYawSpeed = (int8_t)(infantry2_chassis_cmd_ptr->yaw * 100.0f);
         can_tx_drv_t::instance()->clear(0x101);
         can_tx_drv_t::instance()->add_data_raw(0x101, 64, &gimbal_tx);
@@ -476,8 +480,8 @@ void normal_mode(void const *rc_ctrl)
 #if defined (USE_GIMBAL_COM)
     infantry2_chassis_cmd_ptr->vx = cmd.vx;
 #if defined (USE_LEG_CTRL)
-    infantry2_chassis_cmd_ptr->r_leg += (cmd.vy / 8000.0f);
-    infantry2_chassis_cmd_ptr->l_leg += (cmd.vy / 8000.0f);
+    infantry2_chassis_cmd_ptr->r_leg += (cmd.vy / 20000.0f);
+    infantry2_chassis_cmd_ptr->l_leg += (cmd.vy / 20000.0f);
 #endif
 #endif
 #if defined (USE_DR16)
@@ -533,7 +537,7 @@ void over_step_ready_mode(void const *rc_ctrl)
     infantry2_chassis_cmd_ptr->active_mode = wl_cmd_t::OVER_STEP_READY;
 
 #if defined (USE_GIMBAL_COM)
-    infantry2_chassis_cmd_ptr->vx = cmd.vx;
+    infantry2_chassis_cmd_ptr->vx = cmd.vx/3;
 #endif
 #if defined (USE_DR16)
     infantry2_chassis_cmd_ptr->r_leg += (p_ctrl->rc.ch_ry / 2000.0f);
@@ -546,6 +550,7 @@ void over_step_ready_mode(void const *rc_ctrl)
 #endif
 }
 
+#if defined(USE_DIVERGENCY_DETECT)
 bool divergency_detect(float gamma_bias, float r_beta_bias, float l_beta_bias, 
                         float r_x_bias, float l_x_bias)
 {
@@ -570,6 +575,7 @@ bool divergency_detect(float gamma_bias, float r_beta_bias, float l_beta_bias,
     }
     return divergency_flag;
 }
+#endif
 
 
 }

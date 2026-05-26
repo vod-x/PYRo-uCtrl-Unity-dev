@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-28 13:11:52
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-05-25 12:39:46
+ * @LastEditTime: 2026-05-26 11:35:53
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -16,7 +16,7 @@ pid_t turn_pid[2] = {
     pid_t(2.0f, 0.0f, 0.0f, 2.0f, 20.0f), 
     pid_t(2.0f, 0.0f, 0.0f, 2.0f, 20.0f)};
 pid_t wheel_turn_pid_soft[2] = {
-    pid_t(0.01f, 0.0f, 0.0f, 0.5f, 10.0f), 
+    pid_t(2.0f, 0.0f, 0.0f, 0.5f, 10.0f), 
     pid_t(0.01f, 0.0f, 0.0f, 0.5f, 10.0f)};
 pid_t aerial_pid[2] = {
     pid_t(1.0f, 0.0f, 0.0f, 0.0f, 100.0f), 
@@ -352,8 +352,9 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
                 calculate(owner->_leg_data[wl_chassis_t::L].ref_d_l,
                 owner->_leg_data[wl_chassis_t::L].d_l);
             owner->_leg_data[i].x_bias = owner->_leg_data[i].x_gain - owner->_leg_data[i].kf_x;
-            owner->_leg_data[i].d_x_bias = owner->_leg_data[i].d_x_gain - owner->_leg_data[i].kf_v;
-            owner->_leg_data[i].beta_bias = 0.0f- owner->_leg_data[i].beta;
+            owner->_leg_data[i].d_x_bias = 1.0f + owner->_leg_data[i].d_x_gain - owner->_leg_data[i].kf_v;
+            // owner->_leg_data[i].x_bias = 0.0f;
+            owner->_leg_data[i].beta_bias = 0.05f- owner->_leg_data[i].beta;
             owner->_leg_data[i].d_beta_bias = 0.0f - owner->_leg_data[i].d_beta;
             owner->_leg_data[i].gamma_bias = 0.0f - owner->_leg_data[i].gamma;
             owner->_leg_data[i].d_gamma_bias = 0.0f - owner->_leg_data[i].d_gamma;
