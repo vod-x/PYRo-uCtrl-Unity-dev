@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-28 13:11:52
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-05-26 11:35:53
+ * @LastEditTime: 2026-05-27 04:01:21
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -117,7 +117,7 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
             owner->_flag.aerial_cnt = 0;
         }
     }
-    owner->_flag.aerial_cnt = 1;
+    owner->_flag.is_aerial = 0;
     
 
     /* Calculate Tw turn */
@@ -382,10 +382,10 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
                                   
         }
     }
-    owner->_leg_data[wl_chassis_t::R].F[0] = fp32_constrain(owner->_leg_data[wl_chassis_t::R].F[0], -200.0f, 200.0f);
-    owner->_leg_data[wl_chassis_t::L].F[0] = fp32_constrain(owner->_leg_data[wl_chassis_t::L].F[0], -200.0f, 200.0f);
     owner->_leg_data[wl_chassis_t::R].F[1] += owner->T_l_gain;
     owner->_leg_data[wl_chassis_t::L].F[1] -= owner->T_l_gain;
+    owner->_leg_data[wl_chassis_t::R].F[1] = fp32_constrain(owner->_leg_data[wl_chassis_t::R].F[1], -200.0f, 200.0f);
+    owner->_leg_data[wl_chassis_t::L].F[1] = fp32_constrain(owner->_leg_data[wl_chassis_t::L].F[1], -200.0f, 200.0f);
 
 
     /* Transfer the force and torque of virtual rod to the practical torque of

@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-26 20:18:33
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-05-26 21:11:33
+ * @LastEditTime: 2026-05-27 20:32:54
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -198,6 +198,8 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
     // }
     if(cmd.mode == cmd::PASSIVE)
     {
+        infantry2_chassis_cmd_ptr->l_leg = 0.18;
+        infantry2_chassis_cmd_ptr->r_leg = 0.18;
         passive_mode(rc_ctrl);
     }
     else if(cmd.mode == cmd::ACTIVE)
@@ -512,7 +514,7 @@ void control_mode(void const *rc_ctrl)
    static auto *p_ctrl =
             static_cast<dr16_drv_t::dr16_ctrl_t const *>(rc_ctrl);  
     
-    
+#if defined (USE_DR16)
     infantry2_chassis_cmd_ptr->r_angle += (p_ctrl->rc.ch_rx * PI / 2000.0f);
     infantry2_chassis_cmd_ptr->l_angle += (p_ctrl->rc.ch_lx * PI / 2000.0f);
     infantry2_chassis_cmd_ptr->r_angle = loop_fp32_constrain(
@@ -522,10 +524,15 @@ void control_mode(void const *rc_ctrl)
 
     infantry2_chassis_cmd_ptr->r_leg += (p_ctrl->rc.ch_ry / 2000.0f);
     infantry2_chassis_cmd_ptr->l_leg += (p_ctrl->rc.ch_ly / 2000.0f);
-    infantry2_chassis_cmd_ptr->r_leg = fp32_constrain(
-       infantry2_chassis_cmd_ptr->r_leg, 0.13f, 0.37f);
-    infantry2_chassis_cmd_ptr->l_leg = fp32_constrain(
-       infantry2_chassis_cmd_ptr->l_leg, 0.13f, 0.37f);
+#endif
+#if defined (USE_GIMBAL_COM)
+    infantry2_chassis_cmd_ptr->r_angle += (cmd.vx * PI / 2000.0f);
+    infantry2_chassis_cmd_ptr->l_angle += (cmd.vx * PI / 2000.0f);
+    infantry2_chassis_cmd_ptr->r_leg += (cmd.vy * PI / 10000.0f);
+    infantry2_chassis_cmd_ptr->l_leg += (cmd.vy * PI / 10000.0f);
+
+#endif
+
     infantry2_chassis_cmd_ptr->active_mode = wl_cmd_t::CONTROL;
 }
 void over_step_mode(void const *rc_ctrl)
