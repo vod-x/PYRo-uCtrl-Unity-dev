@@ -16,6 +16,11 @@ extern float test_wl_chassis_power_cap;
 extern float test_buffer;
 extern float test_limit;
 
+extern float test_wl_cap_vot;
+extern float test_wl_chassis_power_cap;
+extern float test_buffer;
+extern float test_limit;
+
 powermeter_drv_t powermeter(0x212, can_hub_t::can2);
 powermeter_data powermeter_data;
 float power_bias[2];
@@ -124,7 +129,7 @@ void vofa_drv_t::thread()
     // add_data(&infantry2_chassis_ptr->g_yaw);
     /* force pid */
     // add_data(&infantry2_chassis_ptr->_leg_data[0].F[0]);
-    // add_data(&infantry2_chassis_ptr->_leg_data[0].F[1]);
+    // add_data(&infantry2_chassis_ptr->_leg_data[1].F[0]);
     // add_data(&infantry2_chassis_ptr->_leg_data[0].l);
     // add_data(&infantry2_chassis_ptr->_leg_data[1].l);
     // add_data(&infantry2_chassis_ptr->_leg_data[0].ref_l);
@@ -198,7 +203,7 @@ void vofa_drv_t::thread()
     // add_data(&power_total);
     // add_data(&power_bias_total);
     // add_data(&infantry2_chassis_ptr->_power_ctrl.)
-    //    add_data(&test_wl_cap_vot);
+       add_data(&test_wl_cap_vot);
        add_data(&test_wl_chassis_power_cap);
        add_data(&test_buffer);
        add_data(&test_limit);

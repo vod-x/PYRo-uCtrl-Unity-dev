@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-26 20:18:33
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-05-23 07:53:58
+ * @LastEditTime: 2026-05-26 21:11:33
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -17,12 +17,12 @@
 #include "pyro_referee.h"
 namespace pyro
 {
+
+const float control_acc = 0.003f;
+const float control_max_velocity = 2.0f;
+const float control_leg_length[3] = {0.18f,0.22f,   0.36f};
 float test_buffer;
 float test_limit;
-const float control_acc = 0.006f;
-const float control_max_velocity = 1.0f;
-const float control_leg_length[3] = {0.18f, 0.27f, 0.33f};
-
 extern referee_drv_t *referee_drv;
 extern can_drv_t *can3_drv;
 wl_chassis_t *infantry2_chassis_ptr = nullptr;
@@ -36,6 +36,15 @@ using namespace pyro;
 // #define USE_DR16
 #if defined(USE_GIMBAL_COM) && defined(USE_DR16)
 #error "Gimbal COM and DR16 cannot be used at the same time"   
+#endif
+
+// #define USE_LEG_CTRL
+// #define USE_DIVERGENCY_DETECT
+#if defined (USE_DIVERGENCY_DETECT)
+#define DIVERGENCY_RESET_CNT 4000
+#define MAX_GAMMA_BIAS PI/2
+#define MAX_BETA_BIAS PI/2
+#define MAX_X_BIAS 103.0f
 #endif
 
 extern wl_chassis_cfg_t infantry2_chassis_cfg;
@@ -110,9 +119,12 @@ void over_step_mode(void const *rc_ctrl);
 void over_step_ready_mode(void const *rc_ctrl);
 void control_mode(void const *rc_ctrl);
 void spin_mode(void const *rc_ctrl);
+#if defined(USE_DIVERGENCY_DETECT)
+bool divergency_detect(float gamma_bias, float r_beta_bias, float l_beta_bias, 
+                        float r_x_bias, float l_x_bias);
+#endif
 void infantry2_chassis_rc2cmd(void const *rc_ctrl)
 {
-
 #if defined(USE_GIMBAL_COM)
     can_rx_drv_t::get_data(pyro::can_hub_t::which_can::can3, 0x100,gimbal_rx.buffer);
     memcpy(&last_cmd, &cmd, sizeof(cmd));
@@ -143,6 +155,7 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
             cmd.vx = 0.0f;
         }
     }
+    cmd.vy = gimbal_rx.msg.vy;
     cmd.vx = fp32_constrain(cmd.vx, -control_max_velocity, control_max_velocity);
     cmd.vy = fp32_constrain(cmd.vy, -control_max_velocity, control_max_velocity);
     cmd.v = sqrtf(cmd.vx * cmd.vx + cmd.vy * cmd.vy);
@@ -189,11 +202,11 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
     }
     else if(cmd.mode == cmd::ACTIVE)
     {
-    
+#if !defined (USE_LEG_CTRL)
         infantry2_chassis_cmd_ptr->l_leg = control_leg_length[cmd.leg_length_mode];
         infantry2_chassis_cmd_ptr->r_leg = control_leg_length[cmd.leg_length_mode];
-        // infantry2_chassis_cmd_ptr->l_leg = 0.25f;
-        // infantry2_chassis_cmd_ptr->r_leg = 0.25f;
+#endif
+
         infantry2_chassis_cmd_ptr->mode = pyro::cmd_base_t::mode_t::ACTIVE;
         if(0 == infantry2_chassis_ptr->get_status_flag(wl_cmd_t::READY))
         {
@@ -204,12 +217,13 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
         {
             normal_mode(rc_ctrl);
         }
-                // over_step_mode(rc_ctrl);
     }
     else if(cmd.mode == cmd::SPIN) 
-       { 
+    { 
+#if !defined (USE_LEG_CTRL)
         infantry2_chassis_cmd_ptr->l_leg = control_leg_length[cmd.leg_length_mode];
         infantry2_chassis_cmd_ptr->r_leg = control_leg_length[cmd.leg_length_mode];
+#endif
         infantry2_chassis_cmd_ptr->mode = pyro::cmd_base_t::mode_t::ACTIVE;
         
             spin_mode(rc_ctrl);
@@ -227,7 +241,7 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
         infantry2_chassis_cmd_ptr->r_leg = 0.33f;
         constexpr float TEST_FORCE = -22.0f;
         constexpr float TEST_ANGLE = 2.0f;
-        constexpr float TEST_d_ANGLE = 0.1f;
+        constexpr float TEST_d_ANGLE = 0.5f;
         static uint8_t over_step_flag = 0;
         static float temp_torque[2] = {0.0f, 0.0f};
         static float temp_angle[2] = {0.0f, 0.0f};
@@ -241,7 +255,8 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
         // if((0 == infantry2_chassis_ptr->get_status_flag(wl_cmd_t::OVER_STEP)) &&
         //     ((temp_angle[0] > TEST_ANGLE) || (temp_angle[1] > TEST_ANGLE)))
         if((0 == infantry2_chassis_ptr->get_status_flag(wl_cmd_t::OVER_STEP)) &&
-            ((temp_torque[0] < TEST_FORCE) || (temp_torque[1] < TEST_FORCE)))
+            ((temp_torque[0] < TEST_FORCE) || (temp_torque[1] < TEST_FORCE)) &&
+            ((abs(temp_d_angle[0]) < TEST_d_ANGLE) || (abs(temp_d_angle[1]) < TEST_d_ANGLE)))
         {
             over_step_flag = 1;
         }
@@ -355,7 +370,21 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
     
     }
 #endif
-
+    infantry2_chassis_cmd_ptr->r_leg = fp32_constrain(
+       infantry2_chassis_cmd_ptr->r_leg, 0.18f, 0.37f);
+    infantry2_chassis_cmd_ptr->l_leg = fp32_constrain(
+       infantry2_chassis_cmd_ptr->l_leg, 0.18f, 0.37f);
+#if defined(USE_DIVERGENCY_DETECT)
+    float r_beta_bias, l_beta_bias, gamma_bias, r_x_bias, l_x_bias;
+    infantry2_chassis_ptr->get_cur_x_bias(&r_x_bias, &l_x_bias);
+    infantry2_chassis_ptr->get_cur_beta_bias(&r_beta_bias, &l_beta_bias);
+    infantry2_chassis_ptr->get_cur_gamma_bias(&gamma_bias);
+    if(divergency_detect(gamma_bias, r_beta_bias, l_beta_bias, r_x_bias, l_x_bias))
+    {
+        passive_mode(rc_ctrl);
+    }
+    
+#endif
     infantry2_chassis_cmd_ptr->last_active_mode = infantry2_chassis_cmd_ptr->active_mode;
 }
 void infantry2_chassis_main_tread(void *argument)
@@ -441,6 +470,10 @@ void ready_mode(void const *rc_ctrl)
     infantry2_chassis_cmd_ptr->l_angle = PI/2.0f;
     infantry2_chassis_cmd_ptr->r_angle = PI/2.0f;
     infantry2_chassis_cmd_ptr->active_mode = wl_cmd_t::READY;
+#if defined(USE_LEG_CTRL)
+    infantry2_chassis_cmd_ptr->r_leg = 0.18f;
+    infantry2_chassis_cmd_ptr->l_leg = 0.18f;
+#endif
 }
 void normal_mode(void const *rc_ctrl)
 {
@@ -450,10 +483,16 @@ void normal_mode(void const *rc_ctrl)
 
 #if defined (USE_GIMBAL_COM)
     infantry2_chassis_cmd_ptr->vx = cmd.vx;
+#if defined (USE_LEG_CTRL)
+    infantry2_chassis_cmd_ptr->r_leg += (cmd.vy / 20000.0f);
+    infantry2_chassis_cmd_ptr->l_leg += (cmd.vy / 20000.0f);
+#endif
 #endif
 #if defined (USE_DR16)
+#if defined (USE_LEG_CTRL)
     infantry2_chassis_cmd_ptr->r_leg += (p_ctrl->rc.ch_ry / 2000.0f);
     infantry2_chassis_cmd_ptr->l_leg += (p_ctrl->rc.ch_ry / 2000.0f);
+#endif
 
     infantry2_chassis_cmd_ptr->yaw -= (p_ctrl->rc.ch_lx * PI / 500.0f);
     infantry2_chassis_cmd_ptr->vx = (p_ctrl->rc.ch_ly * 2.0f);
@@ -502,7 +541,7 @@ void over_step_ready_mode(void const *rc_ctrl)
     infantry2_chassis_cmd_ptr->active_mode = wl_cmd_t::OVER_STEP_READY;
 
 #if defined (USE_GIMBAL_COM)
-    infantry2_chassis_cmd_ptr->vx = cmd.vx;
+    infantry2_chassis_cmd_ptr->vx = cmd.vx/3;
 #endif
 #if defined (USE_DR16)
     infantry2_chassis_cmd_ptr->r_leg += (p_ctrl->rc.ch_ry / 2000.0f);
@@ -514,5 +553,33 @@ void over_step_ready_mode(void const *rc_ctrl)
         infantry2_chassis_cmd_ptr->yaw, -PI, PI);
 #endif
 }
+
+#if defined(USE_DIVERGENCY_DETECT)
+bool divergency_detect(float gamma_bias, float r_beta_bias, float l_beta_bias, 
+                        float r_x_bias, float l_x_bias)
+{
+    static bool divergency_flag = 0;
+    static uint16_t cnt = 0;
+    if( 0 == divergency_flag)
+    {
+        if((fabsf(gamma_bias) > MAX_GAMMA_BIAS) || (fabsf(r_beta_bias) > MAX_BETA_BIAS) || (fabsf(l_beta_bias) > MAX_BETA_BIAS) ||
+            (fabsf(r_x_bias) > MAX_X_BIAS) || (fabsf(l_x_bias) > MAX_X_BIAS))
+        {
+            divergency_flag = 1;
+        }
+    }
+    else 
+    {
+        cnt++;
+        if(cnt >= DIVERGENCY_RESET_CNT)
+        {
+            divergency_flag = 0;
+            cnt = 0;
+        }
+    }
+    return divergency_flag;
+}
+#endif
+
 
 }

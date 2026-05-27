@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-26 19:51:12
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-04-22 19:34:29
+ * @LastEditTime: 2026-05-25 13:12:07
  * @Description: Wheel-legged chassis passive state implementation
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -41,6 +41,12 @@ void wl_chassis_t::state_passive_t::execute(wl_chassis_t *owner)
 {
     for(uint8_t i = 0; i < 2; i++)
     {
+            owner->_leg_data[i].x_bias = 0.0f;
+            owner->_leg_data[i].d_x_bias = 0.0f;
+            owner->_leg_data[i].beta_bias = 0.0f;
+            owner->_leg_data[i].d_beta_bias = 0.0f;
+            owner->_leg_data[i].gamma_bias = 0.0f - owner->_leg_data[i].gamma;
+            owner->_leg_data[i].d_gamma_bias = 0.0f - owner->_leg_data[i].d_gamma;
         if(1 == wheel_disable_flag[i])
         {
             float t = wheel_disable_pid[i].calculate(0.0f,

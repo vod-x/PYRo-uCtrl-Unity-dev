@@ -19,7 +19,7 @@
 #define SUPPORT_FORCE_ACC_LPF_RC 0.01f
 /* IMU offset from yaw rotation center (midpoint of two wheels) along body x-axis.
    Positive = IMU is in front of wheel axis. Measure and adjust this value. */
-#define IMU_OFFSET_X  0.2f
+#define IMU_OFFSET_X  0.21f
 
  namespace pyro
 {
@@ -86,6 +86,35 @@ status_t wl_chassis_t::get_cur_ins_yaw(float* temp_yaw)
         return PYRO_PARAM_ERROR;
     }
     *temp_yaw = yaw;
+    return PYRO_OK;
+}
+status_t wl_chassis_t::get_cur_x_bias(float* r_x_bias, float* l_x_bias)
+{
+    if(!r_x_bias || !l_x_bias)
+    {
+        return PYRO_PARAM_ERROR;
+    }
+    *r_x_bias = _leg_data[R].x_bias;
+    *l_x_bias = _leg_data[L].x_bias;
+    return PYRO_OK;
+}
+status_t wl_chassis_t::get_cur_beta_bias(float* r_beta_bias, float* l_beta_bias)
+{
+    if(!r_beta_bias || !l_beta_bias)
+    {
+        return PYRO_PARAM_ERROR;
+    }
+    *r_beta_bias = _leg_data[R].beta_bias;
+    *l_beta_bias = _leg_data[L].beta_bias;
+    return PYRO_OK;
+}
+status_t wl_chassis_t::get_cur_gamma_bias(float* gamma_bias)
+{
+    if(!gamma_bias)
+    {
+        return PYRO_PARAM_ERROR;
+    }
+    *gamma_bias = _leg_data[R].gamma_bias;
     return PYRO_OK;
 }
 
