@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-07 15:14:47
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-05-23 08:02:38
+ * @LastEditTime: 2026-05-27 21:32:37
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -151,9 +151,10 @@ struct wl_cmd_t final : public cmd_base_t
         CONTROL = 6,
         SPIN = 7
     }active_mode, last_active_mode;
+   uint8_t use_cap;
 
     /* Construct function, set zero values */
-    wl_cmd_t() : vx(0), vy(0), vz(0), yaw(0), l_leg(0), r_leg(0),l_angle(0), r_angle(0), active_mode(TEST)
+    wl_cmd_t() : vx(0), vy(0), vz(0), yaw(0), l_leg(0), r_leg(0),l_angle(0), r_angle(0), active_mode(TEST),use_cap(0)
     {
     }
 };
@@ -165,6 +166,7 @@ class wl_chassis_t final : public module_base_t<wl_chassis_t, wl_cmd_t, wl_chass
 
 public:
    
+   const float CAP_POWER = 80.0f;
    wl_chassis_t(const wl_chassis_t &)            = delete;
    wl_chassis_t &operator=(const wl_chassis_t &) = delete;
 
@@ -471,11 +473,16 @@ private:
     fsm_t<wl_chassis_t> _fsm;
     wl_cmd_t *_cmd;
 
-    supercap_drv_t::chassis_cmd_t _supercap_cmd;
-    supercap_drv_t::cap_feedback_t _cap_feedback;
-
-    void _send_supercap_command() const;
-    void _decide_cap();
+   supercap_drv_t::chassis_cmd_t _supercap_cmd;
+   struct
+   {
+      float chassis_power;
+      float cap_power;
+      float voltage;
+   }_cap_data;
+   uint8_t _use_cap;
+   void __send_supercap_command() const;
+   void __decide_cap();
 };
 
 }

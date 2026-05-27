@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-26 20:18:33
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-05-27 20:32:54
+ * @LastEditTime: 2026-05-27 22:01:40
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -102,9 +102,10 @@ struct cmd
         PASSIVE = 0x00,
         ACTIVE = 0x01,
         SPIN = 0x02,
-         STEP_CLIMB= 0x03
+        STEP_CLIMB= 0x03
     }mode;
     uint8_t leg_length_mode;
+    uint8_t use_cap;
 }cmd, last_cmd;
 
 extern "C"
@@ -125,9 +126,11 @@ bool divergency_detect(float gamma_bias, float r_beta_bias, float l_beta_bias,
 #endif
 void infantry2_chassis_rc2cmd(void const *rc_ctrl)
 {
+    /* unpack data of cmd from gimbal or dr16 */
 #if defined(USE_GIMBAL_COM)
     can_rx_drv_t::get_data(pyro::can_hub_t::which_can::can3, 0x100,gimbal_rx.buffer);
     memcpy(&last_cmd, &cmd, sizeof(cmd));
+    /* unpack velocity */
     if(0 != gimbal_rx.msg.vx)
     {
         if(gimbal_rx.msg.vx > 0)
@@ -161,7 +164,9 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
     cmd.v = sqrtf(cmd.vx * cmd.vx + cmd.vy * cmd.vy);
     cmd.turn_angle = atan2f(cmd.vy, cmd.vx);
     
+    /* unpack yaw velocity */
     cmd.yaw_vel = (float)gimbal_rx.msg.yawvel / 100000.0f;
+    /* unpack mode */
     if(gimbal_rx.msg.mode == cmd::PASSIVE)
     {
         cmd.mode = cmd::PASSIVE;
@@ -178,7 +183,10 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
     {
         cmd.mode = cmd::SPIN;
     }
+    /* unpack leg length mode */
     cmd.leg_length_mode = gimbal_rx.msg.legLength;
+    /* unpack cap switch */
+    cmd.use_cap = gimbal_rx.msg.capSwitch;
 #endif
 #if defined(USE_DR16)
     pyro::read_scope_lock lock(
@@ -188,14 +196,6 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
             static_cast<dr16_drv_t::dr16_ctrl_t const *>(rc_ctrl);  
 #endif
 #if defined (USE_GIMBAL_COM)
-    // if(last_mode == pyro::cmd_base_t::mode_t::PASSIVE && 
-    //     cmd.mode == cmd::ACTIVE)
-    // {
-    //     infantry2_chassis_ptr->get_cur_angle(&infantry2_chassis_cmd_ptr->r_angle,
-    //                           &infantry2_chassis_cmd_ptr->l_angle);
-    //     infantry2_chassis_ptr->get_cur_length(&infantry2_chassis_cmd_ptr->r_leg,
-    //                         &infantry2_chassis_cmd_ptr->l_leg);
-    // }
     if(cmd.mode == cmd::PASSIVE)
     {
         infantry2_chassis_cmd_ptr->l_leg = 0.18;

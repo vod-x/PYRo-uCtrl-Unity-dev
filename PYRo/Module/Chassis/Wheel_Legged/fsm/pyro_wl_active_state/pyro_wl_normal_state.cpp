@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-28 13:11:52
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-05-27 04:01:21
+ * @LastEditTime: 2026-05-27 22:07:39
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -418,14 +418,25 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
         // owner->_leg_data[wl_chassis_t::R].T_w = owner->_leg_data[wl_chassis_t::R].T_w_balance + owner->_leg_data[wl_chassis_t::R].T_w_move ;
         // owner->_leg_data[wl_chassis_t::R].T_w = owner->_leg_data[wl_chassis_t::R].T_w_balance + owner->_leg_data[wl_chassis_t::R].T_w_move ;
         // owner->_leg_data[wl_chassis_t::L].T_w = owner->_leg_data[wl_chassis_t::L].T_w_balance + owner->_leg_data[wl_chassis_t::L].T_w_move ;
-        owner->_power_ctrl.set_max_power(referee_drv->get_data().robot_status.chassis_power_limit);
-      
+
+        owner->_use_cap = owner->_cmd->use_cap;
+        if(owner->_use_cap)
+        {
+            owner->_power_ctrl.set_max_power(
+                referee_drv->get_data().robot_status.chassis_power_limit 
+                + owner->CAP_POWER);
+        }
+        else {
+            owner->_power_ctrl.set_max_power(
+                referee_drv->get_data().robot_status.chassis_power_limit);
+        }
+
         float T[2];
         wl_wheel_cmd_t cmd[2];
         cmd[wl_chassis_t::R].tau_balance = -owner->_leg_data[wl_chassis_t::R].T_w_balance;
         cmd[wl_chassis_t::L].tau_balance = owner->_leg_data[wl_chassis_t::L].T_w_balance;
-        cmd[wl_chassis_t::R].tau_motion = -owner->_leg_data[wl_chassis_t::R].T_w_move + owner->_T_w_gain;
-        cmd[wl_chassis_t::L].tau_motion = owner->_leg_data[wl_chassis_t::L].T_w_move + owner->_T_w_gain;
+        cmd[wl_chassis_t::R].tau_motion = -owner->_leg_data[wl_chassis_t::R].T_w_move + owner->_leg_data[wl_chassis_t::R].T_w_turn;
+        cmd[wl_chassis_t::L].tau_motion = owner->_leg_data[wl_chassis_t::L].T_w_move + owner->_leg_data[wl_chassis_t::L].T_w_turn;
         cmd[wl_chassis_t::R].omega = owner->_leg_data[wl_chassis_t::R].w;
         cmd[wl_chassis_t::L].omega = owner->_leg_data[wl_chassis_t::L].w;
         owner->_power_ctrl.update(cmd, T); 
