@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-27 20:38:05
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-05-28 07:09:00
+ * @LastEditTime: 2026-05-25 17:33:04
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -30,10 +30,10 @@
 #define L_MOTOR1_OFFSET 0.0240f
 #define L_MOTOR2_OFFSET 3.82f
 #elif ROBOT_ID == INFANTRY2_ID
-#define R_MOTOR1_OFFSET 1.2974f
-#define R_MOTOR2_OFFSET 0.223f
+#define R_MOTOR1_OFFSET  1.2664f
+#define R_MOTOR2_OFFSET 0.2100f
 #define L_MOTOR1_OFFSET 0.5134f
-#define L_MOTOR2_OFFSET  2.29f
+#define L_MOTOR2_OFFSET 2.2900f
 #endif
 
 

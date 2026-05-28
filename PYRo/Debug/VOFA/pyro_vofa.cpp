@@ -16,6 +16,11 @@ extern float test_wl_chassis_power_cap;
 extern float test_buffer;
 extern float test_limit;
 
+extern float test_wl_cap_vot;
+extern float test_wl_chassis_power_cap;
+extern float test_buffer;
+extern float test_limit;
+
 powermeter_drv_t powermeter(0x212, can_hub_t::can2);
 powermeter_data powermeter_data;
 float power_bias[2];

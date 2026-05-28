@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-28 13:11:52
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-05-28 07:25:03
+ * @LastEditTime: 2026-05-29 02:15:27
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -10,7 +10,7 @@
 #include "pyro_wl_chassis.h"
 #include "pyro_algo_common.h"
 #include "pyro_referee.h"
-
+static float speed_offset_ramp = 0.0f;
 namespace pyro
 {
 extern pid_t wheel_disable_pid[2];
@@ -19,7 +19,7 @@ pid_t turn_pid[2] = {
     pid_t(5.0f, 0.0f, 0.0f, 2.0f, 20.0f), 
     pid_t(5.0f, 0.0f, 0.0f, 2.0f, 20.0f)};
 pid_t wheel_turn_pid_soft[2] = {
-    pid_t(2.0f, 0.0f, 0.0f, 0.5f, 10.0f), 
+    pid_t(0.01f, 0.0f, 0.0f, 0.5f, 10.0f), 
     pid_t(0.01f, 0.0f, 0.0f, 0.5f, 10.0f)};
 pid_t aerial_pid[2] = {
     pid_t(1.0f, 0.0f, 0.0f, 0.0f, 100.0f), 
@@ -33,7 +33,8 @@ void wl_chassis_t::fsm_active_t::state_normal_t::enter(wl_chassis_t *owner)
     owner->_flag.aerial_cnt = 0;
     owner->_flag.is_aerial = 0;
     owner->_flag.test = 0;
-    
+    speed_offset_ramp = 0.0f; 
+
     // owner->_leg_data[wl_chassis_t::R].x = 0.0f;
     // owner->_leg_data[wl_chassis_t::L].x = 0.0f;
     // owner->_leg_data[wl_chassis_t::R].x_gain = 0.0f;
@@ -51,6 +52,11 @@ void wl_chassis_t::fsm_active_t::state_normal_t::enter(wl_chassis_t *owner)
 uint32_t clear_cnt;
 void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
 {
+    if (speed_offset_ramp < 1.0f)
+    {
+
+        speed_offset_ramp += 0.002f; 
+    }
     clear_cnt++;
     if((clear_cnt > 5000)&&(owner->_cmd->vx == 0.0f))
     {
@@ -355,7 +361,7 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
                 calculate(owner->_leg_data[wl_chassis_t::L].ref_d_l,
                 owner->_leg_data[wl_chassis_t::L].d_l);
             owner->_leg_data[i].x_bias = owner->_leg_data[i].x_gain - owner->_leg_data[i].kf_x;
-            owner->_leg_data[i].d_x_bias = 1.0f + owner->_leg_data[i].d_x_gain - owner->_leg_data[i].kf_v;
+            owner->_leg_data[i].d_x_bias = (0.5f * speed_offset_ramp) + owner->_leg_data[i].d_x_gain - owner->_leg_data[i].kf_v;
             // owner->_leg_data[i].x_bias = 0.0f;
             owner->_leg_data[i].beta_bias = 0.05f- owner->_leg_data[i].beta;
             owner->_leg_data[i].d_beta_bias = 0.0f - owner->_leg_data[i].d_beta;

@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-26 20:18:33
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-05-28 08:44:28
+ * @LastEditTime: 2026-05-29 02:50:16
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -15,6 +15,7 @@
 #include "pyro_com_cantx.h"
 #include "pyro_referee.h"
 #include "pyro_referee.h"
+#include "pyro_infantry2_chassis_intf.h"
 namespace pyro
 {
 
@@ -29,6 +30,10 @@ wl_chassis_t *infantry2_chassis_ptr = nullptr;
 wl_cmd_t     *infantry2_chassis_cmd_ptr = nullptr;
 wl_cmd_t     *last_infantry2_chassis_cmd_ptr = nullptr;
 dr16_drv_t::dr16_ctrl_t const *infantry2_rc_ctrl_ptr = nullptr;
+GimbalToChassisComm gimbal_rx;
+ChassisToGimbalComm gimbal_tx;
+cmd_t cmd, last_cmd;
+extern status_t ui_tread_init(void* argument);
 }
 
 using namespace pyro;
@@ -49,63 +54,7 @@ using namespace pyro;
 
 extern wl_chassis_cfg_t infantry2_chassis_cfg;
 
-union GimbalToChassisComm {
 
-    __attribute__((packed)) struct {
-        int32_t vx    : 6; //  正方向： 向前
-        int32_t vy    : 6; // 正方向： 向左
-        uint32_t mode : 4;
-        uint32_t shootEn  : 1;
-        uint32_t resetUI  : 1;
-        uint32_t fn1Switch: 1;
-        uint32_t turboMode    : 1; // [R] 飞坡
-        uint32_t stepClimb    : 1; // [E] 上台阶
-        uint32_t legLength    : 2; // [Z] 腿长 (0/1/2)
-        uint32_t selfRescue   : 1; // [G] 自救
-        uint32_t manualRescue : 1; // [Ctrl] 手动自救
-        uint32_t gimbalReverse: 1; // [X] 调头
-        uint32_t jump         : 1; // [V] 跳跃
-        uint32_t capSwitch    : 1; // [C] 超级电容开关
-        uint32_t fireState    : 4; // 发射机构 FSM 状态 (FireState)
-        uint32_t aimMode      : 2; // [B] 自瞄模式 (0~3)
-        int16_t yawvel     ;
-    } msg;
-
-    std::array<uint8_t, 8> buffer;
-}gimbal_rx;
-
-union ChassisToGimbalComm {
-
-    __attribute__((packed)) struct {
-        // 将 float (4字节) 压缩为 uint16_t (2字节) 传初速度，乘以 100 发送，云台除以 100
-        uint32_t initialSpeedX100      : 15; // 弹丸初速度 * 100 (2 Bytes)
-        uint32_t shooter17mmBarrelHeat : 16; // 17mm 枪口当前热量 (2 Bytes)
-        uint32_t heatLimit             : 9; // 热量上限 (如 150, 240, 360)
-        uint32_t coolingRate           : 7; // 冷却速率 (如 40, 60, 80)
-         uint8_t chassisReady           : 1;
-        uint8_t robotId              : 8;     // 机器人 ID (1 Byte)
-        int8_t chassisYawSpeed        : 8;
-      
-    } msg;
-
-    std::array<uint8_t, 8> buffer;
-}gimbal_tx;
-struct cmd
-{
-    float vx;
-    float vy;
-    float turn_angle;
-    float v;
-    float yaw_vel;
-    enum
-    {
-        PASSIVE = 0x00,
-        ACTIVE = 0x01,
-        SPIN = 0x02,
-         STEP_CLIMB= 0x03
-    }mode;
-    uint8_t leg_length_mode;
-}cmd, last_cmd;
 
 extern "C"
 {
@@ -163,21 +112,21 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
     cmd.turn_angle = atan2f(cmd.vy, cmd.vx);
     
     cmd.yaw_vel = (float)gimbal_rx.msg.yawvel / 100000.0f;
-    if(gimbal_rx.msg.mode == cmd::PASSIVE)
+    if(gimbal_rx.msg.mode == cmd_t::PASSIVE)
     {
-        cmd.mode = cmd::PASSIVE;
+        cmd.mode = cmd_t::PASSIVE;
     }
-    else if(gimbal_rx.msg.mode == cmd::ACTIVE)
+    else if(gimbal_rx.msg.mode == cmd_t::ACTIVE)
     {
-        cmd.mode = cmd::ACTIVE;
+        cmd.mode = cmd_t::ACTIVE;
         if(1 == gimbal_rx.msg.stepClimb)
         {
-            cmd.mode = cmd::STEP_CLIMB;
+            cmd.mode = cmd_t::STEP_CLIMB;
         }
     }
-    else if(gimbal_rx.msg.mode == cmd::SPIN) 
+    else if(gimbal_rx.msg.mode == cmd_t::SPIN) 
     {
-        cmd.mode = cmd::SPIN;
+        cmd.mode = cmd_t::SPIN;
     }
     cmd.leg_length_mode = gimbal_rx.msg.legLength;
 #endif
@@ -197,13 +146,13 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
     //     infantry2_chassis_ptr->get_cur_length(&infantry2_chassis_cmd_ptr->r_leg,
     //                         &infantry2_chassis_cmd_ptr->l_leg);
     // }
-    if(cmd.mode == cmd::PASSIVE)
+    if(cmd.mode == cmd_t::PASSIVE)
     {
         infantry2_chassis_cmd_ptr->l_leg = 0.18;
         infantry2_chassis_cmd_ptr->r_leg = 0.18;
         passive_mode(rc_ctrl);
     }
-    else if(cmd.mode == cmd::ACTIVE)
+    else if(cmd.mode == cmd_t::ACTIVE)
     {
 #if !defined (USE_LEG_CTRL)
         infantry2_chassis_cmd_ptr->l_leg = control_leg_length[cmd.leg_length_mode];
@@ -221,7 +170,7 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
             normal_mode(rc_ctrl);
         }
     }
-    else if(cmd.mode == cmd::SPIN) 
+    else if(cmd.mode == cmd_t::SPIN) 
     { 
 #if !defined (USE_LEG_CTRL)
         infantry2_chassis_cmd_ptr->l_leg = control_leg_length[cmd.leg_length_mode];
@@ -231,12 +180,12 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
         
             spin_mode(rc_ctrl);
     }
-    else if(cmd.mode == cmd::STEP_CLIMB)
+    else if(cmd.mode == cmd_t::STEP_CLIMB)
     {
         static uint32_t over_step_cnt = 0;
         static uint32_t delay_cnt = 0;
         static uint8_t over_step_flag = 0;
-        if(last_cmd.mode == cmd::ACTIVE)
+        if(last_cmd.mode == cmd_t::ACTIVE)
         {
             static float temp_yaw;
             infantry2_chassis_ptr->get_cur_ins_yaw(&temp_yaw); 
@@ -440,6 +389,9 @@ void infantry2_chassis_main_tread(void *argument)
     }
 }
 
+
+
+
 status_t infantry2_chassis_init(void *argument)
 {
 
@@ -453,7 +405,10 @@ status_t infantry2_chassis_init(void *argument)
             "Infantry2 Chassis", 512, 
             nullptr, 1, nullptr);
     CHECK_OS_RET(ret);
+    
+   
     infantry2_chassis_ptr->configure(infantry2_chassis_cfg);
+    ui_tread_init(nullptr);
     return status_t::PYRO_OK;
 }
 
