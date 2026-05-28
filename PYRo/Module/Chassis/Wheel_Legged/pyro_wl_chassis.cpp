@@ -2,7 +2,7 @@
  * @Author: Vod vod0575@outlook
  * @Date: 2026-02-06 15:27:37
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-05-28 04:35:57
+ * @LastEditTime: 2026-05-28 09:09:11
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -347,21 +347,20 @@ void wl_chassis_t::_update_feedback()
 {
     power = referee_drv->get_data().robot_status.chassis_power_limit;
     last_time = dwt_drv_t::get_timeline_ms();
+   
+    supercap_drv_t::cap_feedback_t cap_feedback = supercap_drv_t::get_instance()->get_feedback();
+    _power_data.chassis_power = cap_feedback.chassis_power_cap / 100.0f; 
+    _power_data.cap_power = cap_feedback.cap_power_cap / 100.0f - 250; 
+    _power_data.voltage = cap_feedback.vot_cap / 100.0f; 
+    _power_data.limit = referee_drv->get_data().robot_status.chassis_power_limit;
+    _power_data.buffer_energy = referee_drv->get_data().power_heat.buffer_energy;
 
     _supercap_cmd.power_referee = 0;
-    _supercap_cmd.power_limit_referee = referee_drv->get_data().robot_status.chassis_power_limit;
+    _supercap_cmd.power_limit_referee = _power_data.limit;
     _supercap_cmd.power_buffer_limit_referee = 60.0f;
-    _supercap_cmd.power_buffer_referee = referee_drv->get_data().power_heat.buffer_energy;
+    _supercap_cmd.power_buffer_referee = _power_data.buffer_energy;
     _supercap_cmd.kill_chassis_user = 0;
     _supercap_cmd.speed_up_user_now = 0;
-   
-    _cap_feedback = supercap_drv_t::get_instance()->get_feedback();
-
-    test_wl_cap_feedback = _cap_feedback;
-    test_wl_chassis_power_cap = test_wl_cap_feedback.chassis_power_cap / 100.0f; 
-    test_wl_cap_power_cap = test_wl_cap_feedback.cap_power_cap / 100.0f - 250; 
-    test_wl_cap_vot = test_wl_cap_feedback.vot_cap / 100.0f; 
-
 
     static uint32_t dwt_cnt;
     static float last_dx[2];
@@ -517,16 +516,16 @@ void wl_chassis_t::_fsm_execute()
     else if (cmd_base_t::mode_t::ACTIVE == _cmd->mode)
         _fsm.change_state(&_state_active);
 
-        _decide_cap();
+        __decide_cap();
     _fsm.execute(this);
     time = dwt_drv_t::get_timeline_ms() - last_time;
 }
-void wl_chassis_t::_send_supercap_command() const
+void wl_chassis_t::__send_supercap_command() const
 {
     supercap_drv_t::get_instance()->send_cmd(_supercap_cmd);
 }
 
-void wl_chassis_t::_decide_cap()
+void wl_chassis_t::__decide_cap()
 {
     static bool _last_status = false;
     static uint32_t _timer   = 0;
@@ -553,7 +552,7 @@ void wl_chassis_t::_decide_cap()
                 _delay_done           = true;
                 _timer                = 0; 
                 _supercap_cmd.use_cap = 1;
-                _send_supercap_command();
+                __send_supercap_command();
             }
         }
         else
@@ -563,7 +562,7 @@ void wl_chassis_t::_decide_cap()
             {
                 _timer                = 0;
                 _supercap_cmd.use_cap = 1;
-                _send_supercap_command();
+                __send_supercap_command();
             }
         }
     }
@@ -574,7 +573,7 @@ void wl_chassis_t::_decide_cap()
         {
             // 刚切换到无输出状态：立刻发送 use_cap = 0
             _supercap_cmd.use_cap = 0;
-            _send_supercap_command();
+            __send_supercap_command();
 
             // 重置状态位，防止重复发送
             _delay_done = false;

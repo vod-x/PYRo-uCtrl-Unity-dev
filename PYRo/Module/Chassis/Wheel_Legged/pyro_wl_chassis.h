@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-07 15:14:47
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-05-23 08:02:38
+ * @LastEditTime: 2026-05-28 09:01:23
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -482,10 +482,17 @@ private:
     wl_cmd_t *_cmd;
 
     supercap_drv_t::chassis_cmd_t _supercap_cmd;
-    supercap_drv_t::cap_feedback_t _cap_feedback;
-
-    void _send_supercap_command() const;
-    void _decide_cap();
+   struct
+   {
+      float chassis_power;
+      float voltage;
+      float cap_power;
+      float limit;
+      float buffer_energy;
+   }_power_data;
+   
+    void __send_supercap_command() const;
+    void __decide_cap();
 };
 
 }

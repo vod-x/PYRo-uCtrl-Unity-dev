@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-26 20:18:33
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-05-28 07:42:21
+ * @LastEditTime: 2026-05-28 08:44:28
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -274,7 +274,7 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
         if(over_step_cnt == 0)
         {
             if((0 == infantry2_chassis_ptr->get_status_flag(wl_cmd_t::OVER_STEP)) &&
-                ((temp_torque[0] < TEST_FORCE) || (temp_torque[1] < TEST_FORCE)) 
+                ((temp_torque[0] < TEST_FORCE) || (temp_torque[1] < TEST_FORCE)))
                 // ((temp_torque[0] < TEST_FORCE) || (temp_torque[1] < TEST_FORCE)) &&
                 // ((abs(temp_d_angle[0]) < TEST_d_ANGLE) || (abs(temp_d_angle[1]) < TEST_d_ANGLE)))
             {
