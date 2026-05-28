@@ -149,7 +149,7 @@ elseif(ROBOT_ID EQUAL SENTRY_ID)
 endif ()
 
 add_subdirectory(cmake/stm32cubemx)
-
+add_subdirectory(Ported_third_lib/referee-hud-ui)
 # ==============================================================================
 # 6. 包含路径与链接 (按路径排序)
 # ==============================================================================
@@ -207,6 +207,7 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
         stm32cubemx
         CMSISDSP
         dsppp_lib
+        referee_hud::ui
 )
 
 add_dependencies(echo_robot_id ${CMAKE_PROJECT_NAME})

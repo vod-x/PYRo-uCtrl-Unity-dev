@@ -156,7 +156,7 @@ owner->roll_gain = 0.0f;
                                   owner->_leg_data[i].lqr_gain[7] * (0.0f - chassis_v) + 
                                   owner->_leg_data[i].lqr_gain[8] * (0 - owner->_leg_data[i].gamma) + 
                                   owner->_leg_data[i].lqr_gain[9] * (0 - owner->_leg_data[i].d_gamma) + 
-                                  owner->_leg_data[i].lqr_gain[10] * (0 - owner->_leg_data[i].beta) + 
+                                  owner->_leg_data[i].lqr_gain[10] * (-0.04f - owner->_leg_data[i].beta) + 
                                   owner->_leg_data[i].lqr_gain[11] * (0 - owner->_leg_data[i].d_beta));
                                   
     }

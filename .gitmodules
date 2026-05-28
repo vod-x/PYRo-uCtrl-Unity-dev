@@ -1,0 +1,3 @@
+[submodule "Ported_third_lib/referee-hud-ui"]
+	path = Ported_third_lib/referee-hud-ui
+	url = https://github.com/MekCraftLi/PeiyangRobot-infantry-UILib.git

@@ -19,7 +19,7 @@
 #define SUPPORT_FORCE_ACC_LPF_RC 0.01f
 /* IMU offset from yaw rotation center (midpoint of two wheels) along body x-axis.
    Positive = IMU is in front of wheel axis. Measure and adjust this value. */
-#define IMU_OFFSET_X  0.21f
+#define IMU_OFFSET_X  0.2f
 
  namespace pyro
 {

@@ -10,7 +10,7 @@
 #include "pyro_wl_chassis.h"
 #include "pyro_algo_common.h"
 #include "pyro_referee.h"
-
+static float speed_offset_ramp = 0.0f;
 namespace pyro
 {
 extern pid_t wheel_disable_pid[2];
@@ -33,7 +33,8 @@ void wl_chassis_t::fsm_active_t::state_normal_t::enter(wl_chassis_t *owner)
     owner->_flag.aerial_cnt = 0;
     owner->_flag.is_aerial = 0;
     owner->_flag.test = 0;
-    
+    speed_offset_ramp = 0.0f; 
+
     // owner->_leg_data[wl_chassis_t::R].x = 0.0f;
     // owner->_leg_data[wl_chassis_t::L].x = 0.0f;
     // owner->_leg_data[wl_chassis_t::R].x_gain = 0.0f;
@@ -51,6 +52,11 @@ void wl_chassis_t::fsm_active_t::state_normal_t::enter(wl_chassis_t *owner)
 uint32_t clear_cnt;
 void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
 {
+    if (speed_offset_ramp < 1.0f)
+    {
+
+        speed_offset_ramp += 0.002f; 
+    }
     clear_cnt++;
     if((clear_cnt > 5000)&&(owner->_cmd->vx == 0.0f))
     {
@@ -355,13 +361,13 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
                                       owner->_leg_data[i].lqr_gain[5] * (0 - owner->_leg_data[i].d_beta));
             owner->_leg_data[i].T_w_move = (
                                       owner->_leg_data[i].lqr_gain[0] * (owner->_leg_data[i].x_gain - owner->_leg_data[i].kf_x) + 
-                                      owner->_leg_data[i].lqr_gain[1] * (owner->_leg_data[i].d_x_gain +1.0f - owner->_leg_data[i].kf_v));
+                                      owner->_leg_data[i].lqr_gain[1] * (owner->_leg_data[i].d_x_gain +0.5f* speed_offset_ramp - owner->_leg_data[i].kf_v));
                                     //   owner->_leg_data[i].lqr_gain[0] * (owner->_leg_data[i].x_gain - owner->_leg_data[i].x) + 
                                     //   owner->_leg_data[i].lqr_gain[1] * (owner->_leg_data[i].d_x_gain - owner->_leg_data[i].dx));  
 
             owner->_leg_data[i].F[1] = -(
                                       owner->_leg_data[i].lqr_gain[6] * (owner->_leg_data[i].x_gain - owner->_leg_data[i].kf_x) + 
-                                      owner->_leg_data[i].lqr_gain[7] * (owner->_leg_data[i].d_x_gain +1.0f - owner->_leg_data[i].kf_v) + 
+                                      owner->_leg_data[i].lqr_gain[7] * (owner->_leg_data[i].d_x_gain +0.5f* speed_offset_ramp - owner->_leg_data[i].kf_v) + 
                                     //   owner->_leg_data[i].lqr_gain[6] * (owner->_leg_data[i].x_gain - owner->_leg_data[i].x) + 
                                     //   owner->_leg_data[i].lqr_gain[7] * (owner->_leg_data[i].d_x_gain - owner->_leg_data[i].dx) + 
                                       owner->_leg_data[i].lqr_gain[8] * (0 - owner->_leg_data[i].gamma) + 
