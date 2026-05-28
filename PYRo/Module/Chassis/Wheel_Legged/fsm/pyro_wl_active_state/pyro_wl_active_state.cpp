@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-26 20:03:11
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-05-14 22:49:40
+ * @LastEditTime: 2026-05-28 04:02:51
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -66,6 +66,10 @@ void wl_chassis_t::fsm_active_t::on_execute(wl_chassis_t *owner)
     if(owner->_cmd->active_mode == wl_cmd_t::OVER_STEP_READY)
     {
         this->change_state(&_state_over_step_ready);
+    }
+    if(owner->_cmd->active_mode == wl_cmd_t::OVER_STEP_RESET)
+    {
+        this->change_state(&_state_over_step_reset);
     }
     if(owner->_cmd->active_mode == wl_cmd_t::CONTROL)
     {

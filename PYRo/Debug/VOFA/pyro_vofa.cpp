@@ -123,18 +123,18 @@ void vofa_drv_t::thread()
     // add_data(&infantry2_chassis_ptr->a_forward);
     // add_data(&infantry2_chassis_ptr->g_yaw);
     /* force pid */
-    // add_data(&infantry2_chassis_ptr->_leg_data[0].F[0]);
-    // add_data(&infantry2_chassis_ptr->_leg_data[1].F[0]);
-    // add_data(&infantry2_chassis_ptr->_leg_data[0].l);
-    // add_data(&infantry2_chassis_ptr->_leg_data[1].l);
-    // add_data(&infantry2_chassis_ptr->_leg_data[0].ref_l);
-    // add_data(&infantry2_chassis_ptr->_leg_data[1].ref_l);
-    // add_data(&infantry2_chassis_ptr->_leg_data[0].d_l);
-    // add_data(&infantry2_chassis_ptr->_leg_data[1].d_l);
-    // add_data(&infantry2_chassis_ptr->_leg_data[0].ref_d_l);
-    // add_data(&infantry2_chassis_ptr->_leg_data[1].ref_d_l);
-    // add_data(&infantry2_chassis_ptr->_leg_data[0].P);
-    // add_data(&infantry2_chassis_ptr->_leg_data[1].P);
+    add_data(&infantry2_chassis_ptr->_leg_data[0].F[0]);
+    add_data(&infantry2_chassis_ptr->_leg_data[1].F[0]);
+    add_data(&infantry2_chassis_ptr->_leg_data[0].l);
+    add_data(&infantry2_chassis_ptr->_leg_data[1].l);
+    add_data(&infantry2_chassis_ptr->_leg_data[0].ref_l);
+    add_data(&infantry2_chassis_ptr->_leg_data[1].ref_l);
+    add_data(&infantry2_chassis_ptr->_leg_data[0].d_l);
+    add_data(&infantry2_chassis_ptr->_leg_data[1].d_l);
+    add_data(&infantry2_chassis_ptr->_leg_data[0].ref_d_l);
+    add_data(&infantry2_chassis_ptr->_leg_data[1].ref_d_l);
+    add_data(&infantry2_chassis_ptr->_leg_data[0].P);
+    add_data(&infantry2_chassis_ptr->_leg_data[1].P);
     /* lqr data */
     // add_data(&infantry2_chassis_ptr->_leg_data[0].kf_x);
     // add_data(&infantry2_chassis_ptr->_leg_data[1].kf_x);
@@ -160,26 +160,26 @@ void vofa_drv_t::thread()
     // add_data(&infantry2_chassis_ptr->_leg_data[1].l);
 
     // vmc data
-    add_data(&infantry2_chassis_ptr->_leg_data[0].l);
-    add_data(&infantry2_chassis_ptr->_leg_data[1].l);
-    add_data(&infantry2_chassis_ptr->_leg_data[0].d_l);
-    add_data(&infantry2_chassis_ptr->_leg_data[1].d_l);
-    add_data(&infantry2_chassis_ptr->_leg_data[0].alpha);
-    add_data(&infantry2_chassis_ptr->_leg_data[1].alpha);
-    add_data(&infantry2_chassis_ptr->_leg_data[0].d_alpha);
-    add_data(&infantry2_chassis_ptr->_leg_data[1].d_alpha);
-    add_data(&infantry2_chassis_ptr->_leg_data[0].F[0]);
-    add_data(&infantry2_chassis_ptr->_leg_data[1].F[0]);
-    add_data(&infantry2_chassis_ptr->_leg_data[0].F[1]);
-    add_data(&infantry2_chassis_ptr->_leg_data[1].F[1]);
-    add_data(&infantry2_chassis_ptr->_leg_data[0].theta1);
-    add_data(&infantry2_chassis_ptr->_leg_data[1].theta1);
-    add_data(&infantry2_chassis_ptr->_leg_data[0].theta2);
-    add_data(&infantry2_chassis_ptr->_leg_data[1].theta2);
-    add_data(&infantry2_chassis_ptr->_leg_data[0].d_theta1);
-    add_data(&infantry2_chassis_ptr->_leg_data[1].d_theta1);
-    add_data(&infantry2_chassis_ptr->_leg_data[0].d_theta2);
-    add_data(&infantry2_chassis_ptr->_leg_data[1].d_theta2);
+    // add_data(&infantry2_chassis_ptr->_leg_data[0].l);
+    // add_data(&infantry2_chassis_ptr->_leg_data[1].l);
+    // add_data(&infantry2_chassis_ptr->_leg_data[0].d_l);
+    // add_data(&infantry2_chassis_ptr->_leg_data[1].d_l);
+    // add_data(&infantry2_chassis_ptr->_leg_data[0].alpha);
+    // add_data(&infantry2_chassis_ptr->_leg_data[1].alpha);
+    // add_data(&infantry2_chassis_ptr->_leg_data[0].d_alpha);
+    // add_data(&infantry2_chassis_ptr->_leg_data[1].d_alpha);
+    // add_data(&infantry2_chassis_ptr->_leg_data[0].F[0]);
+    // add_data(&infantry2_chassis_ptr->_leg_data[1].F[0]);
+    // add_data(&infantry2_chassis_ptr->_leg_data[0].F[1]);
+    // add_data(&infantry2_chassis_ptr->_leg_data[1].F[1]);
+    // add_data(&infantry2_chassis_ptr->_leg_data[0].theta1);
+    // add_data(&infantry2_chassis_ptr->_leg_data[1].theta1);
+    // add_data(&infantry2_chassis_ptr->_leg_data[0].theta2);
+    // add_data(&infantry2_chassis_ptr->_leg_data[1].theta2);
+    // add_data(&infantry2_chassis_ptr->_leg_data[0].d_theta1);
+    // add_data(&infantry2_chassis_ptr->_leg_data[1].d_theta1);
+    // add_data(&infantry2_chassis_ptr->_leg_data[0].d_theta2);
+    // add_data(&infantry2_chassis_ptr->_leg_data[1].d_theta2);
 
     // power control
     // add_data(&powermeter_data.current);

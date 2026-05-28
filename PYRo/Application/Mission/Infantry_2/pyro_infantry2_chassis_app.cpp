@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-26 20:18:33
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-05-27 20:32:54
+ * @LastEditTime: 2026-05-28 07:42:21
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -39,7 +39,7 @@ using namespace pyro;
 #endif
 
 // #define USE_LEG_CTRL
-// #define USE_DIVERGENCY_DETECT
+#define USE_DIVERGENCY_DETECT
 #if defined (USE_DIVERGENCY_DETECT)
 #define DIVERGENCY_RESET_CNT 4000
 #define MAX_GAMMA_BIAS PI/2
@@ -117,6 +117,7 @@ void normal_mode(void const *rc_ctrl);
 void reverse_mode(void const *rc_ctrl);
 void over_step_mode(void const *rc_ctrl);
 void over_step_ready_mode(void const *rc_ctrl);
+void over_step_reset_mode(void const *rc_ctrl);
 void control_mode(void const *rc_ctrl);
 void spin_mode(void const *rc_ctrl);
 #if defined(USE_DIVERGENCY_DETECT)
@@ -232,19 +233,33 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
     }
     else if(cmd.mode == cmd::STEP_CLIMB)
     {
+        static uint32_t over_step_cnt = 0;
+        static uint32_t delay_cnt = 0;
+        static uint8_t over_step_flag = 0;
         if(last_cmd.mode == cmd::ACTIVE)
         {
             static float temp_yaw;
             infantry2_chassis_ptr->get_cur_ins_yaw(&temp_yaw); 
             infantry2_chassis_cmd_ptr->yaw = temp_yaw;
+                over_step_flag = 0;
+                delay_cnt = 0;
+                over_step_cnt = 500;
+                infantry2_chassis_ptr->clear_status_flag(wl_cmd_t::OVER_STEP_RESET);
+                infantry2_chassis_ptr->clear_status_flag(wl_cmd_t::OVER_STEP);
         }
         infantry2_chassis_cmd_ptr->yaw += cmd.yaw_vel;
-        infantry2_chassis_cmd_ptr->l_leg = 0.33f;
-        infantry2_chassis_cmd_ptr->r_leg = 0.33f;
-        constexpr float TEST_FORCE = -22.0f;
+        if(delay_cnt < 500)
+        {
+            delay_cnt++;
+        }
+        else
+        {
+            infantry2_chassis_cmd_ptr->l_leg = 0.35f;
+            infantry2_chassis_cmd_ptr->r_leg = 0.35f;
+        }
+        constexpr float TEST_FORCE = -20.0f;
         constexpr float TEST_ANGLE = 2.0f;
         constexpr float TEST_d_ANGLE = 0.5f;
-        static uint8_t over_step_flag = 0;
         static float temp_torque[2] = {0.0f, 0.0f};
         static float temp_angle[2] = {0.0f, 0.0f};
         static float temp_d_angle[2] = {0.0f, 0.0f};
@@ -256,11 +271,19 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
         //     ((temp_torque[0] < TEST_FORCE) && (abs(temp_d_angle[0]) < TEST_d_ANGLE) && (temp_torque[1] < TEST_FORCE) && (abs(temp_d_angle[1]) < TEST_d_ANGLE)))
         // if((0 == infantry2_chassis_ptr->get_status_flag(wl_cmd_t::OVER_STEP)) &&
         //     ((temp_angle[0] > TEST_ANGLE) || (temp_angle[1] > TEST_ANGLE)))
-        if((0 == infantry2_chassis_ptr->get_status_flag(wl_cmd_t::OVER_STEP)) &&
-            ((temp_torque[0] < TEST_FORCE) || (temp_torque[1] < TEST_FORCE)) &&
-            ((abs(temp_d_angle[0]) < TEST_d_ANGLE) || (abs(temp_d_angle[1]) < TEST_d_ANGLE)))
+        if(over_step_cnt == 0)
         {
-            over_step_flag = 1;
+            if((0 == infantry2_chassis_ptr->get_status_flag(wl_cmd_t::OVER_STEP)) &&
+                ((temp_torque[0] < TEST_FORCE) || (temp_torque[1] < TEST_FORCE)) 
+                // ((temp_torque[0] < TEST_FORCE) || (temp_torque[1] < TEST_FORCE)) &&
+                // ((abs(temp_d_angle[0]) < TEST_d_ANGLE) || (abs(temp_d_angle[1]) < TEST_d_ANGLE)))
+            {
+
+                over_step_flag = 1;
+            }
+        }
+        else {
+            over_step_cnt--;
         }
         if(0 == over_step_flag)
         {
@@ -274,12 +297,15 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
             }
             else 
             {
-                ready_mode(rc_ctrl);
+                over_step_reset_mode(rc_ctrl);
             }
             
-            if(1 == infantry2_chassis_ptr->get_status_flag(wl_cmd_t::READY))
+            if(1 == infantry2_chassis_ptr->get_status_flag(wl_cmd_t::OVER_STEP_RESET))
             {
                 over_step_flag = 0;
+                delay_cnt = 0;
+                over_step_cnt = 500;
+                infantry2_chassis_ptr->clear_status_flag(wl_cmd_t::OVER_STEP_RESET);
                 infantry2_chassis_ptr->clear_status_flag(wl_cmd_t::OVER_STEP);
             }
         }
@@ -540,6 +566,12 @@ void over_step_mode(void const *rc_ctrl)
    static auto *p_ctrl =
             static_cast<dr16_drv_t::dr16_ctrl_t const *>(rc_ctrl);  
     infantry2_chassis_cmd_ptr->active_mode = wl_cmd_t::OVER_STEP;
+}
+void over_step_reset_mode(void const *rc_ctrl)
+{
+   static auto *p_ctrl =
+            static_cast<dr16_drv_t::dr16_ctrl_t const *>(rc_ctrl);  
+    infantry2_chassis_cmd_ptr->active_mode = wl_cmd_t::OVER_STEP_RESET;
 }
 void over_step_ready_mode(void const *rc_ctrl)
 {

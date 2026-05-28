@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-28 13:11:52
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-05-27 04:01:21
+ * @LastEditTime: 2026-05-28 07:25:03
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -65,7 +65,7 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
        than threadhold, it means the leg is in the air, which may cause 
        instability. */
     calc_support_force(owner);
-    constexpr uint8_t AERIAL_DEBOUNCE = 150;
+    constexpr uint8_t AERIAL_DEBOUNCE = 30;
     constexpr uint8_t LANDING_DEBOUNCE = 10;
     constexpr float TAKEOFF_FORCE_THRESHOLD = -80.0f;
     constexpr float LANDING_COMPRESSION_THRESHOLD = 0.1f;
@@ -117,7 +117,7 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
             owner->_flag.aerial_cnt = 0;
         }
     }
-    owner->_flag.is_aerial = 0;
+    // owner->_flag.is_aerial = 0;
     
 
     /* Calculate Tw turn */

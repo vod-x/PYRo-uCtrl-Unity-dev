@@ -148,8 +148,9 @@ struct wl_cmd_t final : public cmd_base_t
         REVERSE = 3,
         OVER_STEP = 4,
         OVER_STEP_READY = 5,
-        CONTROL = 6,
-        SPIN = 7
+        OVER_STEP_RESET = 6,
+        CONTROL = 7,
+        SPIN = 8
     }active_mode, last_active_mode;
 
     /* Construct function, set zero values */
@@ -392,6 +393,7 @@ private:
       uint8_t test = 0;
       uint8_t reverse = 0;
       uint8_t over_step = 0;
+      uint8_t over_step_reset = 0;
       uint8_t control = 0;
    }_active_mode_flag;
 
@@ -439,6 +441,14 @@ private:
             void execute(wl_chassis_t *owner) override;
             void exit(wl_chassis_t *owner) override;
         }_state_over_step_ready;
+
+        class state_over_step_reset_t : public state_t<wl_chassis_t>
+        {
+            void enter(wl_chassis_t *owner) override;
+            void execute(wl_chassis_t *owner) override;
+            void exit(wl_chassis_t *owner) override;
+            void calc_target_value(wl_chassis_t *owner);
+        }_state_over_step_reset;
         class state_control_t : public state_t<wl_chassis_t>
         {
             void enter(wl_chassis_t *owner) override;

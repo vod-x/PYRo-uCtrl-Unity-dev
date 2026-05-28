@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-28 15:55:50
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-05-20 15:21:21
+ * @LastEditTime: 2026-05-28 06:20:05
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -11,8 +11,8 @@
 #include "pyro_algo_common.h"
 
 #define LENGTH_SPEED (0.1f/200.0f)
-#define ANGLE_SPEED (PI/400.0f)
-#define TARGET_ANGLE (2.15f)
+#define ANGLE_SPEED (PI/800.0f)
+#define TARGET_ANGLE (2.47f)
 #define TEMP_ANGLE (-2.85f)
 #define TEST_ANGLE (PI/2.0f + 0.5f)
 #define TARGET_LENGTH 0.17f
@@ -54,7 +54,6 @@ void wl_chassis_t::fsm_active_t::state_over_step_t::enter(wl_chassis_t *owner)
     {
         state_flag[i] = 0;
     }
-    owner->_active_mode_flag.ready = 0;
 }
 
 void wl_chassis_t::fsm_active_t::state_over_step_t::execute(wl_chassis_t *owner)
@@ -161,7 +160,7 @@ void wl_chassis_t::fsm_active_t::state_over_step_t::execute(wl_chassis_t *owner)
     {
         static uint32_t cnt = 0;
         cnt++;
-        if(cnt > 50)
+        if(cnt > 1000)
         {
             cnt = 0;
              owner->_active_mode_flag.over_step = 1;

@@ -2,7 +2,7 @@
  * @Author: Vod vod0575@outlook
  * @Date: 2026-02-06 15:27:37
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-05-23 03:42:32
+ * @LastEditTime: 2026-05-28 04:35:57
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -130,6 +130,8 @@ uint8_t wl_chassis_t::get_status_flag(wl_cmd_t::active_mode_t mode)
             return _active_mode_flag.reverse;
         case wl_cmd_t::OVER_STEP:
             return _active_mode_flag.over_step;
+        case wl_cmd_t::OVER_STEP_RESET:
+            return _active_mode_flag.over_step_reset;
         case wl_cmd_t::NORMAL:
             return _active_mode_flag.normal;
         case wl_cmd_t::CONTROL:
@@ -154,6 +156,9 @@ status_t wl_chassis_t::clear_status_flag(wl_cmd_t::active_mode_t mode)
             break;
         case wl_cmd_t::OVER_STEP:
             _active_mode_flag.over_step = 0;
+            break;
+        case wl_cmd_t::OVER_STEP_RESET:
+            _active_mode_flag.over_step_reset = 0;
             break;
         case wl_cmd_t::NORMAL:
             _active_mode_flag.normal = 0;

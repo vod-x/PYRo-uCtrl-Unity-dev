@@ -12,6 +12,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
         PYRo/Module/Chassis/Wheel_Legged/fsm/pyro_wl_active_state/pyro_wl_reverse_state.cpp
         PYRo/Module/Chassis/Wheel_Legged/fsm/pyro_wl_active_state/pyro_wl_over_step_state.cpp
         PYRo/Module/Chassis/Wheel_Legged/fsm/pyro_wl_active_state/pyro_wl_over_step_ready_state.cpp
+        PYRo/Module/Chassis/Wheel_Legged/fsm/pyro_wl_active_state/pyro_wl_over_step_reset_state.cpp
         PYRo/Module/Chassis/Wheel_Legged/fsm/pyro_wl_active_state/pyro_wl_control_state.cpp
         PYRo/Module/Chassis/Wheel_Legged/fsm/pyro_wl_active_state/pyro_wl_spin_state.cpp
     )
