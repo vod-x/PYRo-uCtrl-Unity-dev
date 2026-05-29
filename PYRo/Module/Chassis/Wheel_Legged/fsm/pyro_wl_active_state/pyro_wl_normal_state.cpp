@@ -73,7 +73,7 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
     calc_support_force(owner);
     constexpr uint8_t AERIAL_DEBOUNCE = 30;
     constexpr uint8_t LANDING_DEBOUNCE = 10;
-    constexpr float TAKEOFF_FORCE_THRESHOLD = -80.0f;
+    constexpr float TAKEOFF_FORCE_THRESHOLD = -100.0f;
     constexpr float LANDING_COMPRESSION_THRESHOLD = 0.1f;
     constexpr float LANDING_UPWARD_ACC_THRESHOLD = 3.0f;
     if(!owner->_flag.is_aerial)

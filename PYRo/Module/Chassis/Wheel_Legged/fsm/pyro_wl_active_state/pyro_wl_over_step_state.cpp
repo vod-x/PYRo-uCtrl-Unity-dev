@@ -160,7 +160,7 @@ void wl_chassis_t::fsm_active_t::state_over_step_t::execute(wl_chassis_t *owner)
     {
         static uint32_t cnt = 0;
         cnt++;
-        if(cnt > 1000)
+        if(cnt > 100)
         {
             cnt = 0;
              owner->_active_mode_flag.over_step = 1;

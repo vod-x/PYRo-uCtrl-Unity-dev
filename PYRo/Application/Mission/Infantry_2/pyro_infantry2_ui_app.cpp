@@ -5,6 +5,7 @@
 #include "ui-renderer-srvc.h"
 #include "referee-hud-ui.h"
 #include "pyro_infantry2_chassis_intf.h"
+#include "pyro_referee.h"
 #include"usart.h"
 
 
@@ -15,6 +16,8 @@ extern wl_chassis_t *infantry2_chassis_ptr;
 extern GimbalToChassisComm gimbal_rx;
 extern ChassisToGimbalComm gimbal_tx;
 extern cmd_t cmd, last_cmd;
+extern referee_drv_t *referee_drv;
+
 status_t ui_tread_init(void* argument);
 
 __attribute__((section(".dma_heap"))) static uint8_t refereeUiTxBuffer[512]={0};
@@ -52,7 +55,9 @@ void refereeUiRendererTask(void *argument) {
 
 
 void hudProducerTask(void *argument) {
+    vTaskDelay(1500);
     hudUi.reset(renderer);
+    renderer.setSenderId(referee_drv_t::get_instance()->get_data().robot_status.robot_id);
 
     for (;;) {
         RefereeHudInput input {};
@@ -81,8 +86,8 @@ void hudProducerTask(void *argument) {
         infantry2_chassis_ptr->get_cur_length(&r_leg, &l_leg);
         
   
-        input.leftLegThighAngleDeg =90.0f -l_angle * 180.0f / PI;
-        input.rightLegThighAngleDeg =90.0f- r_angle * 180.0f / PI;
+        input.leftLegHipWheelAngleDeg =l_angle * 180.0f / PI;
+        input.rightLegHipWheelAngleDeg =r_angle * 180.0f / PI;
         
         input.leftLegHipWheelDistance = l_leg / 0.21f;
         input.rightLegHipWheelDistance = r_leg / 0.21f;

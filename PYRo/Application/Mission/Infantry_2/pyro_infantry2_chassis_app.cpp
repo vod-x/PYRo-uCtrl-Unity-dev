@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-26 20:18:33
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-05-29 02:50:16
+ * @LastEditTime: 2026-05-29 08:11:28
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -20,8 +20,8 @@ namespace pyro
 {
 
 const float control_acc = 0.003f;
-const float control_max_velocity = 2.0f;
-const float control_leg_length[3] = {0.18f,0.22f,   0.36f};
+const float control_max_velocity = 1.5f;
+const float control_leg_length[3] = {0.22f,0.28f,   0.36f};
 float test_buffer;
 float test_limit;
 extern referee_drv_t *referee_drv;
@@ -46,7 +46,7 @@ using namespace pyro;
 // #define USE_LEG_CTRL
 #define USE_DIVERGENCY_DETECT
 #if defined (USE_DIVERGENCY_DETECT)
-#define DIVERGENCY_RESET_CNT 4000
+#define DIVERGENCY_RESET_CNT 1000
 #define MAX_GAMMA_BIAS PI/2
 #define MAX_BETA_BIAS PI/2
 #define MAX_X_BIAS 103.0f
@@ -128,6 +128,11 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
     {
         cmd.mode = cmd_t::SPIN;
     }
+
+        if(1 == gimbal_rx.msg.selfRescue)
+        {
+            cmd.mode = cmd_t::REVERSE;
+        }
     cmd.leg_length_mode = gimbal_rx.msg.legLength;
 #endif
 #if defined(USE_DR16)
@@ -168,13 +173,23 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
         else
         {
             normal_mode(rc_ctrl);
+#if defined(USE_DIVERGENCY_DETECT)
+            float r_beta_bias, l_beta_bias, gamma_bias, r_x_bias, l_x_bias;
+            infantry2_chassis_ptr->get_cur_x_bias(&r_x_bias, &l_x_bias);
+            infantry2_chassis_ptr->get_cur_beta_bias(&r_beta_bias, &l_beta_bias);
+            infantry2_chassis_ptr->get_cur_gamma_bias(&gamma_bias);
+            if(divergency_detect(gamma_bias, r_beta_bias, l_beta_bias, r_x_bias, l_x_bias))
+            {
+                passive_mode(rc_ctrl);
+            }
+#endif
         }
     }
     else if(cmd.mode == cmd_t::SPIN) 
     { 
 #if !defined (USE_LEG_CTRL)
-        infantry2_chassis_cmd_ptr->l_leg = control_leg_length[cmd.leg_length_mode];
-        infantry2_chassis_cmd_ptr->r_leg = control_leg_length[cmd.leg_length_mode];
+        infantry2_chassis_cmd_ptr->l_leg = 0.18f;
+        infantry2_chassis_cmd_ptr->r_leg = 0.18f;
 #endif
         infantry2_chassis_cmd_ptr->mode = pyro::cmd_base_t::mode_t::ACTIVE;
         
@@ -251,13 +266,23 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
             
             if(1 == infantry2_chassis_ptr->get_status_flag(wl_cmd_t::OVER_STEP_RESET))
             {
-                over_step_flag = 0;
-                delay_cnt = 0;
-                over_step_cnt = 500;
-                infantry2_chassis_ptr->clear_status_flag(wl_cmd_t::OVER_STEP_RESET);
-                infantry2_chassis_ptr->clear_status_flag(wl_cmd_t::OVER_STEP);
+                // over_step_flag = 0;
+                // delay_cnt = 0;
+                // over_step_cnt = 500;
+                // infantry2_chassis_ptr->clear_status_flag(wl_cmd_t::OVER_STEP_RESET);
+                // infantry2_chassis_ptr->clear_status_flag(wl_cmd_t::OVER_STEP);
+                infantry2_chassis_cmd_ptr->l_leg = 0.18f;
+                infantry2_chassis_cmd_ptr->r_leg = 0.18f;
+                over_step_ready_mode(rc_ctrl);
             }
         }
+    }
+    else if(cmd.mode == cmd_t::REVERSE)
+    {
+        infantry2_chassis_cmd_ptr->mode = pyro::cmd_base_t::mode_t::ACTIVE;
+        infantry2_chassis_cmd_ptr->l_leg = 0.35f;
+        infantry2_chassis_cmd_ptr->r_leg = 0.35f;
+        reverse_mode(rc_ctrl);
     }
 #endif
 
@@ -347,20 +372,11 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
     
     }
 #endif
+#if defined(USE_LEG_CTRL)
     infantry2_chassis_cmd_ptr->r_leg = fp32_constrain(
        infantry2_chassis_cmd_ptr->r_leg, 0.18f, 0.37f);
     infantry2_chassis_cmd_ptr->l_leg = fp32_constrain(
        infantry2_chassis_cmd_ptr->l_leg, 0.18f, 0.37f);
-#if defined(USE_DIVERGENCY_DETECT)
-    float r_beta_bias, l_beta_bias, gamma_bias, r_x_bias, l_x_bias;
-    infantry2_chassis_ptr->get_cur_x_bias(&r_x_bias, &l_x_bias);
-    infantry2_chassis_ptr->get_cur_beta_bias(&r_beta_bias, &l_beta_bias);
-    infantry2_chassis_ptr->get_cur_gamma_bias(&gamma_bias);
-    if(divergency_detect(gamma_bias, r_beta_bias, l_beta_bias, r_x_bias, l_x_bias))
-    {
-        passive_mode(rc_ctrl);
-    }
-    
 #endif
     infantry2_chassis_cmd_ptr->last_active_mode = infantry2_chassis_cmd_ptr->active_mode;
 }
@@ -376,7 +392,7 @@ void infantry2_chassis_main_tread(void *argument)
         gimbal_tx.msg.shooter17mmBarrelHeat = referee_drv->get_data().power_heat.shooter_17mm_barrel_heat;
         gimbal_tx.msg.heatLimit = referee_drv->get_data().robot_status.shooter_barrel_heat_limit;
         gimbal_tx.msg.coolingRate = referee_drv->get_data().robot_status.shooter_barrel_cooling_value;
-        gimbal_tx.msg.robotId = referee_drv->get_robot_id();
+        gimbal_tx.msg.robotId = referee_drv->get_data().robot_status.robot_id;
         gimbal_tx.msg.chassisReady = infantry2_chassis_ptr->get_status_flag(wl_cmd_t::READY);
         gimbal_tx.msg.chassisYawSpeed = (int8_t)(infantry2_chassis_cmd_ptr->yaw * 100.0f);
        
@@ -436,11 +452,6 @@ void spin_mode(void const *rc_ctrl)
     static auto *p_ctrl =
             static_cast<dr16_drv_t::dr16_ctrl_t const *>(rc_ctrl);  
     
-    
-    infantry2_chassis_cmd_ptr->l_leg = control_leg_length[cmd.leg_length_mode];
-    infantry2_chassis_cmd_ptr->r_leg = control_leg_length[cmd.leg_length_mode];
-
-   
     infantry2_chassis_cmd_ptr->mode = pyro::cmd_base_t::mode_t::ACTIVE;
     
   

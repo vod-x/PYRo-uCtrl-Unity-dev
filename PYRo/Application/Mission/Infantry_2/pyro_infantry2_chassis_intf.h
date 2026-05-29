@@ -2,7 +2,7 @@
  * @Author: vod-x vod_x@outlook.com
  * @Date: 2026-05-29 02:30:45
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-05-29 02:49:28
+ * @LastEditTime: 2026-05-29 04:33:49
  * @FilePath: \Wheel-Legged-Robot\embedded_system\PYRo\Application\Mission\Infantry_2\pyro_infantry2_chassis_intf.cpp
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -66,7 +66,8 @@ struct cmd_t
         PASSIVE = 0x00,
         ACTIVE = 0x01,
         SPIN = 0x02,
-         STEP_CLIMB= 0x03
+        STEP_CLIMB= 0x03,
+        REVERSE = 0x04,
     }mode;
     uint8_t leg_length_mode;
 };
