@@ -8,7 +8,7 @@ extern referee_drv_t *referee_drv;
 pid_t wheel_turn_pid[2] = {
     pid_t(5.0, 0.0f, 0.0f, 2.0f, 20.0f), 
     pid_t(5.0, 0.0f, 0.0f, 2.0f, 20.0f)};
- const float SPIN_SPEED =8.0f   ;
+//  const float SPIN_SPEED =8.0f   ;
 void wl_chassis_t::fsm_active_t::state_spin_t::enter(wl_chassis_t *owner)
 {
    
@@ -34,16 +34,32 @@ void wl_chassis_t::fsm_active_t::state_spin_t::execute(wl_chassis_t *owner)
 
     // owner->_leg_data[wl_chassis_t::L].ref_l = owner->_cmd->l_leg / cosf(owner->_leg_data[wl_chassis_t::L].gamma);
     // owner->_leg_data[wl_chassis_t::R].ref_l = owner->_cmd->r_leg / cosf(owner->_leg_data[wl_chassis_t::R].gamma);
-     /* Calculate turn torque */
-    owner->_leg_data[wl_chassis_t::R].T_w_turn =  wheel_turn_pid[wl_chassis_t::R].calculate(SPIN_SPEED , owner->g_yaw); 
-    owner->_leg_data[wl_chassis_t::L].T_w_turn =  wheel_turn_pid[wl_chassis_t::L].calculate(SPIN_SPEED , owner->g_yaw); 
+
+    float cap_volt = owner->_power_data.voltage;
+    if(cap_volt < 5.0f) {
+        cap_volt = 18.0f; 
+    }
+
+    
+    float dynamic_spin_speed = 3.0f + (cap_volt - 18.0f) * (10.0f - 3.0f) / (27.0f - 20.0f);
+    
+ 
+    dynamic_spin_speed = fp32_constrain(dynamic_spin_speed, 3.0f, 10.0f);
+
+    owner->_leg_data[wl_chassis_t::R].T_w_turn =  wheel_turn_pid[wl_chassis_t::R].calculate(dynamic_spin_speed , owner->g_yaw); 
+    owner->_leg_data[wl_chassis_t::L].T_w_turn =  wheel_turn_pid[wl_chassis_t::L].calculate(dynamic_spin_speed , owner->g_yaw);
+   
+   
+    // /* Calculate turn torque */
+    // owner->_leg_data[wl_chassis_t::R].T_w_turn =  wheel_turn_pid[wl_chassis_t::R].calculate(SPIN_SPEED , owner->g_yaw); 
+    // owner->_leg_data[wl_chassis_t::L].T_w_turn =  wheel_turn_pid[wl_chassis_t::L].calculate(SPIN_SPEED , owner->g_yaw); 
 
     /* Calculate roll gain to make sure roll angle equal 0 */
     owner->_delta_mea = owner->_leg_data[wl_chassis_t::R].alpha 
                             - owner->_leg_data[wl_chassis_t::L].alpha;
     owner->_d_delta_mea = owner->_leg_data[wl_chassis_t::R].d_alpha 
                             - owner->_leg_data[wl_chassis_t::L].d_alpha;
-    owner->_d_delta_ref = owner->_d_delta_pid->calculate(
+    owner->_d_delta_ref = owner->_delta_pid->calculate(
                                 0.0f, owner->_delta_mea);
 
     owner->T_l_gain = owner->_d_delta_pid->calculate(owner->_d_delta_ref,
@@ -181,26 +197,52 @@ owner->roll_gain = 0.0f;
         // owner->_leg_data[wl_chassis_t::R].T_w = owner->_leg_data[wl_chassis_t::R].T_w_balance + owner->_leg_data[wl_chassis_t::R].T_w_move ;
         // owner->_leg_data[wl_chassis_t::L].T_w = owner->_leg_data[wl_chassis_t::L].T_w_balance + owner->_leg_data[wl_chassis_t::L].T_w_move ;
         // owner->_power_ctrl.set_max_power(1000.0f);
+
+// owner->_power_ctrl.set_max_power(referee_power * 0.5f);
+       
         float T[2];
         wl_wheel_cmd_t cmd[2];
         cmd[wl_chassis_t::R].tau_balance = -owner->_leg_data[wl_chassis_t::R].T_w_balance;
         cmd[wl_chassis_t::L].tau_balance = owner->_leg_data[wl_chassis_t::L].T_w_balance;
+        
+       
         cmd[wl_chassis_t::R].tau_motion = -owner->_leg_data[wl_chassis_t::R].T_w_move + owner->_leg_data[wl_chassis_t::R].T_w_turn;
         cmd[wl_chassis_t::L].tau_motion = owner->_leg_data[wl_chassis_t::L].T_w_move + owner->_leg_data[wl_chassis_t::L].T_w_turn;
-        cmd[wl_chassis_t::R].omega = owner->_leg_data[wl_chassis_t::R].w;
-        cmd[wl_chassis_t::L].omega = owner->_leg_data[wl_chassis_t::L].w;
+        
+     
+        cmd[wl_chassis_t::R].omega = -owner->_leg_data[wl_chassis_t::R].w;
+        cmd[wl_chassis_t::L].omega = -owner->_leg_data[wl_chassis_t::L].w;
+
+       
+        float referee_power = referee_drv->get_data().robot_status.chassis_power_limit;
+        
+        
+       
+        if(cap_volt < 5.0f) {
+            cap_volt = 20.0f; 
+        }
+
+        owner->_power_ctrl.update_energy_loop(
+            referee_power, 
+            cap_volt,    
+            20.0f         
+        );
+
+       
         owner->_power_ctrl.update(cmd, T); 
-        owner->_power_ctrl.set_max_power(referee_drv->get_data().robot_status.chassis_power_limit);
+
         for(uint8_t i = 0; i < 2; i++)
         {
             owner->_leg_data[i].T_w_out = T[i];
         }
-        owner->_leg_data[wl_chassis_t::R].predict_power = owner->_power_ctrl.predict_power(wl_chassis_t::R, -owner->_leg_data[wl_chassis_t::R].T_w, owner->_leg_data[wl_chassis_t::R].w);
-        owner->_leg_data[wl_chassis_t::L].predict_power = owner->_power_ctrl.predict_power(wl_chassis_t::L, owner->_leg_data[wl_chassis_t::L].T_w, owner->_leg_data[wl_chassis_t::L].w);
-        // owner->_wheel_drv[wl_chassis_t::R]->send_torque(fp32_constrain(owner->_leg_data[wl_chassis_t::R].T_w_out / owner->_reduction_ratio /0.3f * (3591.0f/187.0f), -20.0f, 20.0f));
-        // owner->_wheel_drv[wl_chassis_t::L]->send_torque(fp32_constrain(owner->_leg_data[wl_chassis_t::L].T_w_out / owner->_reduction_ratio /0.3f * (3591.0f/187.0f), -20.0f, 20.0f));
-        owner->_wheel_drv[wl_chassis_t::R]->send_torque(fp32_constrain(-owner->_leg_data[wl_chassis_t::R].T_w / owner->_reduction_ratio /0.3f * (3591.0f/187.0f), -20.0f, 20.0f));
-        owner->_wheel_drv[wl_chassis_t::L]->send_torque(fp32_constrain(owner->_leg_data[wl_chassis_t::L].T_w / owner->_reduction_ratio /0.3f * (3591.0f/187.0f), -20.0f, 20.0f));
+
+      
+        owner->_leg_data[wl_chassis_t::R].predict_power = owner->_power_ctrl.predict_power(wl_chassis_t::R, owner->_leg_data[wl_chassis_t::R].T_w_out, -owner->_leg_data[wl_chassis_t::R].w);
+        owner->_leg_data[wl_chassis_t::L].predict_power = owner->_power_ctrl.predict_power(wl_chassis_t::L, owner->_leg_data[wl_chassis_t::L].T_w_out, -owner->_leg_data[wl_chassis_t::L].w);
+
+       
+        owner->_wheel_drv[wl_chassis_t::R]->send_torque(fp32_constrain(owner->_leg_data[wl_chassis_t::R].T_w_out / owner->_reduction_ratio /0.3f * (3591.0f/187.0f), -20.0f, 20.0f));
+        owner->_wheel_drv[wl_chassis_t::L]->send_torque(fp32_constrain(owner->_leg_data[wl_chassis_t::L].T_w_out / owner->_reduction_ratio /0.3f * (3591.0f/187.0f), -20.0f, 20.0f));
     
     owner->_motor_drv[wl_chassis_t::RF]->send_torque(
                         -owner->_leg_data[wl_chassis_t::R].T[0]);

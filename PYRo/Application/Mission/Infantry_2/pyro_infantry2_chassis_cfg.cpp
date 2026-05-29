@@ -230,14 +230,14 @@ wl_chassis_cfg_t infantry2_chassis_cfg = {
         .max_out = 40.0f
     },
     .delta_pid_cfg = {
-          .kp = 3.0f,
+          .kp = 4.0f,
           .ki = 0.0f,
           .kd = 0.0f,
           .integral_limit = 0.0f,
           .max_out = 20.0f,
      },
     .d_delta_pid_cfg = {
-          .kp = 2.0f,
+          .kp = 3.0f,
           .ki = 0.0f,
           .kd = 0.0f,
           .integral_limit = 0.0f,
@@ -345,5 +345,14 @@ wl_chassis_cfg_t infantry2_chassis_cfg = {
         .cap_max_bonus = 0.0f,
     },
 #elif ROBOT_ID == INFANTRY2_ID
+ .power_ctrl_cfg = {
+        .k1 = {0.115f, 0.167f},
+        .k2 = {2.44f, 2.26f},
+        .k3 = {2.0f, 2.0f},
+        .energy_kp = 1.0f,
+        .energy_kd = 0.0f,
+        .min_max_power = 15.0f,
+        .cap_max_bonus = 120.0f,
+    },
 #endif
 };

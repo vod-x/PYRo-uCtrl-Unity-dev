@@ -86,8 +86,8 @@ void hudProducerTask(void *argument) {
         infantry2_chassis_ptr->get_cur_length(&r_leg, &l_leg);
         
   
-        input.leftLegHipWheelAngleDeg =l_angle * 180.0f / PI;
-        input.rightLegHipWheelAngleDeg =r_angle * 180.0f / PI;
+        input.leftLegHipWheelAngleDeg =180.0f-l_angle * 180.0f / PI;
+        input.rightLegHipWheelAngleDeg =180.0f-r_angle * 180.0f / PI;
         
         input.leftLegHipWheelDistance = l_leg / 0.21f;
         input.rightLegHipWheelDistance = r_leg / 0.21f;
