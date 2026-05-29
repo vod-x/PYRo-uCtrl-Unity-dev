@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-27 20:38:05
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-05-29 08:12:30
+ * @LastEditTime: 2026-05-30 00:44:42
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -147,6 +147,41 @@ wl_chassis_cfg_t infantry2_chassis_cfg = {
             .max_out = 20.0f,
         }
     },
+#if ROBOT_ID == INFANTRY1_ID
+    .F_pid_cfg = {
+        {
+            .kp = 70.0f,
+            .ki = 0.0f,
+            .kd = 0.0f,
+            .integral_limit = 50.0f,
+            .max_out = 200.0f,
+        },
+        {
+            .kp = 70.0f,
+            .ki = 0.0f,
+            .kd = 0.0f,
+            .integral_limit = 50.0f,
+            .max_out = 200.0f,
+        }
+    },
+
+    .d_F_pid_cfg = {
+        {
+            .kp = 200.0f,
+            .ki = 0.0f,
+            .kd = 0.0f,
+            .integral_limit = 0.0f,
+            .max_out = 200.0f,
+        },
+        {
+            .kp = 200.0f,
+            .ki = 0.0f,
+            .kd = 0.0f,
+            .integral_limit = 0.0f,
+            .max_out = 200.0f,
+        }
+    },
+#elif ROBOT_ID == INFANTRY2_ID
     .F_pid_cfg = {
         {
             .kp = 80.0f,
@@ -179,6 +214,7 @@ wl_chassis_cfg_t infantry2_chassis_cfg = {
             .max_out = 200.0f,
         }
     },
+#endif
     .yaw_pid_cfg = {
         .kp = 4.0f,
         .ki = 0.0f,

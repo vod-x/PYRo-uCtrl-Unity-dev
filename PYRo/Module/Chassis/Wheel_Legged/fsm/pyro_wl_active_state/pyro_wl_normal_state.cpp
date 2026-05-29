@@ -2,7 +2,7 @@
  * @Author: vod vod_x@outlook.com
  * @Date: 2026-02-28 13:11:52
  * @LastEditors: vod-x vod_x@outlook.com
- * @LastEditTime: 2026-05-29 02:15:27
+ * @LastEditTime: 2026-05-30 01:04:22
  * @Description: 
  * 
  * Copyright (c) 2026 by PeiYangRobot, All Rights Reserved. 
@@ -21,12 +21,21 @@ pid_t turn_pid[2] = {
 pid_t wheel_turn_pid_soft[2] = {
     pid_t(0.01f, 0.0f, 0.0f, 0.5f, 10.0f), 
     pid_t(0.01f, 0.0f, 0.0f, 0.5f, 10.0f)};
+#if ROBOT_ID == INFANTRY1_ID
+pid_t aerial_pid[2] = {
+    pid_t(40.0f, 0.0f, 0.0f, 0.0f, 100.0f), 
+    pid_t(40.0f, 0.0f, 0.0f, 0.0f, 100.0f)};
+pid_t aerial_d_pid[2] = {
+    pid_t(300.0f, 0.0f, 0.0f, 0.0f, 100.0f), 
+    pid_t(300.0f, 0.0f, 0.0f, 0.0f, 100.0f)};
+#elif ROBOT_ID == INFANTRY2_ID
 pid_t aerial_pid[2] = {
     pid_t(1.0f, 0.0f, 0.0f, 0.0f, 100.0f), 
     pid_t(1.0f, 0.0f, 0.0f, 0.0f, 100.0f)};
 pid_t aerial_d_pid[2] = {
     pid_t(200.0f, 0.0f, 0.0f, 0.0f, 100.0f), 
     pid_t(200.0f, 0.0f, 0.0f, 0.0f, 100.0f)};
+#endif
 float test_length = 0.20f;
 void wl_chassis_t::fsm_active_t::state_normal_t::enter(wl_chassis_t *owner)
 {
@@ -71,9 +80,13 @@ void wl_chassis_t::fsm_active_t::state_normal_t::execute(wl_chassis_t *owner)
        than threadhold, it means the leg is in the air, which may cause 
        instability. */
     calc_support_force(owner);
-    constexpr uint8_t AERIAL_DEBOUNCE = 30;
+    constexpr uint8_t AERIAL_DEBOUNCE = 100;
     constexpr uint8_t LANDING_DEBOUNCE = 10;
+#if ROBOT_ID == INFANTRY1_ID
+    constexpr float TAKEOFF_FORCE_THRESHOLD = 65.0f;
+#elif ROBOT_ID == INFANTRY2_ID
     constexpr float TAKEOFF_FORCE_THRESHOLD = -100.0f;
+#endif
     constexpr float LANDING_COMPRESSION_THRESHOLD = 0.1f;
     constexpr float LANDING_UPWARD_ACC_THRESHOLD = 3.0f;
     if(!owner->_flag.is_aerial)
