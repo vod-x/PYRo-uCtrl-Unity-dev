@@ -41,10 +41,10 @@ void wl_chassis_t::fsm_active_t::state_spin_t::execute(wl_chassis_t *owner)
     }
 
     
-    float dynamic_spin_speed = 3.0f + (cap_volt - 18.0f) * (10.0f - 3.0f) / (27.0f - 20.0f);
+    float dynamic_spin_speed = 3.0f + (cap_volt - 18.0f) * (9.0f - 3.0f) / (27.0f - 20.0f);
     
  
-    dynamic_spin_speed = fp32_constrain(dynamic_spin_speed, 3.0f, 10.0f);
+    dynamic_spin_speed = fp32_constrain(dynamic_spin_speed, 3.0f, 9.0f);
 
     owner->_leg_data[wl_chassis_t::R].T_w_turn =  wheel_turn_pid[wl_chassis_t::R].calculate(dynamic_spin_speed , owner->g_yaw); 
     owner->_leg_data[wl_chassis_t::L].T_w_turn =  wheel_turn_pid[wl_chassis_t::L].calculate(dynamic_spin_speed , owner->g_yaw);

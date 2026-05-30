@@ -303,10 +303,10 @@ wl_chassis_cfg_t infantry2_chassis_cfg = {
         .k1 = {0.115f, 0.167f},
         .k2 = {2.44f, 2.26f},
         .k3 = {2.0f, 2.0f},
-        .energy_kp = 0.0f,
+        .energy_kp = 1.0f,
         .energy_kd = 0.0f,
-        .min_max_power = 0.0f,
-        .cap_max_bonus = 0.0f,
+        .min_max_power = 15.0f,
+        .cap_max_bonus = 150.0f,
     },
 #elif ROBOT_ID == INFANTRY2_ID
  .power_ctrl_cfg = {
@@ -316,7 +316,7 @@ wl_chassis_cfg_t infantry2_chassis_cfg = {
         .energy_kp = 1.0f,
         .energy_kd = 0.0f,
         .min_max_power = 15.0f,
-        .cap_max_bonus = 120.0f,
+        .cap_max_bonus = 150.0f,
     },
 #endif
 };

@@ -112,6 +112,17 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
     cmd.turn_angle = atan2f(cmd.vy, cmd.vx);
     
     cmd.yaw_vel = (float)gimbal_rx.msg.yawvel / 100000.0f;
+   
+    static uint32_t last_gimbal_mode = cmd_t::PASSIVE;
+    static uint16_t spin_enter_delay_cnt = 0;
+
+    
+    if (last_gimbal_mode != cmd_t::SPIN && gimbal_rx.msg.mode == cmd_t::SPIN)
+    {
+        spin_enter_delay_cnt = 500; 
+    }
+    last_gimbal_mode = gimbal_rx.msg.mode;
+  
     if(gimbal_rx.msg.mode == cmd_t::PASSIVE)
     {
         cmd.mode = cmd_t::PASSIVE;
@@ -126,7 +137,19 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
     }
     else if(gimbal_rx.msg.mode == cmd_t::SPIN) 
     {
-        cmd.mode = cmd_t::SPIN;
+       
+        if (spin_enter_delay_cnt > 0) 
+        {
+            spin_enter_delay_cnt--;
+            cmd.mode = cmd_t::ACTIVE;  
+            cmd.vx = 0.0f;             
+            cmd.vy = 0.0f;             
+           
+        } 
+        else 
+        {
+            cmd.mode = cmd_t::SPIN;    
+        }
     }
 
         if(1 == gimbal_rx.msg.selfRescue)
@@ -134,6 +157,24 @@ void infantry2_chassis_rc2cmd(void const *rc_ctrl)
             cmd.mode = cmd_t::REVERSE;
         }
     cmd.leg_length_mode = gimbal_rx.msg.legLength;
+
+    static uint16_t spin_exit_delay_cnt = 0;
+    
+    /* If the previous frame was in SPIN mode and the current frame switches back to Normal mode, a delay countdown is triggered.*/
+    if (last_cmd.mode == cmd_t::SPIN && cmd.mode == cmd_t::ACTIVE)
+    {
+        spin_exit_delay_cnt = 1000; 
+    }
+
+   
+    if (spin_exit_delay_cnt > 0)
+    {
+        spin_exit_delay_cnt--;
+        cmd.vx = 0.0f;
+        cmd.vy = 0.0f;
+       
+    }
+   
 #endif
 #if defined(USE_DR16)
     pyro::read_scope_lock lock(
